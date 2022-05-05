@@ -1,0 +1,84 @@
+# HEADER
+Bootstrap: docker
+From: continuumio/miniconda3
+
+# SECTIONS
+%files
+    README.md
+    setup.py
+    gpu_environment.yml
+    
+%post
+    
+    # *** Non-interactive Shell
+	export DEBIAN_FRONTEND=noninteractive
+    
+    # *** Reconfigure Shell (or %post -c /bin/bash)
+    dpkg-reconfigure dash
+    
+    # *** OS Upgrade & Install
+    apt update && apt upgrade -y
+    apt install -y git wget \
+        build-essential \
+		ca-certificates \
+        libgl1-mesa-glx \
+        libegl1-mesa \
+		libxrandr2 \
+		libxss1 \
+		libxcursor1 \
+		libxcomposite1 \
+		libasound2 \
+		libxi6 \
+		libxtst6
+	
+	# Load Anaconda Environment Variables
+	. /opt/conda/etc/profile.d/conda.sh
+	
+	# Update Conda
+	conda update conda
+	
+	# *** Setting Up Envrionmnet
+    conda env create -f gpu_environment.yml python=3.8
+    conda activate exatrkx-gpu
+    pip install -e .
+    
+    # *** Setup Conda Init ***
+	mv ~/.bashrc ~/.bashrcold
+	conda init
+	cat ~/.bashrc >> /etc/conda.init
+	echo conda activate exatrkx-gpu >> /etc/conda.init
+	conda clean -afy
+	mv ~/.bashrcold ~/.bashrc
+	rm *.py *.yml *.md
+	
+    # *** Cleanup
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
+    
+%environment
+	action="${1##*/}"
+	if [ "$action" = "shell" ]; then
+		if [ "${SINGULARITY_SHELL:-}" = "/bin/bash" ]; then
+			set -- --noprofile --init-file /etc/conda.init
+		elif test -z "${SINGULARITY_SHELL:-}"; then
+			export SINGULARITY_SHELL=/bin/bash
+			set -- --noprofile --init-file /etc/conda.init
+		fi
+	fi	
+
+%runscript
+	BASH_ENV=/etc/conda.init exec /bin/bash --noprofile --init-file /etc/conda.init "$@"
+
+%labels
+    Author: Adeel Akram <adeel.chep@gmail.com>
+    Dated : 01-01-2022
+
+%help
+
+    Singularity container for building PyTorch using Spack package manager.
+    
+    Build the container from definition file.
+    $ sudo singularity build stttrkx-hsf.sif stttrkx-hsf.def
+    
+    One can build a sandbox container as the following
+    $ sudo singularity build --sandbox stttrkx-hsf.sif stttrkx-hsf.def
