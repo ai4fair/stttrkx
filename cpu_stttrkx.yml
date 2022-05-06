@@ -1,4 +1,4 @@
-name: exatrkx-cpu
+name: exatrkx
 channels:
   - pyg
   - pytorch
