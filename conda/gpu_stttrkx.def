@@ -7,7 +7,6 @@ From: continuumio/miniconda3
     README.md
     setup.py
     gpu_environment.yml
-    cpu_environment.yml
 
 %post -c /bin/bash
 
@@ -40,7 +39,6 @@ From: continuumio/miniconda3
     conda clean -t
     mv ~/.bashrcold ~/.bashrc
 
-
     # *** Cleanup
     apt clean && \
     rm -rf /var/lib/apt/lists/*
@@ -48,7 +46,7 @@ From: continuumio/miniconda3
 
 %environment
     # This setting is for "singularity shell" command
-    action="${0##*/}"     # SeSEGPU: "${1##*/}"
+    action="${0##*/}"
     if [ "$action" = "shell" ]; then
         if [ "${SINGULARITY_SHELL:-}" = "/bin/bash" ]; then
             set -- --noprofile --init-file /etc/conda.init
@@ -59,10 +57,8 @@ From: continuumio/miniconda3
     fi
 
 %runscript
-    # exec /bin/bash --noprofile --init-file /etc/conda.init "$@"
     BASH_ENV=/etc/conda.init exec /bin/bash --noprofile --init-file /etc/conda.init "$@" 
 
 %help
-
-    To run this container with "exatrkx" conda environment, do:
-    $ singularity run mycontainer.sif -c "python main.py"
+    Run the Container
+    $ singularity run gpu_stttrkx.sif -c "conda activate exatrkx && python main.py"
