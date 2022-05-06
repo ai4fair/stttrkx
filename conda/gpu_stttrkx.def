@@ -27,7 +27,7 @@ From: continuumio/miniconda3
     conda update conda
 
     # *** Setting Up Envrionmnet
-    conda env create -f cpu_environment.yml python=3.8
+    conda env create -f gpu_environment.yml python=3.8
     conda activate exatrkx
     pip install -e .
 
