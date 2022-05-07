@@ -3,7 +3,7 @@
 LUSTRE_HOME="/lustre/pbar/"$USER
 
 # *** Account, ***
-#SBATCH -A aakram                                            # Account Name (--account=g2020014)
+#SBATCH -A panda                                             # Account Name (--account=g2020014)
 #SBATCH -J CTD                                               # Job Name (--job-name=HitPairs)
 #-SBATCH -M snowy                                            # Cluster Name (--clusters=snowy)
 #SBATCH -t 8:00:00                                           # Time (DD-HH:MM) (--time=0:59:00)
@@ -18,7 +18,7 @@ LUSTRE_HOME="/lustre/pbar/"$USER
 #-SBATCH --qos=short                                         # Priority of short-jobs of 1-4 nodes, with timelimit<= 15 min.
 
 # *** I/O ***
-#SBATCH -D .                                                 # Set CWD as Wroking Dir. for Batch Script(one can also set to $LUSTRE_HOME)
+#SBATCH -D .                                                 # Set CWD as Wroking Dir. for Batch Script(or to $LUSTRE_HOME)
 #SBATCH -o %x-%j.out                                         # Standard Output (--output=<filename pattern>)
 #SBATCH -e %x-%j.err                                         # Standard Error (--error=<filename pattern>)
 #SBATCH --mail-type=END                                      # Notification Type
@@ -55,5 +55,5 @@ echo "== --------------------------------------------"
 
 CENV=${exatrkx}
 CONT=${gpu_stttrkx.sif}
-srun singularity run --nv $LUSTRE_HOME/containers/$CONT -c "conda activate $CENV && python main.py"
+srun singularity run --nv $LUSTRE_HOME/containers/$CONT -c "conda activate $CENV && python test.py"
 
