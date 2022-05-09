@@ -150,10 +150,9 @@ class GNNBase(LightningModule):
         edge_true_positive = (
             (truth & (preds > self.hparams["edge_cut"])).sum().float()
         )
-        
-        # FIXME::ADAK: torch.Tensor(src-tensor) to src-tensor.clone().detach()
-        eff = torch.Tensor(edge_true_positive / max(1, edge_true)).clone().detach()
-        pur = torch.Tensor(edge_true_positive / max(1, edge_positive)).clone().detach()
+                
+        eff = torch.tensor(edge_true_positive / max(1, edge_true))
+        pur = torch.tensor(edge_true_positive / max(1, edge_positive))
         
         auc = roc_auc_score(truth.cpu().detach(), preds.cpu().detach())
         
