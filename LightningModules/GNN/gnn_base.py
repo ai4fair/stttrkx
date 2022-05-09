@@ -150,9 +150,9 @@ class GNNBase(LightningModule):
         edge_true_positive = (
             (truth & (preds > self.hparams["edge_cut"])).sum().float()
         )
-                
-        eff = torch.tensor(edge_true_positive / max(1, edge_true))
-        pur = torch.tensor(edge_true_positive / max(1, edge_positive))
+        
+        eff = (edge_true_positive / max(1, edge_true)).clone().detach()
+        pur = (edge_true_positive / max(1, edge_positive)).clone().detach()
         
         auc = roc_auc_score(truth.cpu().detach(), preds.cpu().detach())
         
