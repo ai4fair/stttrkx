@@ -11,7 +11,7 @@
 #SBATCH -N 1                                                 # No. of Compute Nodes Requested (--nodes=<number>)
 #SBATCH -c 32                                                # No. of CPUs Cores per Task (--cpus-per-task=<ncpus>
 #SBATCH --mem=32768                                          # Request CPU RAM, I am requesting 32G
-#SBATCH --ntasks-per-node=1                                  # Request ntasks invoked on each node (for --nodes), ntasks
+#SBATCH --ntasks-per-node=1                                  # Request no. of tasks invoked on each node (for --nodes)
 #SBATCH --gres=gpu:tesla:1                                   # Request GPUs resources [gpu:<type>:<no.>]
 #-SBATCH --nodelist=lxbk0[717-718]                           # Request specific node(s) on --partition
 
