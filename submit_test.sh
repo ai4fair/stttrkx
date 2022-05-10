@@ -55,4 +55,4 @@ echo "EXATRKX_DATA: $EXATRKX_DATA"
 
 CENV=exatrkx
 CONT=gpu_stttrkx.sif
-singularity run --nv $LUSTRE_HOME/containers/$CONT -c "conda activate $CENV && traintrack configs/pipeline_quickstart.yaml"
+singularity run --nv $LUSTRE_HOME/containers/$CONT -c "conda activate $CENV && python test.py"
