@@ -1,8 +1,8 @@
 #!/bin/sh
 
+maxevts=100
 inputdir="run/gnn_evaluation/test"
 outputdir="run/trkx_from_gnn"
-maxevts=100
 
 python trkx_from_gnn.py \
     --input-dir $inputdir \

@@ -1,13 +1,18 @@
 #!/bin/sh
 
-reco_tracks_path="run/trkx_from_gnn"
-raw_tracks_path="run/gnn_evaluation/test"
-outputdir="run/trkx_reco_eval/eval"
 maxevts=100
+gnn_pred="run/gnn_evaluation/test"
+reco_tracks="run/trkx_from_gnn"
+outputdir="run/trkx_reco_eval/eval"
+
+# good and bad events
+#gnn_pred="run/gnn_evaluation/test_bad"
+#reco_tracks="run/trkx_from_gnn_bad"
+#outputdir="run/trkx_reco_eval/bad"
 
 python trkx_reco_eval.py \
-    --reco-tracks-path $reco_tracks_path \
-    --raw-tracks-path $raw_tracks_path \
+    --reco-tracks-path $reco_tracks \
+    --raw-tracks-path $gnn_pred \
     --outname $outputdir \
     --max-evts $maxevts \
     --force \
