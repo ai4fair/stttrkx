@@ -7,6 +7,16 @@ import numpy as np
 # TODO: Adapt for STT
 
 
+# Polar to Cartesian
+def polar_to_cartesian(r, phi):
+    """Convert cylinderical to cartesian coordinates. 
+    Offset scaling [r*100, phi*np.pi, z*100]"""
+    theta = phi * np.pi
+    x = r * np.cos(theta)*100
+    y = r * np.sin(theta)*100
+    return x, y
+
+
 # Cylinerical to Cartesian
 def cylindrical_to_cartesian(r, phi, z):
     """Convert cylinderical to cartesian coordinates. 
@@ -40,6 +50,7 @@ def calc_dphi(phi1, phi2):
     return dphi
 
 
+# Find Ratio and Error
 def ratio_error(a, b, in_percentage=False):
     ratio = a/b
     if in_percentage:

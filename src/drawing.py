@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 try:
     output_base = os.path.dirname(os.path.abspath(__file__))
 except KeyError as e:
@@ -17,6 +16,17 @@ except KeyError as e:
 
 # detector file
 detector_path = os.path.join(output_base, 'stt.csv')
+
+# TODO: fetch functions from the utils_math.py and remove them from here.
+
+# Polar to Cartesian
+def polar_to_cartesian(r, phi):
+    """Convert cylinderical to cartesian coordinates. 
+    Offset scaling [r*100, phi*np.pi, z*100]"""
+    theta = phi * np.pi
+    x = r * np.cos(theta)*100
+    y = r * np.sin(theta)*100
+    return x, y
 
 
 # Cylinerical to Cartesian
@@ -31,6 +41,7 @@ def cylindrical_to_cartesian(r, phi, z):
 
 
 # Using Object Oriented API
+# -----------------------------------------------------------------------------
 def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     """Draw event from the processing stage, the `feature_data` is pytorch_geometric data."""
     plt.close('all')
@@ -72,9 +83,11 @@ def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
         fig.savefig('event_%d.png' % e_id)
     return fig
 
+
 # Using Object Oriented API
+# -----------------------------------------------------------------------------
 def draw_event(event=None, figsize=(10, 10), save_fig=False):
-    """Draw a Single Event using event Dataframe"""
+    """Draw a single event using 'event' DataFrame."""
     
     # OOP Method #1
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
@@ -110,7 +123,7 @@ def draw_event(event=None, figsize=(10, 10), save_fig=False):
 
 
 def draw_event_v2(hits=None, tubes=None, particles=None, truth=None, event_id=0, figsize=(10, 10), save_fig=False):
-    """Draw a Single Event Using hits, tubes, particles, truth Dataframes"""
+    """Draw a single event using 'hits', 'tubes', 'particles' and 'truth' DataFrames."""
     
     # OOP Method #2
     fig = plt.figure(figsize=figsize)
@@ -147,8 +160,9 @@ def draw_event_v2(hits=None, tubes=None, particles=None, truth=None, event_id=0,
 
 
 # Using Pyplot API
+# -----------------------------------------------------------------------------
 def draw_single_event(event=None, figsize=(10, 10), save_fig=False):
-    """Draw a Single Event using event Dataframe"""
+    """Draw a single event using 'event' DataFrame."""
     
     plt.close('all')
     fig = plt.figure(figsize=figsize)
@@ -185,7 +199,7 @@ def draw_single_event(event=None, figsize=(10, 10), save_fig=False):
 
 def draw_single_event_v2(hits=None, tubes=None, particles=None, truth=None,
                          event_id=0, figsize=(10, 10), save_fig=False):
-    """Draw a Single Event Using hits, tubes, particles, truth Dataframes"""
+    """Draw a single event using 'hits', 'tubes', 'particles' and 'truth' DataFrames."""
     
     plt.close('all')
     fig = plt.figure(figsize=figsize)
