@@ -97,8 +97,8 @@ After pipeline is finished, the track building and track evaluation is performed
 
 Consult following notebooks
 
-- main.ipynb
-- eval.ipynb
+- `main.ipynb`: Reading CSVs, Event Building from CSVs, SttCSVReader Class to Read CSV, Detector Layout, Plotting, etc.
+- `eval.ipynb`: Inspections on Track Evaluation (once the `trkx_reco_eval.py` has been run).
  
 
 
