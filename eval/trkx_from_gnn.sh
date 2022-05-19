@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/bin/bash
+
+# This script runs 'trkx_from_gnn.py'
 
 maxevts=100
 inputdir="run/gnn_evaluation/test"
 outputdir="run/trkx_from_gnn"
 
+# reco tracks from GNN
 python trkx_from_gnn.py \
     --input-dir $inputdir \
     --output-dir $outputdir \

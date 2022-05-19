@@ -1,9 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 
-maxevts=100
+# This script runs 'trkx_reco_eval.py' for a single event.
+
+if [ $# -lt 1 ]; then
+  echo -e "Provide Event ID.\n"
+  echo -e "USAGE: ./eval.sh <event_id>"
+  exit 1
+fi
+
+
+evtid=$1
 gnn_pred="run/gnn_evaluation/test"
 reco_tracks="run/trkx_from_gnn"
-outputdir="run/trkx_reco_eval/eval"
+outputdir="run/trkx_reco_eval/$1"
 
 # good and bad events
 #gnn_pred="run/gnn_evaluation/test_bad"
@@ -14,7 +23,7 @@ python trkx_reco_eval.py \
     --reco-tracks-path $reco_tracks \
     --raw-tracks-path $gnn_pred \
     --outname $outputdir \
-    --max-evts $maxevts \
+    --event-id $evtid \
     --force \
     --min-hits-truth 7 \
     --min-hits-reco 4 \
