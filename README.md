@@ -55,50 +55,61 @@ Follow instructions on [NERSC Documentation](https://docs.nersc.gov/) or see the
 
 ## Directory Tree
 
-- software environment
-    - `conda` contains files and instructions for building a conda environment for CPU and GPU
+&nbsp;
+### (1) - Software Environment
 
-### (1) - Understanding CSV Data
+- `conda/` contains files and instructions for building a conda environment for CPU and GPU
+
+&nbsp;
+### (2) - Understanding CSV Data
 
 - exploration of raw CSV data
-    - `eda` contains notebooks to understand CSV data
-- genric code
-    - `src` contains generic code for plotting, event building from CSV data
+    - `eda/` contains notebooks to understand CSV data, any other investigative stuff.
+- helper code for raw CSV data
+    - `src/` contains helper code for **utility functions**, **plotting**, **event building**, etc
 
-### (2) - Running Pipeline (Recommended)
+&nbsp;
+### (3) - Running Pipeline
 
-- Running Stages of the Pipeline in Bash
+- Running Stages of the Pipeline in Bash (Recommended)
     - `traintrack configs/pipeline_quickstart.yaml`
 
-### (3) - Running Pipeline, Interactively
-To run pipeline stages in Jupyter, use notebooks in the `notebook` folder.
+- Running Stages of the Pipeline in Jupyter
+    - use notebooks in the `notebook/` folder.
 
+**Note:** Deep learning pipeline specific code rests in `configs/` and `LightningModules/` folders. These two folders are only required to fully run the pipeline. Everything else, is helper code used for post-training analysis. 
 
+&nbsp;
 ### (4) - Understanding the Pipeline
 
 In order to understand the **output** of each stage, look into these notebooks.
 
-- `stt1_proc.ipynb` for processing
-- `stt2_embd.ipynb` for embedding
-- `stt3_filter.ipynb` for filtering
-- `stt4_gnn.ipynb` for GNN
+- `stt1_proc.ipynb` for processing stage
+- `stt2_embd.ipynb` for embedding stage
+- `stt3_filter.ipynb` for filtering stage
+- `stt4_gnn.ipynb` for GNN stage
+- `main.ipynb` for random testing such as reading CSVs, event building, plotting, etc.
 
 
+&nbsp;
+### (5) - Post Training
 
-### (5) - Post Training, the _Track Building_ Stage
+After pipeline is finished, all we get is the `edge_score`. One needs to use this information to build tracks. All post-training hepler code is located in the `eval/` directory.
 
-After pipeline is finished, the track building and track evaluation is performed on the data from the GNN stage (last stage in the pipeline). Follow the procedure here,
+The track building and track evaluation is performed on the data from the GNN stage (last stage in the pipeline). Follow the procedure here,
 
-- `trkx_from_gnn.py` runs after GNN stage to build track candidates (help: `trkx_from_gnn.sh`, `trkx_from_gnn.ipynb`)
-- `trkx_reco_eval.py` runs after `trkx_from_gnn.py` to evaluate tracks (help: `trkx_reco_eval.sh`, `trkx_reco_eval.ipynb`)
+1. First, run `trkx_from_gnn.py`
+2. Second, run `trkx_reco_eval.py`
 
+One can use the corresponding `bash` scripts to facilitate the execution of `python` scripts.
 
-**Inspection on Track Candidates**
+&nbsp;
 
-Consult following notebooks
+### (6) - Inspection on Track Candidates
 
-- `main.ipynb`: Reading CSVs, Event Building from CSVs, SttCSVReader Class to Read CSV, Detector Layout, Plotting, etc.
-- `eval.ipynb`: Inspections on Track Evaluation (once the `trkx_reco_eval.py` has been run).
+To understand the evaluation of tracks, one needs to dive deeper into the track reconstruction and evalution. Consult the following notebook:
+
+- `eval.ipynb`: Inspections on Track Evaluation.
  
 
 
