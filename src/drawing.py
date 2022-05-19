@@ -40,6 +40,30 @@ def cylindrical_to_cartesian(r, phi, z):
     return x, y, z
 
 
+def detector_layout(figsize=(10, 10), save_fig=False):
+    """Draw Detector (STT) Layout, intended as base plot for further plotting"""
+    
+    plt.close('all')
+    
+    # init subplots
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+
+    # detector layout    
+    det = pd.read_csv(detector_path)
+    nkw = det.query('skewed==0')  # non-skewed
+    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
+    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+    
+    # plotting params
+    ax.set_xlabel('x [cm]', fontsize=10)
+    ax.set_ylabel('y [cm]', fontsize=10)
+    ax.set_xlim(-41, 41)
+    ax.set_ylim(-41, 41)
+    ax.grid(False)
+    
+    return fig, ax
+
 # Using Object Oriented API
 # -----------------------------------------------------------------------------
 def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
