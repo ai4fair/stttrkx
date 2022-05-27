@@ -12,8 +12,8 @@ fontsize = 16
 minor_size = 14
 
 # pT params
-# pt_bins = np.arange(0, 10.2, step=0.2)
-pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
+pt_bins = np.arange(0.1, 1.5, step=0.1)
+#pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
 
 pt_configs = {
     'bins': pt_bins,
@@ -106,8 +106,8 @@ def make_cmp_plot(arrays, legends, configs,
     ax.set_ylabel(ylabel, fontsize=fontsize)
     add_up_xaxis(ax)
     ax.legend()
-    ax.grid(True)
-    fig.savefig("{}.pdf".format(outname))
+    ax.grid(False)
+    fig.savefig("{}.png".format(outname))
 
     # make a ratio plot
     fig, ax = get_plot()
@@ -122,10 +122,11 @@ def make_cmp_plot(arrays, legends, configs,
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ratio_label)
+    ax.set_ylim([0., 1.])
     add_up_xaxis(ax)
 
     if ratio_legends is not None:
-        ax.legend()
+        ax.legend(loc='lower right')
 
-    ax.grid(True)
-    fig.savefig("{}_ratio.pdf".format(outname))
+    ax.grid(False)
+    fig.savefig("{}_ratio.png".format(outname))

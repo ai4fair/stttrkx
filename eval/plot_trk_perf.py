@@ -41,11 +41,15 @@ if __name__ == "__main__":
     # plot the efficiency as a function of pT, eta
     make_cmp_plot_fn = partial(make_cmp_plot,
                                legends=["Generated", "Reconstructable", "Matched"],
-                               ylabel="Events", ratio_label='Track efficiency',
-                               ratio_legends=["Physics Eff", "Technical Eff"])
-
+                               ylabel="Events", ratio_label='Track Efficiency',
+                               ratio_legends=["Physics Eff.", "Technical Eff."])
+    
+    print("pt_bins: ", pt_configs['bins'])
+    print("n_bins: ", len(pt_configs['bins']))
+    
     # fiducial cuts: pT > 1 GeV and |eta| < 4
-    all_cuts = [0., 0.1, 0.25]
+    # all_cuts = [0., 0.1, 0.25]
+    all_cuts = [0.]
     for cut_pt in all_cuts:
         cuts = (pt > cut_pt)
         gen_pt = pt[cuts]
@@ -56,5 +60,5 @@ if __name__ == "__main__":
         make_cmp_plot_fn([gen_pt, true_pt, reco_pt],
                          configs=pt_configs,
                          xlabel="pT [GeV]",
-                         outname=os.path.join(outdir, "{}_pt_cut{}".format(out_prefix, cut_pt*1000)),
+                         outname=os.path.join(outdir, "{}_pt_cut{}".format(out_prefix, cut_pt)),
                          ymin=0.6)

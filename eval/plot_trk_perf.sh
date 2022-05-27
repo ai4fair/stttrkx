@@ -2,7 +2,7 @@
 
 # This script runs 'plot_trk_perf.py'
 
-infile="run/trkx_reco_eval/eval_particles.h5"
+infile="run/trkx_reco_eval/complex/particles.h5"
 outputdir="run/trkx_reco_eval"
 prefix="trk_perf"
 
