@@ -28,7 +28,7 @@ def cylindrical_to_cartesian(r, phi, z):
     return x, y, z
 
 
-# Cartesion to Spherical
+# Cartesian to Spherical
 def cartesion_to_spherical(x, y, z):
     r3 = np.sqrt(x**2 + y**2 + z**2)
     phi = np.arctan2(y, x)
@@ -59,6 +59,7 @@ def ratio_error(a, b, in_percentage=False):
     return ratio, error
 
 
+# Covariance Martix: x,y to r
 def cov_r(x, y, xe, ye):
     r = math.sqrt(x**2 + y**2)
     dr = math.sqrt(x**2/r**2 * xe**2 + y**2/r**2 * ye**2)

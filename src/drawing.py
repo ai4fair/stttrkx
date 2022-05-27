@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import os
 import numpy as np
 import pandas as pd
@@ -16,6 +15,7 @@ except KeyError as e:
 
 # detector file
 detector_path = os.path.join(output_base, 'stt.csv')
+
 
 # TODO: fetch functions from the utils_math.py and remove them from here.
 
@@ -40,8 +40,11 @@ def cylindrical_to_cartesian(r, phi, z):
     return x, y, z
 
 
+# ------------------------------------------------------------------------
+#                           Detector Layout
+# ------------------------------------------------------------------------
 def detector_layout(figsize=(10, 10), save_fig=False):
-    """Draw Detector (STT) Layout, intended as base plot for further plotting"""
+    """Draw Detector (STT) Layout, intended as base for further plotting"""
     
     plt.close('all')
     
@@ -64,8 +67,10 @@ def detector_layout(figsize=(10, 10), save_fig=False):
     
     return fig, ax
 
-# Using Object Oriented API
-# -----------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------
+#                           Using Object Oriented API
+# ------------------------------------------------------------------------
 def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     """Draw event from the processing stage, the `feature_data` is pytorch_geometric data."""
     plt.close('all')
@@ -108,8 +113,9 @@ def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     return fig
 
 
-# Using Object Oriented API
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+#                           Using Object Oriented API
+# ------------------------------------------------------------------------
 def draw_event(event=None, figsize=(10, 10), save_fig=False):
     """Draw a single event using 'event' DataFrame."""
     
@@ -183,8 +189,9 @@ def draw_event_v2(hits=None, tubes=None, particles=None, truth=None, event_id=0,
     return fig
 
 
-# Using Pyplot API
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+#                           Using Pyplot API
+# ------------------------------------------------------------------------
 def draw_single_event(event=None, figsize=(10, 10), save_fig=False):
     """Draw a single event using 'event' DataFrame."""
     

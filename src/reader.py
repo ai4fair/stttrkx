@@ -15,9 +15,9 @@ Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'even
 class SttCSVReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
     
-    def __init__(self, input_dir: str, noise: bool, skewed: bool):
+    def __init__(self, path: str, noise: bool, skewed: bool):
         """Initialize Instance Variables in Constructor"""
-        self._path = input_dir
+        self._path = path
         self._noise = noise
         self._skewed = skewed
         self._detector = None
