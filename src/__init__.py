@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from .drawing import draw_event
-from .drawing import draw_proc_event
-from .event import compose_event
-from .reader import SttCSVReader
+# Drawing
+from .drawing import detector_layout, draw_csv_event, draw_proc_event
+
+# Event Class 
+from .event import Compose_Event, Draw_Event, Draw_Single_Event
+
+# SttCSVReader Class (Alt. to Event Class)
+from .reader import SttCSVReader, Draw_Reader_Event
+
+
+
+

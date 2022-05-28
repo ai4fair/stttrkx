@@ -6,12 +6,25 @@
 import os
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import trackml.dataset
+
+
+try:
+    output_base = os.path.dirname(os.path.abspath(__file__))
+except KeyError as e:
+    print("Require the directory for outputs")
+    print("Given by environment variable: TRKXOUTPUTDIR")
+    raise e
+
+
+# detector file
+detector_path = os.path.join(output_base, 'stt.csv')
 
 
 # TODO: Adapt Event class to STT Dataset (from xju2-gnn/heptrkx/dataset/event.py)
 
-
+# Event Class
 class Event(object):
     """An object saving Event info, including hits, particles, truth and cell info"""
 
@@ -183,7 +196,8 @@ class Event(object):
         return sel
 
 
-def compose_event(event_prefix="", noise=False, skewed=False):
+# Compose DataFrames into Single Event DataFrame.
+def Compose_Event(event_prefix="", noise=False, skewed=True):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
     the necessary columns in the final dataframe."""
@@ -226,3 +240,77 @@ def compose_event(event_prefix="", noise=False, skewed=False):
     event = hits.assign(event_id=int(event_prefix[-10:]))
 
     return event
+
+
+# Draw Event:: (Using Object Oriented API)
+def Draw_Event(event=None, figsize=(10,10), save_fig=False):
+    """Draw a single event using 'event' DataFrame."""
+    
+    # OOP Method #1
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    
+    e_ids = np.unique(event.event_id.values)[0]
+    p_ids = np.unique(event.particle_id.values)
+    det = pd.read_csv(detector_path)
+    
+    nkw = det.query('skewed==0')  # non-skewed
+    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
+    
+    ax.scatter(nkw.x.values, nkw.y.values, s=45, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=45, facecolors='none', edgecolors='coral')
+
+    for i in p_ids:
+        df_ = event.loc[event.particle_id == i]
+        ax.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*3000/45).values, label='particle_id: {}'.format(i))
+    
+    ax.set_title('Event ID # {}'.format(e_ids))
+    ax.set_xlabel('x [cm]', fontsize=10)
+    ax.set_ylabel('y [cm]', fontsize=10)
+    # ax.set_xticks(xticks, fontsize=10)
+    # ax.set_yticks(yticks, fontsize=10)
+    ax.set_xlim(-41, 41)
+    ax.set_ylim(-41, 41)
+    ax.grid(False)
+    ax.legend(fontsize=10, loc='best')
+    fig.tight_layout()
+    
+    if save_fig:
+        fig.savefig('event_{}.png'.format(e_ids))
+    return fig
+
+
+# Draw_Event:: (Using Pyplot API)
+def Draw_Single_Event(event=None, figsize=(10, 10), save_fig=False):
+    """Draw a single event using 'event' DataFrame."""
+    
+    plt.close('all')
+    fig = plt.figure(figsize=figsize)
+    
+    e_ids = np.unique(event.event_id.values)
+    p_ids = np.unique(event.particle_id.values)
+    det = pd.read_csv(detector_path)
+    
+    nkw = det.query('skewed==0')  # non-skewed
+    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
+    
+    plt.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
+    plt.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+
+    for i in p_ids:
+        df_ = event.loc[event.particle_id == i]
+        plt.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*150).values, label='particle_id: {}'.format(i))
+    
+    plt.title('Event ID # {}'.format(e_ids))
+    plt.xlabel('x [cm]', fontsize=10)
+    plt.ylabel('y [cm]', fontsize=10)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.xlim((-41, 41))
+    plt.ylim((-41, 41))
+    plt.grid(False)
+    plt.legend(fontsize=10, loc='best')
+    plt.tight_layout()
+    
+    if save_fig:
+        plt.savefig('event_{}.png'.format(e_ids))
+    return fig

@@ -5,13 +5,28 @@ import os
 import glob
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
 
+
+try:
+    output_base = os.path.dirname(os.path.abspath(__file__))
+except KeyError as e:
+    print("Require the directory for outputs")
+    print("Given by environment variable: TRKXOUTPUTDIR")
+    raise e
+
+
+# detector file
+detector_path = os.path.join(output_base, 'stt.csv')
+
+
 Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'event_file'])
 
-
+# SttCSVReader Class
 class SttCSVReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
     
@@ -129,3 +144,41 @@ class SttCSVReader(object):
     
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
         return self.read(evtid)
+
+
+# Draw Reader Event:: Using Object Oriented API
+def Draw_Reader_Event(data=None, figsize=(10, 10), save_fig=False):
+    """Draw a single event produced by SttCSVReader class."""
+    
+    # OOP Method #1
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    
+    event = data.event
+    e_ids = int(data.event_file[-10:])
+    p_ids = np.unique(event.particle_id.values)
+    det = pd.read_csv(detector_path)
+    
+    nkw = det.query('skewed==0')  # non-skewed
+    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
+    
+    ax.scatter(nkw.x.values, nkw.y.values, s=45, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=45, facecolors='none', edgecolors='coral')
+
+    for i in p_ids:
+        df_ = event.loc[event.particle_id == i]
+        ax.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*3000/45).values, label='particle_id: {}'.format(i))
+    
+    ax.set_title('Event ID # {}'.format(e_ids))
+    ax.set_xlabel('x [cm]', fontsize=10)
+    ax.set_ylabel('y [cm]', fontsize=10)
+    # ax.set_xticks(xticks, fontsize=10)
+    # ax.set_yticks(yticks, fontsize=10)
+    ax.set_xlim(-41, 41)
+    ax.set_ylim(-41, 41)
+    ax.grid(False)
+    ax.legend(fontsize=10, loc='best')
+    fig.tight_layout()
+    
+    if save_fig:
+        fig.savefig('event_{}.png'.format(e_ids))
+    return fig
