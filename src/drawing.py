@@ -31,8 +31,8 @@ def detector_layout(figsize=(10, 10), save_fig=False):
     det = pd.read_csv(detector_path)
     nkw = det.query('skewed==0')  # non-skewed
     skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
-    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+    ax.scatter(nkw.x.values, nkw.y.values, s=44, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=44, facecolors='none', edgecolors='coral')
     
     # plotting params
     ax.set_xlabel('x [cm]', fontsize=10)
@@ -58,8 +58,8 @@ def draw_csv_event(hits=None, tubes=None, particles=None, truth=None, event_id=0
     nkw = det.query('skewed==0')  # non-skewed
     skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
     
-    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+    ax.scatter(nkw.x.values, nkw.y.values, s=44, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=44, facecolors='none', edgecolors='coral')
 
     for i in p_ids:
         df_ = hits.loc[truth.particle_id == i]
@@ -94,8 +94,8 @@ def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     det = pd.read_csv(detector_path)
     nkw = det.query('skewed==0')  # non-skewed
     skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
-    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+    ax.scatter(nkw.x.values, nkw.y.values, s=44, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=44, facecolors='none', edgecolors='coral')
     
     # event Id
     e_id = int(feature_data.event_file[-10:])
