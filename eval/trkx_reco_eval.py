@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from typing import Any
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class SttTorchDataReader(object):
     """Torch Geometric Data Reader from an Input Directory."""
@@ -26,7 +27,7 @@ class SttTorchDataReader(object):
     def read(self, evtid: int = None):
         """Read an Event from the Input Directory."""
         event_fname = os.path.join(self.path, "{}".format(evtid))
-        event = torch.load(event_fname)
+        event = torch.load(event_fname, map_location=device)
         return event
 
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:

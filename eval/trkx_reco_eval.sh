@@ -3,7 +3,7 @@
 # This script runs 'trkx_reco_eval.py', the trkx_from_gnn.py must run 
 # before this script. Better way is to use 'from_reco_to_eval.sh'.
 
-maxevts=1000
+maxevts=5000
 gnn_pred="run/gnn_evaluation/test"
 reco_tracks="run/trkx_from_gnn"
 outputdir="run/trkx_reco_eval/eval"

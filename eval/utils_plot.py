@@ -11,9 +11,10 @@ import itertools
 fontsize = 16
 minor_size = 14
 
-# pT params
-pt_bins = np.arange(0.1, 1.5, step=0.1)
-#pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
+# pt params
+# pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
+# pt_bins = np.arange(0.1, 1.5, step=0.1) # prob: last value isn't included
+pt_bins = np.linspace(0.1, 1.5, num=15)   # will give 15 bins
 
 pt_configs = {
     'bins': pt_bins,

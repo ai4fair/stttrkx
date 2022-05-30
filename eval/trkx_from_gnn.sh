@@ -2,7 +2,7 @@
 
 # This script runs 'trkx_from_gnn.py'
 
-maxevts=1000
+maxevts=5000
 inputdir="run/gnn_evaluation/test"
 outputdir="run/trkx_from_gnn"
 

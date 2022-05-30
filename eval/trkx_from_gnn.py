@@ -16,6 +16,7 @@ from multiprocessing import Pool
 from functools import partial
 from sklearn.cluster import DBSCAN
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def tracks_from_gnn(hit_id, score, senders, receivers,
                     edge_score_cut=0., epsilon=0.25, min_samples=2,
@@ -75,7 +76,7 @@ def process(filename, output_dir, score_name, **kwargs):
     evtid = int(os.path.basename(filename))
     
     # gnn_prcessed data by GNNBuilder Callback
-    gnn_data = torch.load(filename)
+    gnn_data = torch.load(filename, map_location=device)
     score = gnn_data.scores[:gnn_data.edge_index.shape[1]]  # score has twice the size of edge_index (flip(0) was used)
     senders = gnn_data.edge_index[0]
     receivers = gnn_data.edge_index[1]
