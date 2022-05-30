@@ -11,6 +11,7 @@ import trackml.dataset
 from typing import Any
 from collections import namedtuple
 
+# TODO: skewed or non-skewed selection: make layer_id column for both cases.
 
 try:
     output_base = os.path.dirname(os.path.abspath(__file__))

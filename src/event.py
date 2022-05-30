@@ -243,7 +243,7 @@ def Compose_Event(event_prefix="", noise=False, skewed=True):
 
 
 # Draw Event:: (Using Object Oriented API)
-def Draw_Event(event=None, figsize=(10,10), save_fig=False):
+def Draw_Compose_Event(event=None, figsize=(10,10), save_fig=False):
     """Draw a single event using 'event' DataFrame."""
     
     # OOP Method #1
@@ -264,8 +264,8 @@ def Draw_Event(event=None, figsize=(10,10), save_fig=False):
         ax.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*3000/45).values, label='particle_id: {}'.format(i))
     
     ax.set_title('Event ID # {}'.format(e_ids))
-    ax.set_xlabel('x [cm]', fontsize=10)
-    ax.set_ylabel('y [cm]', fontsize=10)
+    ax.set_xlabel('x [cm]', fontsize=15)
+    ax.set_ylabel('y [cm]', fontsize=15)
     # ax.set_xticks(xticks, fontsize=10)
     # ax.set_yticks(yticks, fontsize=10)
     ax.set_xlim(-41, 41)
@@ -301,8 +301,8 @@ def Draw_Single_Event(event=None, figsize=(10, 10), save_fig=False):
         plt.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*150).values, label='particle_id: {}'.format(i))
     
     plt.title('Event ID # {}'.format(e_ids))
-    plt.xlabel('x [cm]', fontsize=10)
-    plt.ylabel('y [cm]', fontsize=10)
+    plt.xlabel('x [cm]', fontsize=15)
+    plt.ylabel('y [cm]', fontsize=15)
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
     plt.xlim((-41, 41))

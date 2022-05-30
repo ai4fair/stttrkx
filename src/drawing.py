@@ -19,7 +19,7 @@ detector_path = os.path.join(output_base, 'stt.csv')
 
 
 # Draw STT: Using Object Oriented API
-def detector_layout(figsize=(10, 10), save_fig=False):
+def detector_layout(figsize=(10, 10)):
     """Draw Detector (STT) Layout, intended as base for further plotting"""
     
     plt.close('all')
@@ -35,8 +35,8 @@ def detector_layout(figsize=(10, 10), save_fig=False):
     ax.scatter(skw.x.values, skw.y.values, s=44, facecolors='none', edgecolors='coral')
     
     # plotting params
-    ax.set_xlabel('x [cm]', fontsize=10)
-    ax.set_ylabel('y [cm]', fontsize=10)
+    ax.set_xlabel('x [cm]', fontsize=15)
+    ax.set_ylabel('y [cm]', fontsize=15)
     ax.set_xlim(-41, 41)
     ax.set_ylim(-41, 41)
     ax.grid(False)
@@ -108,12 +108,12 @@ def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     for pid in p_ids:
         idx = feature_data.pid == pid
         # TODO: here z=isochrone radius, one should add a  separate variable for isochrone in feature_data
-        ax.scatter(x[idx], y[idx], s=(z[idx]*50), label='particle_id: {}'.format(pid))
+        ax.scatter(x[idx], y[idx], s=(z[idx]*100), label='particle_id: {}'.format(pid))
 
     # plotting params
     ax.set_title('Event ID # %d' % e_id)
-    ax.set_xlabel('x [cm]', fontsize=10)
-    ax.set_ylabel('y [cm]', fontsize=10)
+    ax.set_xlabel('x [cm]', fontsize=15)
+    ax.set_ylabel('y [cm]', fontsize=15)
     ax.set_xlim(-41, 41)
     ax.set_ylim(-41, 41)
     ax.grid(False)
