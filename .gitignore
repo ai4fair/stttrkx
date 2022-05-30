@@ -57,7 +57,7 @@
 .virtual_documents
 __pycache__
 *.sif
-run
+run*
 data_sets
 train_all
 lightning_logs
