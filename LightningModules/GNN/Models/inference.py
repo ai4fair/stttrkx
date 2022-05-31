@@ -94,12 +94,12 @@ class GNNTelemetry(Callback):
     def make_plot(self, x_val, y_val, x_lab, y_lab, title):
 
         # Update this to dynamically adapt to number of metrics
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(20, 20))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(x_val, y_val)
-        axs[0].set_xlabel(x_lab)
-        axs[0].set_ylabel(y_lab)
+        axs[0].set_xlabel(x_lab, fontsize=20)
+        axs[0].set_ylabel(y_lab, fontsize=20)
         axs[0].set_title(title)
         plt.tight_layout()
 
@@ -110,24 +110,24 @@ class GNNTelemetry(Callback):
         eff_fig, eff_axs = self.make_plot(
             metrics["eff_plot"]["score_cuts"],
             metrics["eff_plot"]["eff"],
-            "cut",
-            "Eff",
-            "Efficiency vs. cut",
+            "Cut",
+            "Efficiency",
+            "Efficiency vs. Cut",
         )
         pur_fig, pur_axs = self.make_plot(
             metrics["pur_plot"]["score_cuts"],
             metrics["pur_plot"]["pur"],
-            "cut",
-            "Pur",
-            "Purity vs. cut",
+            "Cut",
+            "Purity",
+            "Purity vs. Cut",
         )
 
         auc_fig, auc_axs = self.make_plot(
             metrics["auc_plot"]["eff"],
             metrics["auc_plot"]["pur"],
-            "Eff",
-            "Pur",
-            "Purity vs. Eff",
+            "Efficiency",
+            "Purity",
+            "Purity vs. Efficiency",
         )
 
         return {
@@ -141,7 +141,7 @@ class GNNTelemetry(Callback):
         os.makedirs(output_dir, exist_ok=True)
 
         for metric, (fig, axs) in metrics_plots.items():
-            fig.savefig(os.path.join(output_dir, f"metrics_{metric}.pdf"), format="pdf")
+            fig.savefig(os.path.join(output_dir, f"metrics_{metric}.png"), format="png")
 
 #FIXME::ADAK To get the output files as integers change batch.event_file[-4:] to str(int(batch.event_file[-4:])). 
 # Note that the one needs string type for torch.save(), so from 'str' to 'int' followed by 'str'. The event_file

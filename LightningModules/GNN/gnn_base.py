@@ -218,12 +218,12 @@ class GNNBase(LightningModule):
         return outputs
 
     def test_step_end(self, output_results):
-
-        print("Step:", output_results)
-
+        # print("Step:", output_results)
+        pass
+    
     def test_epoch_end(self, outputs):
-
-        print("Epoch:", outputs)
+        # print("Epoch:", outputs)
+        pass
 
     def optimizer_step(
         self,
