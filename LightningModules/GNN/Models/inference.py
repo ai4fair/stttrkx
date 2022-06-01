@@ -35,6 +35,8 @@ class GNNMetrics(Callback):
         after training. The best checkpoint is automatically loaded"""
         self.preds = []
         self.truth = []
+        
+        print("Starting GNNMetrics...")
 
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
