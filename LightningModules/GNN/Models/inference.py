@@ -19,6 +19,132 @@ Class-based Callback inference for integration with Lightning
 """
 
 
+# GNNMetrics Callback
+class GNNMetrics(Callback):
+
+    """Simpler version of 'GNNTelemetry' callback. It contains standardised
+    tests (AUC-ROC & AUC-PRC curves) of the performance of a GNN network."""
+
+    def __init__(self):
+        super().__init__()
+        logging.info("Constructing GNNMetrics Callback !")
+
+    def on_test_start(self, trainer, pl_module):
+
+        """This hook is automatically called when the model is tested
+        after training. The best checkpoint is automatically loaded"""
+        self.preds = []
+        self.truth = []
+
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+
+        """Get the relevant outputs from each batch"""
+
+        self.preds.append(outputs["preds"])
+        self.truth.append(outputs["truth"])
+
+    def on_test_end(self, trainer, pl_module):
+
+        """ 
+         1. Aggregate all outputs,
+         2. Calculate the ROC/PRC curve,
+         3. Plot ROC/PRC curve,
+         4. Save plots to PDF 'AUC-ROC/PRC.pdf'
+        """
+
+        # TODO: REFACTOR THIS INTO CALCULATE METRICS, PLOT METRICS, SAVE METRICS
+        
+        # Aggregate 'truth' and 'pred' from all batches.
+        preds = np.concatenate(self.preds)
+        truth = np.concatenate(self.truth)
+        print(preds.shape, truth.shape)
+
+
+        # -------------------------- ROC Metric
+        # AUC-ROC:: Calculate 
+        roc_fpr, roc_tpr, roc_thr = sklearn.metrics.roc_curve(truth, preds)
+        roc_auc = sklearn.metrics.auc(roc_fpr, roc_tpr)
+        logging.info("ROC AUC: %s", roc_auc)
+        
+        
+        # AUC-ROC:: Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+        
+        axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.3f" % roc_auc)
+        axs[0].plot([0, 1], [0, 1], color="navy", linestyle="--")
+        axs[0].set_xlabel("False Positive Rate", fontsize=20)
+        axs[0].set_ylabel("True Positive Rate", fontsize=20)
+        axs[0].set_title("ROC Curve, AUC = %.3f" % roc_auc)
+        axs[0].legend(loc='lower right')
+        plt.tight_layout()
+        fig.savefig("roc_curve.pdf", format="pdf")
+
+
+        # -------------------------- PRC Metric
+        # AUC-PRC: Calculate
+        # ppv, tpr, thr = sklearn.metrics.precision_recall_curve(truth, preds)
+        pre, recall, thr = sklearn.metrics.precision_recall_curve(truth, preds)
+        prc_auc = sklearn.metrics.auc(recall, pre)
+        logging.info("PRC AUC: %s", prc_auc)
+        
+        
+        # AUC-PRC:: Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+
+        axs[0].plot(recall, pre, color="darkorange", label="ROC Curve, AUC = %.3f" % prc_auc)
+        axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
+        axs[0].set_xlabel("Recall/TPR", fontsize=20)
+        axs[0].set_ylabel("Precision/PPV", fontsize=20)
+        axs[0].set_title("PRC Curve, AUC = %.3f" % prc_auc)
+        axs[0].legend(loc='lower left')
+        plt.tight_layout()
+        fig.savefig("prc_curve.pdf", format="pdf")
+
+
+        # -------------------------- Eff-Pur Metric
+        # Efficiency-Purity: Calculate
+        eff = roc_tpr
+        pur = 1 - roc_fpr
+        eff_pur_auc = sklearn.metrics.auc(eff, pur)
+        logging.info("EFF-PUR AUC: %s", eff_pur_auc)
+        
+        
+        # EFF-PUR:: Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+
+        axs[0].plot(eff, pur, color="darkorange", label="EFF-PUR Curve, AUC = %.3f" % eff_pur_auc)
+        axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
+        axs[0].set_xlabel("Efficiency", fontsize=20)
+        axs[0].set_ylabel("Purity", fontsize=20)
+        axs[0].set_title("Efficiency-Purity Curve, AUC = %.3f" % eff_pur_auc)
+        axs[0].legend(loc='lower left')
+        plt.tight_layout()
+        fig.savefig("eff_pur_curve.pdf", format="pdf")
+
+
+    def make_plot(self, x_val, y_val, x_lab, y_lab, title):
+        """common function for creating plots"""
+        
+        # Update this to dynamically adapt to number of metrics
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+
+        axs[0].plot(x_val, y_val, color="darkorange", label=title)
+        axs[0].set_xlabel(x_lab, fontsize=20)
+        axs[0].set_ylabel(y_lab, fontsize=20)
+        axs[0].set_title(title)
+        axs[0].legend()
+        plt.tight_layout()
+
+        return fig, axs
+
+
+# GNNTelemetry Callback
 class GNNTelemetry(Callback):
 
     """
@@ -43,12 +169,11 @@ class GNNTelemetry(Callback):
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
-        """
-        Get the relevant outputs from each batch
-        """
+        """Get the relevant outputs from each batch"""
 
         self.preds.append(outputs["preds"].cpu())
         self.truth.append(outputs["truth"].cpu())
+
 
     def on_test_end(self, trainer, pl_module):
 
@@ -58,20 +183,39 @@ class GNNTelemetry(Callback):
         3. Plot ROC curve,
         4. Save plots to PDF 'metrics.pdf'
         """
-
+        
         metrics = self.calculate_metrics()
-
         metrics_plots = self.plot_metrics(metrics)
-
         self.save_metrics(metrics_plots, pl_module.hparams.output_dir)
+
+
+    def calculate_metrics(self):
+        """"Calculate metrics"""
+        eff, pur, score_cuts, auc = self.get_eff_pur_metrics()
+
+        return {
+            "eff_plot": {"eff": eff, "score_cuts": score_cuts},
+            "pur_plot": {"pur": pur, "score_cuts": score_cuts},
+            "auc_plot": {"eff": eff, "pur": pur, "auc": auc},
+        }
+
 
     def get_eff_pur_metrics(self):
 
         self.truth = torch.cat(self.truth)
         self.preds = torch.cat(self.preds)
+        
+        # AUC-PRC Curve
+        # precision, recall, thresholds = precision_recall_curve(y_true, y_scores)
 
-        fpr, eff, score_cuts = roc_curve(self.truth, self.preds)
+        # AUC-ROC Curve
+        # fpr, tpr, thr = roc_curve(y_true, y_score)
+        fpr, eff, score_cuts = sklearn.metrics.roc_curve(self.truth, self.preds)
         pur = 1 - fpr
+
+        # Area Under the Curve (AUC) using the trapezoidal rule.
+        # auc = sklearn.metrics.auc(x, y)
+        auc = sklearn.metrics.auc(eff, pur)
 
         eff, pur, score_cuts = (
             eff[score_cuts <= 1],
@@ -79,17 +223,9 @@ class GNNTelemetry(Callback):
             score_cuts[score_cuts <= 1],
         )  # Make sure this is nicely plottable!
 
-        return eff, pur, score_cuts
+        return eff, pur, score_cuts, auc
 
-    def calculate_metrics(self):
 
-        eff, pur, score_cuts = self.get_eff_pur_metrics()
-
-        return {
-            "eff_plot": {"eff": eff, "score_cuts": score_cuts},
-            "pur_plot": {"pur": pur, "score_cuts": score_cuts},
-            "auc_plot": {"eff": eff, "pur": pur},
-        }
 
     def make_plot(self, x_val, y_val, x_lab, y_lab, title):
 
@@ -106,7 +242,8 @@ class GNNTelemetry(Callback):
         return fig, axs
 
     def plot_metrics(self, metrics):
-
+        
+        # Efficiency vs Threshold (cuts)
         eff_fig, eff_axs = self.make_plot(
             metrics["eff_plot"]["score_cuts"],
             metrics["eff_plot"]["eff"],
@@ -114,6 +251,8 @@ class GNNTelemetry(Callback):
             "Efficiency",
             "Efficiency vs. Cut",
         )
+        
+        # Purity vs Threshold (cuts)
         pur_fig, pur_axs = self.make_plot(
             metrics["pur_plot"]["score_cuts"],
             metrics["pur_plot"]["pur"],
@@ -121,15 +260,20 @@ class GNNTelemetry(Callback):
             "Purity",
             "Purity vs. Cut",
         )
-
+        
+        # Purity vs Efficiency
         auc_fig, auc_axs = self.make_plot(
             metrics["auc_plot"]["eff"],
             metrics["auc_plot"]["pur"],
             "Efficiency",
             "Purity",
-            "Purity vs. Efficiency",
+            "Efficiency-Purity Curve, AUC = %.3f" % metrics["auc_plot"]["auc"],
         )
-
+        
+        # TODO: How to add AUC?
+        #auc_axs.text(0.8, 0.8, 'boxed italics text in data coords', style='italic',
+        #bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
+        
         return {
             "eff_plot": [eff_fig, eff_axs],
             "pur_plot": [pur_fig, pur_axs],
@@ -143,12 +287,16 @@ class GNNTelemetry(Callback):
         for metric, (fig, axs) in metrics_plots.items():
             fig.savefig(os.path.join(output_dir, f"metrics_{metric}.png"), format="png")
 
+
+
+
 #FIXME::ADAK To get the output files as integers change batch.event_file[-4:] to str(int(batch.event_file[-4:])). 
 # Note that the one needs string type for torch.save(), so from 'str' to 'int' followed by 'str'. The event_file
 # is of the format e.g. path/to/event0000000001, so event_file[-10:] will return 0000000001 (last 10 str) and 
 # event_file[-4:] will return 0001 (last 4 str). We are not expecting more than 9999 event in testset. The trainset
 # and valset are rebuild with GNNBuilder but not needed as both are redundant w.r.t data from Processing.
 
+# GNNBuilder Callback
 class GNNBuilder(Callback):
     """Callback handling filter inference for later stages.
 
