@@ -14,8 +14,39 @@ import torch
 import numpy as np
 from sklearn.metrics import roc_curve
 
+"""Class-based Callback Inference for Integration with Pytorch Lightning"""
+
 """
-Class-based Callback inference for integration with Lightning
+Explanation of Evalution Metrics:
+
+1.     ROC: FPR vs TPR
+2.     PRC: PPV vs TPR
+3. EFF-PUR: TNR vs TPR
+
+
+# Alternate Names
+
+- TPR is also known as Sensitivity, Recall, Hit Rate or Probability of Detection. To calculate: TPR = 1 - FNR
+- TNR is alos known as Specificity, Selectivity. To calculate: TNR = 1 - FPR
+- FPR is also known as Fall-out or Probability of False Alarm. To calculate: FPR = 1 - TNR = 1 − specificity
+- FNR is also known as Miss rate. To calculate: FNR = 1 - TPR
+
+- Accuracy. To calculate: ACC = (TP + TN)/(TP + TN + FP + FN)
+- Precision is also known as Positive Predictive Value (PPV). To calculate: PPV = 1 - FDR = TP/(TP + FP)
+- F1-score is harmonic mean of precision and recall
+
+# HEP Metric
+- Efficiency := TPR or Sensitivity or Recall or Probability of Detection
+-     Purity := TNR or Specificity or Selectivity
+
+From ROC curve, one can exatract these variables. For example, the ROC curve gives
+
+`roc_fpr, roc_tpr, roc_thr = sklearn.metrics.roc_curve(truth, preds)`
+
+Efficiency := roc_tpr
+    Purity := 1 - roc_fpr
+
+So, the efficiency vs purity curve is infact TPR vs TNR curve.
 """
 
 
@@ -61,6 +92,8 @@ class GNNMetrics(Callback):
         # Aggregate 'truth' and 'pred' from all batches.
         preds = np.concatenate(self.preds)
         truth = np.concatenate(self.truth)
+
+        print("Starting GNNMetrics...\n")
         print(preds.shape, truth.shape)
 
 
@@ -119,18 +152,18 @@ class GNNMetrics(Callback):
         fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
         axs = axs.flatten() if type(axs) is list else [axs]
 
-        axs[0].plot(eff, pur, color="darkorange", label="EFF-PUR Curve, AUC = %.3f" % eff_pur_auc)
+        axs[0].plot(eff, pur, color="darkorange", label="ROC Curve, AUC = %.5f" % eff_pur_auc)
         axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
         axs[0].set_xlabel("Efficiency", fontsize=20)
         axs[0].set_ylabel("Purity", fontsize=20)
         axs[0].set_title("Efficiency-Purity Curve, AUC = %.3f" % eff_pur_auc)
         axs[0].legend(loc='lower left')
         plt.tight_layout()
-        fig.savefig("eff_pur_curve.pdf", format="pdf")
+        fig.savefig("eff_pur_curve.png", format="png")
 
 
-    def make_plot(self, x_val, y_val, x_lab, y_lab, title):
-        """common function for creating plots"""
+    def make_plot(self, x_val, y_val, x_lab, y_lab, title, legend):
+        """Common function for creating plots"""
         
         # Update this to dynamically adapt to number of metrics
         fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
