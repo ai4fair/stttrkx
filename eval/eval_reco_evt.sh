@@ -19,7 +19,7 @@ outputdir="run/trkx_reco_eval/$1"
 #reco_tracks="run/trkx_from_gnn_bad"
 #outputdir="run/trkx_reco_eval/bad"
 
-python trkx_reco_eval.py \
+python eval_reco_trkx.py \
     --reco-tracks-path $reco_tracks \
     --raw-tracks-path $gnn_pred \
     --outname $outputdir \

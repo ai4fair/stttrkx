@@ -1,36 +1,21 @@
 #!/bin/bash
 
-# This script combines scripts 'trkx_from_gnn.py' and 'trkx_reco_eval.py' together.
-# To run these scripts individually, see 'trkx_from_gnn.sh' and 'trkx_reco_eval.sh'.
+# This script runs 'trkx_reco_eval.py', the trkx_from_gnn.py must
+# run before this script. Better way is to use 'reco_to_eval.sh'.
 
-# max events
-maxevts=100
+# Max Events
+maxevts=5000
 
-# trkx_from_gnn.py
-inputdir="run/gnn_evaluation/test"
-outputdir="run/trkx_from_gnn"
+# Data Directories
+gnn_pred="run/gnn_evaluation/test"
+reco_tracks="run/trkx_from_gnn"
+outputdir="run/trkx_reco_eval/eval"
 
-# trkx_reco_eval.py
-reco_tracks_path="run/trkx_from_gnn"
-raw_tracks_path="run/gnn_evaluation/test"
-outputdir_eval="run/trkx_reco_eval/eval"
-
-# reco tracks from GNN
-python trkx_from_gnn.py \
-    --input-dir $inputdir \
-    --output-dir $outputdir \
-    --max-evts $maxevts \
-    --num-workers 8 \
-    --score-name "score" \
-    --edge-score-cut 0.0 \
-    --epsilon 0.25 \
-    --min-samples 2
-
-# evaluate reco tracks from GNN
-python trkx_reco_eval.py \
-    --reco-tracks-path $reco_tracks_path \
-    --raw-tracks-path $raw_tracks_path \
-    --outname $outputdir_eval \
+# Evaluate Reco. Tracks
+python eval_reco_trkx.py \
+    --reco-tracks-path $reco_tracks \
+    --raw-tracks-path $gnn_pred \
+    --outname $outputdir \
     --max-evts $maxevts \
     --force \
     --min-hits-truth 7 \
