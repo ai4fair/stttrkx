@@ -1,6 +1,6 @@
 # HEADER
 Bootstrap: docker
-From: ubuntu:20.04
+From: continuumio/miniconda3
 
 # SECTIONS
 %files
@@ -8,36 +8,20 @@ From: ubuntu:20.04
     setup.py
     gpu_environment.yml
 
-%post
+%post -c /bin/bash
 
-    # *** Switch to Non-interactive Mode
+    # *** Non-interactive Shell
     export DEBIAN_FRONTEND=noninteractive
+
+    # *** Reconfigure Shell (or %post -c /bin/bash)
+    # dpkg-reconfigure dash
 
     # *** OS Upgrade & Install
     apt update && apt upgrade -y
-    apt install -y git wget \
-        build-essential \
-        ca-certificates \
-        libgl1-mesa-glx \
-        libegl1-mesa \
-        libxrandr2 \
-        libxss1 \
-        libxcursor1 \
-        libxcomposite1 \
-        libasound2 \
-        libxi6 \
-        libxtst6
-
-    # *** Reconfigure Shell
-    dpkg-reconfigure dash
-
-    # Installing Anaconda3 (Silent Mode)
-    # wget -c https://repo.anaconda.com/archive/Anaconda3-2021.11-Linux-x86_64.sh -O anaconda.sh
-    wget -c https://repo.anaconda.com/miniconda/Miniconda3-py38_4.11.0-Linux-x86_64.sh -O anaconda.sh
-    bash anaconda.sh -bp /opt/anaconda/
+    apt install -y git wget build-essential ca-certificates
 
     # Load Anaconda Environment Variables
-    . /opt/anaconda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh
 
     # Update Conda
     conda update conda
@@ -47,22 +31,22 @@ From: ubuntu:20.04
     conda activate exatrkx
     pip install -e .
 
-    # *** Setup Conda Init ***
+    # *** Setup Custom File for Conda Environment, Then Put in BASH_ENV ***
     mv ~/.bashrc ~/.bashrcold
     conda init
     cat ~/.bashrc >> /etc/conda.init
-    echo conda activate exatrkx >> /etc/conda.init
-    conda clean -afy
+    echo "conda activate exatrkx" >> /etc/conda.init
+    conda clean -t
     mv ~/.bashrcold ~/.bashrc
 
     # *** Cleanup
     apt clean && \
     rm -rf /var/lib/apt/lists/*
-    rm *.sh *.yml *.md
+    rm *.py *.yml *.md
 
 %environment
     # This setting is for "singularity shell" command
-    action="${1##*/}"
+    action="${0##*/}"
     if [ "$action" = "shell" ]; then
         if [ "${SINGULARITY_SHELL:-}" = "/bin/bash" ]; then
             set -- --noprofile --init-file /etc/conda.init
@@ -73,20 +57,8 @@ From: ubuntu:20.04
     fi
 
 %runscript
-    BASH_ENV=/etc/conda.init exec /bin/bash --noprofile --init-file /etc/conda.init "$@"
-
-%labels
-    Author: Adeel Akram <adeel.chep@gmail.com>
-    Dated : 01-01-2022
+    BASH_ENV=/etc/conda.init exec /bin/bash --noprofile --init-file /etc/conda.init "$@" 
 
 %help
-    Singularity container for building PyTorch using Spack package manager.
-
-    Build the container from definition file.
-    $ sudo singularity build gpu_exatrkx.sif gpu_exatrkx.def
-
-    One can build a sandbox container as the following
-    $ sudo singularity build --sandbox gpu_exatrkx gpu_exatrkx.def
-
     Run the Container
-    $ singularity run gpu_exatrkx.sif -c "conda activate exatrkx && python main.py"
+    $ singularity run gpu_stttrkx.sif -c "conda activate exatrkx && python main.py"
