@@ -1,15 +1,12 @@
-import sys, os
-import logging
+#!/usr/bin/env python
+# coding: utf-8
 
-import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
-from datetime import timedelta
-import torch.nn.functional as F
-from torch_geometric.data import DataLoader
-from torch.nn import Linear
+import os
 import torch
-
-from .utils import load_dataset, random_edge_slice_v2
+import torch.nn.functional as F
+from pytorch_lightning import LightningModule
+from torch_geometric.loader import DataLoader
+from .utils import load_dataset
 
 
 class RegressionBase(LightningModule):
@@ -19,10 +16,11 @@ class RegressionBase(LightningModule):
         Initialise the Lightning Module that can scan over different GNN training regimes
         """
         # Assign hyperparameters
-        self.hparams = hparams
+        self.save_hyperparameters(hparams)
         self.hparams["posted_alert"] = False
+        self.trainset, self.valset, self.testset = None, None, None
 
-    def setup(self, stage):
+    def setup(self, stage: str = None) -> None:
         # Handle any subset of [train, val, test] data split, assuming that ordering
         input_dirs = [None, None, None]
         input_dirs[: len(self.hparams["datatype_names"])] = [
@@ -86,7 +84,7 @@ class RegressionBase(LightningModule):
         )
 
         node_output, _ = (
-            self(torch.cat([batch.cell_data, batch.x], axis=-1), batch.edge_index)
+            self(torch.cat([batch.cell_data, batch.x], dim=-1), batch.edge_index)
             if ("ci" in self.hparams["regime"])
             else self(batch.x, batch.edge_index)
         )
@@ -106,7 +104,7 @@ class RegressionBase(LightningModule):
 
         if "hybrid" in self.hparams["regime"]:
             loss += F.binary_cross_entropy_with_logits(
-                output, truth.float(), weight=manual_weights, pos_weight=weight
+                node_output, node_truth.float(), weight=manual_weights, pos_weight=weight
             )
 
         self.log("train_loss", loss)
@@ -122,7 +120,7 @@ class RegressionBase(LightningModule):
         )
 
         node_output, edge_output = (
-            self(torch.cat([batch.cell_data, batch.x], axis=-1), batch.edge_index)
+            self(torch.cat([batch.cell_data, batch.x], dim=-1), batch.edge_index)
             if ("ci" in self.hparams["regime"])
             else self(batch.x, batch.edge_index)
         )
@@ -189,25 +187,16 @@ class RegressionBase(LightningModule):
 
         return outputs
 
-    def test_step_end(self, output_results):
-
-        print("Step:", output_results)
-
-    def test_epoch_end(self, outputs):
-
-        print("Epoch:", outputs)
-
-    def optimizer_step(
-        self,
-        epoch,
-        batch_idx,
-        optimizer,
-        optimizer_idx,
-        optimizer_closure=None,
-        on_tpu=False,
-        using_native_amp=False,
-        using_lbfgs=False,
-    ):
+    def optimizer_step(self,
+                       epoch,
+                       batch_idx,
+                       optimizer,
+                       optimizer_idx=0,  # ADAK: optimizer_idx to optimizer_idx=0
+                       optimizer_closure=None,
+                       on_tpu=False,
+                       using_native_amp=False,
+                       using_lbfgs=False):
+        """Optimizer Step Hook"""
         # warm up lr
         if (self.hparams["warmup"] is not None) and (
             self.trainer.global_step < self.hparams["warmup"]

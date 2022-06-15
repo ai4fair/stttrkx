@@ -1,14 +1,14 @@
 # Input/output configuration
-input_dir: ${EXATRKX_DATA}/run/feature_store
-output_dir: ${EXATRKX_DATA}/run/gnn_evaluation
+input_dir: ${EXATRKX_DATA}/run_all/feature_store
+output_dir: ${EXATRKX_DATA}/run_all/gnn_evaluation
 project: GNNStudy
 edge_cut: 0.5
 
 # Dataset parameters
 pt_signal_min: 0.
 pt_background_min: 0.
-datatype_names: [[train, val, test]]  # Which directory prefixes to use, assuming at least a train dataset 
-datatype_split: [[8500, 500, 1000]]  # Number of [training, validation, testing] examples
+datatype_names: [[train, val, test]] # Which directory prefixes to use, assuming at least a train dataset 
+datatype_split: [[9500, 2500, 2500]] # Number of [training, validation, testing] examples
 noise: False
 overwrite: True
 
@@ -28,7 +28,7 @@ warmup: 200
 lr: 0.001
 factor: 0.3
 patience: 10
-regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
+regime: [[pid]] #NOTE: [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
 max_epochs: 50
 
 # Post-processing
