@@ -170,8 +170,8 @@ class GNNMetrics_V2(Callback):
         os.makedirs(output_dir, exist_ok=True)
         
         # Aggregate 'truth' and 'pred' from all batches.
-        preds = np.concatenate(self.preds)
-        truth = np.concatenate(self.truth)
+        preds = torch.cat(self.preds)
+        truth = torch.cat(self.truth)
         print(preds.shape, truth.shape)
         
         
@@ -185,7 +185,7 @@ class GNNMetrics_V2(Callback):
                                   y_val=roc_tpr, 
                                   x_lab="FPR",
                                   y_lab="TPR", 
-                                  title="ROC Curve, AUC = %.3f" % roc_auc,
+                                  title="ROC Curve, AUC = %.5f" % roc_auc,
                                   loc='lower right'
                                   )
         # Plotting: ROC
@@ -206,7 +206,7 @@ class GNNMetrics_V2(Callback):
                                   y_val=pre, 
                                   x_lab="Recall",  # TPR
                                   y_lab="Precision",  # PPV
-                                  title="PR Curve, AUC = %.3f" % prc_auc,
+                                  title="PR Curve, AUC = %.5f" % prc_auc,
                                   loc='lower left'
                                   )
         
@@ -227,13 +227,13 @@ class GNNMetrics_V2(Callback):
                                   y_val=pur, 
                                   x_lab="Efficiency",  # TPR
                                   y_lab="Purity",  # TNR = 1 - FPR
-                                  title="EP Curve, AUC = %.3f" % eff_pur_auc,
+                                  title="EP Curve, AUC = %.5f" % eff_pur_auc,
                                   loc='lower left'
                                   )
         
         axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "eff_pur_curve.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "epc_curve.png"), format="png")
 
     def make_plot(self, x_val, y_val, x_lab, y_lab, title, loc):
         """common function for creating plots"""
@@ -243,16 +243,17 @@ class GNNMetrics_V2(Callback):
         axs = axs.flatten() if type(axs) is list else [axs]
         
         # plotting: data
-        axs[0].plot(x_val, y_val, color="darkorange")
+        axs[0].plot(x_val, y_val, color="darkorange", label=title)
         
         # plotting: params
         axs[0].set_xlabel(x_lab, fontsize=20)
         axs[0].set_ylabel(y_lab, fontsize=20)
-        axs[0].set_xlim(-0.1, 1)
-        axs[0].set_ylim(-0.1, 1)
+        axs[0].set_xlim(-0.1, 1.1)
+        axs[0].set_ylim(-0.1, 1.1)
         axs[0].set_title(title)
         axs[0].legend(loc=loc)
         return fig, axs
+
 
 # GNNTelemetry Callback
 # from Common_Tracking_Example/.../GNN/Models/inference.py
