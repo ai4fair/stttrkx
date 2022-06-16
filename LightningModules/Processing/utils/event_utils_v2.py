@@ -240,7 +240,7 @@ def graph_intersection(pred_graph, truth_graph):
     return new_pred_graph, y
 
 
-def select_hits(event_file=None, noise=False, skewed=False):
+def select_hits(event_file=None, noise=False, min_pt=None, skewed=False):
     """Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria."""
     
     # load data using event_prefix (e.g. path/to/event0000000001)
@@ -261,6 +261,10 @@ def select_hits(event_file=None, noise=False, skewed=False):
     # assign pt (from tpx & tpy, why not px & py ???) and add to truth
     truth = truth.assign(pt=np.sqrt(truth.tpx**2 + truth.tpy**2))
     
+    # apply min_pt on truth data frame
+    if min_pt is not None:
+        truth = truth[truth.pt > min_pt]
+    
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
 
@@ -277,8 +281,8 @@ def select_hits(event_file=None, noise=False, skewed=False):
         hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
     
     else:
-        # FIXME: this is conveniet to use layer as a column for both skewed=True or False
-        # second way is to drop layer_id from hits, and rename layer to layer_id.
+        # FIXME: This is conveniet to use layer as a column for both skewed=True or False.
+        # The second way is to drop layer_id from hits, and rename layer to layer_id.
         hits = hits.rename(columns={"layer_id": "layer"})
 
     # Calculate derived hits variables
@@ -294,23 +298,34 @@ def select_hits(event_file=None, noise=False, skewed=False):
     return hits
     
     
-def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
-                inputedges=False, noise=False, skewed=False):
-    """
-    Get true edge list using the ordering by R' = distance from production vertex of each particle.
-    Return: [X=(r, phi, z), particle_id, layers, layerless_true_edges, layerwise_true_edges, hit_id]
-    """
+def build_event(event_file,
+                feature_scale,
+                modulewise=True,
+                layerwise=True,
+                noise=False,
+                min_pt=None,
+                # detector=None,
+                inputedges=False,
+                skewed=False):
     
-    # Load event using "event_file" prefix.
-    # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
-    
-    # Select hits, add new/select columns, add event_id
-    hits = select_hits(event_file=event_file, noise=noise, skewed=skewed).assign(
+    # Get true edge list using the ordering by R' = distance from production vertex of each particle
+    hits = select_hits(event_file=event_file, noise=noise, min_pt=min_pt, skewed=skewed).assign(
         event_id=int(event_file[-10:])
     )
     
+    # Make a unique module ID and attach to hits
+    # TODO: Get module_id's for STT
+    
+    # if detector is not None:
+    #    module_lookup = detector.reset_index()[["index", "volume_id", "layer_id", "module_id"]]
+    #                                           .rename(columns={"index": "module_index"})
+    #    hits = hits.merge(module_lookup, on=["volume_id", "layer_id", "module_id"], how="left")
+    #    module_id = hits.module_index.to_numpy()
+    # else:
+    #    module_id = None
+        
     # Get list of all layers
-    layers = hits.layer.to_numpy()
+    layer_id = hits.layer.to_numpy()
 
     # Handle which truth graph(s) are being produced
     modulewise_true_edges, layerwise_true_edges = None, None
@@ -361,24 +376,26 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
     return (
         hits[["r", "phi", "isochrone"]].to_numpy() / feature_scale,
         hits.particle_id.to_numpy(),
-        layers,
-        layerwise_true_edges,
+        layer_id,
+        # module_id,
         modulewise_true_edges,
+        layerwise_true_edges,
         layerwise_input_edges,
         hits["hit_id"].to_numpy(),
         hits.pt.to_numpy(),
         # edge_weight_norm,
-    )
- 
-    
+    )    
+
+
 def prepare_event(
     event_file,
     progressbar=None,
     output_dir=None,
     modulewise=True,
     layerwise=True,
-    inputedges=True,
     noise=False,
+    min_pt=None,
+    inputedges=True,
     skewed=False,
     overwrite=False,
     **kwargs
@@ -399,9 +416,10 @@ def prepare_event(
             (
                 X,
                 pid,
-                layers,
-                layerwise_true_edges,
+                layer_id,
+                # module_id,
                 modulewise_true_edges,
+                layerwise_true_edges,
                 layerwise_input_edges,
                 hid,
                 pt,
@@ -409,10 +427,11 @@ def prepare_event(
             ) = build_event(
                 event_file,
                 feature_scale,
-                layerwise=layerwise,
                 modulewise=modulewise,
-                inputedges=inputedges,
+                layerwise=layerwise,
                 noise=noise,
+                min_pt=min_pt, 
+                inputedges=inputedges,
                 skewed=skewed
             )
             
@@ -420,7 +439,8 @@ def prepare_event(
             data = Data(
                 x=torch.from_numpy(X).float(),
                 pid=torch.from_numpy(pid),
-                layers=torch.from_numpy(layers),
+                # modules=torch.from_numpy(module_id),
+                layers=torch.from_numpy(layer_id),
                 event_file=event_file,
                 hid=torch.from_numpy(hid),
                 pt=torch.from_numpy(pt),
@@ -435,31 +455,31 @@ def prepare_event(
                 data.layerwise_true_edges = torch.from_numpy(layerwise_true_edges)
             
             # NOTE: I am jumping from Processing to GNN stage, so I need ground truth (GT) of input
-            # edges (edge_index). After embedding, one gets GT as y, and after filtering one gets 
+            # edges (edge_index). After Embedding, one gets GT as 'y', and after Filtering one gets 
             # the GT in the form of 'y_pid'. As I intend to skip both the Embedding & the Filtering
             # stages, the input graph and its GT is build in Processing stage. The GNN can run after
-            # either embedding or filtering stages so it look for either 'y' or 'y_pid', existance of
-            # one of these means the execution of these stages i.e. if y_pid exists in data that means
-            # both embedding and filtering stages has been executed. If only 'y' exists then only 
+            # either Embedding or Filtering stages, so it looks for either 'y' or 'y_pid', existance of
+            # one of these means the execution of these stages i.e. if 'y_pid' exists in data that means
+            # both Embedding and Filtering stages has been executed. If only 'y' exists then only 
             # embedding stage has been executed. In principle, I should have only one of these in Data.
             
             # Now, for my case, I will build input graph duing Processing and also add its GT to the
             # data. If the 'edge_index' is build in Processing then ground truth (y or y_pid) should 
-            # also be built here. The dimension of y (n) and y_pid (m) are given below, here m < n.
+            # also be built here. The dimension of 'y(n)' and 'y_pid(m)' are given below, here m < n.
             
-            # y (n): appears after embedding stage along with e_radius (2,n), y.shape==e_radius.shape[1]
-            # y_pid (m): appears after filtering stage along with e_radius (2,m), y_pid.shape==e_radius.shape[1]
-            
+            # y(n): appears after Embedding stage along with e_radius(2,n), y.shape==e_radius.shape[1]
+            # y_pid(m): appears after Filtering stage along with e_radius(2,m), y_pid.shape==e_radius.shape[1]
+
             if layerwise_input_edges is not None:
                 input_edges = torch.from_numpy(layerwise_input_edges)
                 new_input_graph, y = graph_intersection(input_edges, data.layerwise_true_edges)
                 data.edge_index = new_input_graph
                 # data.y = y     # if regime: [] will point to embedding
-                data.y_pid = y  # if regime: [[pid]] points to filtering
+                data.y_pid = y   # if regime: [[pid]] points to filtering
 
             # TODO: add cell/tube information to Data, Check for STT
-            # logging.info("Getting cell info")
             
+            # logging.info("Getting cell info")
             # if cell_information:
             #    data = get_cell_information(
             #        data, cell_features, detector_orig, detector_proc, endcaps, noise
