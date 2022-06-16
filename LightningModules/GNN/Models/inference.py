@@ -2,10 +2,12 @@
 # coding: utf-8
 
 import os
+import sys
+import copy
 import logging
 import torch
 from pytorch_lightning.callbacks import Callback
-from sklearn.metrics import roc_curve, auc, precision_recall_curve
+from sklearn.metrics import roc_curve
 import matplotlib.pyplot as plt
 
 
@@ -21,25 +23,24 @@ class GNNTelemetry(Callback):
 
     def __init__(self):
         super().__init__()
-        logging.info("Constructing telemetry callback")
+        self.preds, self.truth = None, None
+        logging.info("Constructing GNNTelemetry Callback!")
 
     def on_test_start(self, trainer, pl_module):
 
-        """
-        This hook is automatically called when the model is tested after training. The best checkpoint is automatically loaded
-        """
+        """This hook is automatically called when the model is tested
+        after training. The best checkpoint is automatically loaded"""
+
         self.preds = []
         self.truth = []
 
-        print("Starting TELEMETRY")
+        print("Starting GNNTelemetry...")
 
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
-        """
-        Get the relevant outputs from each batch
-        """
+        """Get the relevant outputs from each batch"""
 
         self.preds.append(outputs["preds"].cpu())
         self.truth.append(outputs["truth"].cpu())
@@ -157,6 +158,7 @@ class GNNBuilder(Callback):
     """
 
     def __init__(self):
+        self.datatypes = None
         self.output_dir = None
         self.overwrite = False
 
@@ -179,7 +181,7 @@ class GNNBuilder(Callback):
                     if (
                         not os.path.exists(
                             os.path.join(
-                                self.output_dir, datatype, str(int(batch.event_file[-10:])) #ADAK [-4:] to str(int([-4:]))
+                                self.output_dir, datatype, str(int(batch.event_file[-10:]))  # ADAK [:] to str(int([:]))
                             )
                         )
                     ) or self.overwrite:
@@ -229,7 +231,7 @@ class GNNBuilder(Callback):
     def save_downstream(self, batch, pl_module, datatype):
 
         with open(
-            os.path.join(self.output_dir, datatype, str(int(batch.event_file[-10:]))), "wb" #ADAK [-4:] to str(int([-4:]))
+            os.path.join(self.output_dir, datatype, str(int(batch.event_file[-10:]))), "wb"  # ADAK [:] to str(int([:]))
         ) as pickle_file:
             torch.save(batch, pickle_file)
 
