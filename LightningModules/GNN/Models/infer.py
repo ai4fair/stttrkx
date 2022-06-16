@@ -55,18 +55,11 @@ class GNNMetrics(Callback):
         # Output Directory
         output_dir = pl_module.hparams.output_dir
         os.makedirs(output_dir, exist_ok=True)
-        
-        print("preds: ", len(self.preds))
-        print("truth: ", len(self.truth))
-        
+                
         # Aggregate 'truth' and 'pred' from all batches.
-        truth = torch.cat(self.truth)
         preds = torch.cat(self.preds)
-        
-        print("preds: ", preds.shape)
-        print("truth: ", truth.shape)
-        
-        # print(preds.shape, truth.shape)
+        truth = torch.cat(self.truth)
+        print("preds: {}, truth: {}".format(preds.shape, truth.shape))
 
         # ----- ROC Metric
         # fpr, tpr, threshold = roc_curve(truth, preds)
@@ -172,8 +165,7 @@ class GNNMetrics_V2(Callback):
         # Aggregate 'truth' and 'pred' from all batches.
         preds = torch.cat(self.preds)
         truth = torch.cat(self.truth)
-        print(preds.shape, truth.shape)
-        
+        print("preds: {}, truth: {}".format(preds.shape, truth.shape))
         
         # ----- ROC Metric
         # fpr, tpr, threshold = roc_curve(truth, preds)
@@ -248,8 +240,8 @@ class GNNMetrics_V2(Callback):
         # plotting: params
         axs[0].set_xlabel(x_lab, fontsize=20)
         axs[0].set_ylabel(y_lab, fontsize=20)
-        axs[0].set_xlim(-0.1, 1.1)
-        axs[0].set_ylim(-0.1, 1.1)
+        axs[0].set_xlim(-0.04, 1.04)
+        axs[0].set_ylim(-0.04, 1.04)
         axs[0].set_title(title)
         axs[0].legend(loc=loc)
         return fig, axs
@@ -303,9 +295,9 @@ class GNNTelemetry(Callback):
         os.makedirs(output_dir, exist_ok=True)
         
         # Aggregate 'truth' and 'pred' from all batches.
-        preds = np.concatenate(self.preds)
-        truth = np.concatenate(self.truth)
-        print(preds.shape, truth.shape)
+        preds = torch.cat(self.preds)
+        truth = torch.cat(self.truth)
+        print("preds: {}, truth: {}".format(preds.shape, truth.shape))
 
         roc_fpr, roc_tpr, roc_thresholds = roc_curve(truth, preds)
         roc_auc = auc(roc_fpr, roc_tpr)
