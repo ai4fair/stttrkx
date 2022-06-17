@@ -251,9 +251,7 @@ class GNNMetrics_V2(Callback):
 # from Common_Tracking_Example/.../GNN/Models/inference.py
 class GNNTelemetry(Callback):
 
-    """
-    This callback contains standardised tests of the performance of a GNN
-    """
+    """This callback contains standardised tests of the performance of a GNN"""
 
     def __init__(self):
         super().__init__()
@@ -262,8 +260,8 @@ class GNNTelemetry(Callback):
 
     def on_test_start(self, trainer, pl_module):
 
-        """This hook is automatically called when the model is tested after
-        training. The best checkpoint is automatically loaded"""
+        """This hook is automatically called when the model is tested 
+        after training. The best checkpoint is automatically loaded"""
 
         self.preds = []
         self.truth = []
@@ -272,9 +270,7 @@ class GNNTelemetry(Callback):
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
-        """
-        Get the relevant outputs from each batch
-        """
+        """Get the relevant outputs from each batch"""
 
         self.preds.append(outputs["preds"])
         self.truth.append(outputs["truth"])
@@ -293,18 +289,20 @@ class GNNTelemetry(Callback):
         # Output Directory
         output_dir = pl_module.hparams.output_dir
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Aggregate 'truth' and 'pred' from all batches.
         preds = torch.cat(self.preds)
         truth = torch.cat(self.truth)
         print("preds: {}, truth: {}".format(preds.shape, truth.shape))
 
+
+        # ------------------------ ROC Curve
         roc_fpr, roc_tpr, roc_thresholds = roc_curve(truth, preds)
         roc_auc = auc(roc_fpr, roc_tpr)
         logging.info("ROC AUC: %s", roc_auc)
 
-        # Update this to dynamically adapt to number of metrics
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(20, 20))
+        # Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.3f" % roc_auc)
@@ -313,5 +311,37 @@ class GNNTelemetry(Callback):
         axs[0].set_ylabel("True Positive Rate")
         axs[0].set_title("ROC Curve, AUC = %.3f" % roc_auc)
         plt.tight_layout()
-                
-        fig.savefig(os.path.join(output_dir, "metrics_roc.png"), format="png")
+        #fig.savefig(os.path.join(output_dir, "metrics_roc.png"), format="png")
+
+
+        # ------------------------ EPC Curve
+        eff = roc_tpr
+        pur = 1 - roc_fpr
+        score_cuts = roc_thresholds
+        
+        eff, pur, score_cuts = (
+            eff[score_cuts <= 1],
+            pur[score_cuts <= 1],
+            score_cuts[score_cuts <= 1],
+        )  # Make sure this is nicely plottable!
+        
+        epc_auc = auc(eff, pur)
+        logging.info("EPC AUC: %s", epc_auc)
+
+        # Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+        
+        axs2 = axs[0].twinx()
+
+        axs[0].plot(score_cuts, pur, color="darkblue", label="Purity")
+        axs2.plot(score_cuts, eff, color="darkorange", label="Efficiency")
+
+        axs[0].set_xlabel("Score Cut", fontsize=20)
+        axs[0].set_ylabel("Purity", fontsize=20)
+        axs2.set_ylabel("Efficiency", fontsize=20)
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, "curve_epc_vs_score_cut.png"), format="png")
+
+
+
