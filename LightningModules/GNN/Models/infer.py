@@ -305,16 +305,17 @@ class GNNTelemetry(Callback):
         fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
         axs = axs.flatten() if type(axs) is list else [axs]
 
-        axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.3f" % roc_auc)
-        axs[0].plot([0, 1], [0, 1], "--")
-        axs[0].set_xlabel("False Positive Rate")
-        axs[0].set_ylabel("True Positive Rate")
-        axs[0].set_title("ROC Curve, AUC = %.3f" % roc_auc)
+        axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.5f" % roc_auc)
+        axs[0].plot([0, 1], [0, 1], color="navy", linestyle="--")
+        axs[0].set_xlabel("FPR", fontsize=20)
+        axs[0].set_ylabel("TPR", fontsize=20)
+        # axs[0].set_title("ROC Curve, AUC = %.5f" % roc_auc)
+        axs[0].legend(loc='lower right')
         plt.tight_layout()
-        #fig.savefig(os.path.join(output_dir, "metrics_roc.png"), format="png")
-
-
-        # ------------------------ EPC Curve
+        fig.savefig(os.path.join(output_dir, "curve_roc.png"), format="png")
+        
+        
+        # ------------------------ EPC Curve 
         eff = roc_tpr
         pur = 1 - roc_fpr
         score_cuts = roc_thresholds
@@ -327,21 +328,39 @@ class GNNTelemetry(Callback):
         
         epc_auc = auc(eff, pur)
         logging.info("EPC AUC: %s", epc_auc)
+        
+        
+        # Plotting
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        axs = axs.flatten() if type(axs) is list else [axs]
+
+        axs[0].plot(eff, pur, color="darkorange", label="EP Curve, AUC = %.5f" % epc_auc)
+        axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
+        axs[0].set_xlabel("Edge Efficiency", fontsize=20)
+        axs[0].set_ylabel("Edge Purity", fontsize=20)
+        # axs[0].set_title("EP Curve, AUC = %.5f" % epc_auc)
+        axs[0].legend(loc='lower left')
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, "curve_epc.png"), format="png")
+               
 
         # Plotting
         fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
         axs = axs.flatten() if type(axs) is list else [axs]
+        #axs2 = axs[0].twinx()
+
+        axs[0].plot(score_cuts, pur, color="darkblue", label="Edge Purity")
+        axs[0].plot(score_cuts, eff, color="darkorange", label="Edge Efficiency")
+        axs[0].set_xlabel("Edge Score Cut", fontsize=20)
         
-        axs2 = axs[0].twinx()
-
-        axs[0].plot(score_cuts, pur, color="darkblue", label="Purity")
-        axs2.plot(score_cuts, eff, color="darkorange", label="Efficiency")
-
-        axs[0].set_xlabel("Score Cut", fontsize=20)
-        axs[0].set_ylabel("Purity", fontsize=20)
-        axs2.set_ylabel("Efficiency", fontsize=20)
+        # axs[0].set_ylabel("Purity", fontsize=20)
+        axs[0].set_ylim(0.5,1.02)
+        
+        # axs2.set_ylabel("Efficiency", fontsize=20)
+        
+        axs[0].legend(loc='lower center', fontsize=15)
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_epc_vs_score_cut.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "curve_epc_cut.png"), format="png")
 
 
 
