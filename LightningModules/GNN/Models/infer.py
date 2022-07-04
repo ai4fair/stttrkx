@@ -296,7 +296,7 @@ class GNNTelemetry(Callback):
         print("preds: {}, truth: {}".format(preds.shape, truth.shape))
 
 
-        # ------------------------ ROC Curve
+        # ------------------------ ROC Curve: FPR vs TPR
         roc_fpr, roc_tpr, roc_thresholds = roc_curve(truth, preds)
         roc_auc = auc(roc_fpr, roc_tpr)
         logging.info("ROC AUC: %s", roc_auc)
@@ -310,12 +310,12 @@ class GNNTelemetry(Callback):
         axs[0].set_xlabel("FPR", fontsize=20)
         axs[0].set_ylabel("TPR", fontsize=20)
         # axs[0].set_title("ROC Curve, AUC = %.5f" % roc_auc)
-        axs[0].legend(loc='lower right')
+        axs[0].legend(loc='lower right', fontsize=16)
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_roc.png"), format="png")
-        
-        
-        # ------------------------ EPC Curve 
+        fig.savefig(os.path.join(output_dir, "curve_roc.pdf"), format="pdf")
+
+
+        # ------------------------ ROC Curve: Efficiency vs Purity
         eff = roc_tpr
         pur = 1 - roc_fpr
         score_cuts = roc_thresholds
@@ -339,11 +339,12 @@ class GNNTelemetry(Callback):
         axs[0].set_xlabel("Edge Efficiency", fontsize=20)
         axs[0].set_ylabel("Edge Purity", fontsize=20)
         # axs[0].set_title("EP Curve, AUC = %.5f" % epc_auc)
-        axs[0].legend(loc='lower left')
+        axs[0].legend(loc='lower left', fontsize=16)
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_epc.png"), format="png")
-               
+        fig.savefig(os.path.join(output_dir, "curve_epc.pdf"), format="pdf")
 
+
+        # ------------------------ EP vs Score Cuts 
         # Plotting
         fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
         axs = axs.flatten() if type(axs) is list else [axs]
@@ -358,9 +359,6 @@ class GNNTelemetry(Callback):
         
         # axs2.set_ylabel("Efficiency", fontsize=20)
         
-        axs[0].legend(loc='lower center', fontsize=15)
+        axs[0].legend(loc='lower center', fontsize=16)
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_epc_cut.png"), format="png")
-
-
-
+        fig.savefig(os.path.join(output_dir, "curve_epc_cut.pdf"), format="pdf")
