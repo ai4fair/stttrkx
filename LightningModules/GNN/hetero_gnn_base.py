@@ -10,7 +10,7 @@ from torch.nn import Linear
 import torch
 import numpy as np
 
-from .utils import load_dataset, purity_sample, LargeDataset
+from .utils.hetero_gnn_utils import load_dataset, purity_sample, LargeDataset
 from sklearn.metrics import roc_auc_score
 
 

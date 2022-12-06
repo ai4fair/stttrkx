@@ -1,14 +1,18 @@
 # Input/output configuration
-input_dir: ${EXATRKX_DATA}/run/feature_store
-output_dir: ${EXATRKX_DATA}/run/gnn_evaluation
+input_dir: ${EXATRKX_DATA}/run_quick/feature_store
+output_dir: ${EXATRKX_DATA}/run_quick/gnn_processed
 project: GNNStudy
 edge_cut: 0.5
 
 # Dataset parameters
 pt_signal_min: 0.
 pt_background_min: 0.
-datatype_names: [[train, val, test]]  # Which directory prefixes to use, assuming at least a train dataset 
-datatype_split: [[8500, 500, 1000]]  # Number of [training, validation, testing] examples
+datatype_names: [[train, val, test]]
+datatype_split: [[8000, 1000, 1000]]
+
+train_split: [[8000, 1000, 1000]]     # ADAK: for data_utils.py
+sorted_events: True
+
 noise: False
 overwrite: True
 
@@ -32,4 +36,4 @@ regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. va
 max_epochs: 50
 
 # Post-processing
-callbacks: [[GNNTelemetry, GNNBuilder]]
+callbacks: [[GNNBuilder,GNNTelemetry]]

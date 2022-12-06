@@ -11,7 +11,7 @@ from torch_geometric.loader import DataLoader
 from torch.nn import Linear
 import torch
 
-from .utils import load_dataset, random_edge_slice_v2
+from .utils.gnn_utils import load_dataset, random_edge_slice_v2
 from sklearn.metrics import roc_auc_score
 
 # FIXME::ADAK: I have removed .bool() from y_pid and y varialbe, it gives an error.

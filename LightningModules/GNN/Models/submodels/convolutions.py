@@ -6,7 +6,7 @@ import torch
 from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
-from ...utils import make_mlp
+from ...utils.hetero_gnn_utils import make_mlp
 
 def get_aggregation(aggregation):
     """

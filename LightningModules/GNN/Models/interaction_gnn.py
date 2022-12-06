@@ -15,7 +15,7 @@ from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
 from ..gnn_base import GNNBase
-from ..utils import make_mlp
+from ..utils.gnn_utils import make_mlp
 
 
 class InteractionGNN(GNNBase):
