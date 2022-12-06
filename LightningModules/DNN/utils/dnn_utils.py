@@ -89,7 +89,8 @@ def select_data(events, pt_background_cut, pt_signal_cut, noise):
 
             # Apply Mask on "edge_index, y, weights, y_pid"
             event.edge_index = event.edge_index[:, edge_mask]
-            event.y = event.y[edge_mask]
+            if "y" in event.__dict__.keys():
+                event.y = event.y[edge_mask]
 
             if "weights" in event.__dict__.keys():
                 if event.weights.shape[0] == edge_mask.shape[0]:

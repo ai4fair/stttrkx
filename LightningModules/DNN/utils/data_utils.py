@@ -26,6 +26,7 @@ def split_datasets(
     Prepare the random Train, Val, Test split, using a seed for reproducibility. Seed should
     be changed across final varied runs, but can be left as default for experimentation.
     """
+    print("Loading data to '{}'".format(device))
     
     # random seed
     if train_split is None:
@@ -45,7 +46,7 @@ def split_datasets(
     # split data
     train_events, val_events, test_events = random_split(loaded_events, train_split)
     
-    print("\nTrainset: {}, Valset: {}, Testset: {}\n".format(len(train_events), len(val_events), len(test_events)))
+    print("Trainset: {}, Valset: {}, Testset: {}\n".format(len(train_events), len(val_events), len(test_events)))
     
     return train_events, val_events, test_events
   
