@@ -89,7 +89,7 @@ class GNNTelemetry(Callback):
     def make_plot(self, x_val, y_val, x_lab, y_lab, title):
 
         # Update this to dynamically adapt to number of metrics
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(x_val, y_val)
@@ -136,7 +136,7 @@ class GNNTelemetry(Callback):
         os.makedirs(output_dir, exist_ok=True)
 
         for metric, (fig, axs) in metrics_plots.items():
-            fig.savefig(os.path.join(output_dir, f"metrics_{metric}.png"), format="png")
+            fig.savefig(os.path.join(output_dir, f"metrics_{metric}.pdf"), format="pdf")
 
 
 # ADAK: To get the output files as integers change batch.event_file[-4:] to str(int(batch.event_file[-4:])). 
