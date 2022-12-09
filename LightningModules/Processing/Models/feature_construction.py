@@ -41,4 +41,4 @@ class TrackMLFeatureStore(FeatureStoreBase):
         # Process input files with a worker pool and progress bar
         # Use process_mp() from tqdm instead of mp.Pool from multiprocessing.
         process_func = partial(prepare_event, **self.hparams)
-        process_map(process_func, all_events, max_workers=self.n_workers)
+        process_map(process_func, all_events, max_workers=self.n_workers, chunksize=10)

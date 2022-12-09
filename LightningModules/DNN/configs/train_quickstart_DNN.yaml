@@ -33,7 +33,7 @@ lr: 0.001
 factor: 0.3
 patience: 10
 regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
-max_epochs: 50
+max_epochs: 10
 
 # Post-processing
 callbacks: [[GNNBuilder,GNNTelemetry]]
