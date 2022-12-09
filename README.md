@@ -39,11 +39,29 @@ traintrack configs/pipeline_quickstart.yaml
 
 &nbsp;
 
-Important Notes: 
+### Important Notes: 
 
 - The **Processing** stage can't run within a CUDA enabled envrionment, due to multiprocessing, one needs to run it in CPU-only envrionment. 
 
 - After the **Processing**, one needs to move the data into `train`, `val` and `test` folders by hand as **GNN** stage assumes data distributed in these folders [Maybe in future this will change].
+
+- **GNN** stage will finish with `GNNBuilder` callback, storing the `edge_score` for all events. One re-run this step by using e.g. `traintrack --inference configs/pipeline_quickstart.yaml` but one needs to put `resume_id` in the `pipeline_quickstart`.
+
+- For the rest of inference/prediction steps don't use the `traintrack`. Proceed as follows:
+    - Creat a `test_dataloader` from the testset or one can create [LightningDataModule](https://pytorch-lightning.readthedocs.io/en/stable/data/datamodule.html#why-do-i-need-a-datamodule) with `stages=fit, test, predict`. 
+    - Load Model from checkpoint
+    - Call Trainer with `model` and `test_dataloader`.
+    ```bash
+    trainer = Trainer()
+    dm = MNISTDataModule()
+    model = Model()
+    trainer.fit(model, datamodule=dm)
+    trainer.test(datamodule=dm)
+    trainer.validate(datamodule=dm)
+    trainer.predict(datamodule=dm)
+    ```
+
+
 
 &nbsp;
 
