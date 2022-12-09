@@ -1,0 +1,10 @@
+input_dir: ${EXATRKX_DATA}/run_quick/gnn_processed/test
+output_dir: ${EXATRKX_DATA}/run_quick/seg_processed
+datatype_names: [[train, val, test]]
+
+edge_cut: 0.5
+n_tasks: 1
+n_files: 500
+n_workers: 1
+
+seg_method: ccl # chose among [ccl, dbscan, wrangler]
