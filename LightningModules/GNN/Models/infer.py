@@ -38,7 +38,7 @@ class GNNMetrics(Callback):
 
         """Get the relevant outputs from each batch"""
 
-        self.preds.append(outputs["preds"].cpu())
+        self.preds.append(outputs["score"].cpu())  # ADAK: preds to score
         self.truth.append(outputs["truth"].cpu())
 
     def on_test_end(self, trainer, pl_module):
@@ -68,7 +68,7 @@ class GNNMetrics(Callback):
         logging.info("ROC AUC: %s", roc_auc)
         
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
         
         axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.5f" % roc_auc)
@@ -78,7 +78,7 @@ class GNNMetrics(Callback):
         axs[0].set_title("ROC Curve, AUC = %.5f" % roc_auc)
         axs[0].legend(loc='lower right')
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_roc.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "curve_roc.pdf"), format="pdf")
 
         # ----- PRC Metric
         # ppv, tpr, thr = precision_recall_curve(truth, preds)
@@ -87,7 +87,7 @@ class GNNMetrics(Callback):
         logging.info("PRC AUC: %s", prc_auc)
 
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(recall, pre, color="darkorange", label="PR Curve, AUC = %.5f" % prc_auc)
@@ -97,7 +97,7 @@ class GNNMetrics(Callback):
         axs[0].set_title("PR Curve, AUC = %.5f" % prc_auc)
         axs[0].legend(loc='lower left')
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_prc.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "curve_prc.pdf"), format="pdf")
 
         # ----- Eff-Pur Metric        
         eff = roc_tpr
@@ -106,7 +106,7 @@ class GNNMetrics(Callback):
         logging.info("EPC AUC: %s", epc_auc)
         
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(eff, pur, color="darkorange", label="EP Curve, AUC = %.5f" % epc_auc)
@@ -116,7 +116,7 @@ class GNNMetrics(Callback):
         axs[0].set_title("EP Curve, AUC = %.5f" % epc_auc)
         axs[0].legend(loc='lower left')
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "curve_epc.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "curve_epc.pdf"), format="pdf")
 
 
 class GNNMetrics_V2(Callback):
@@ -144,7 +144,7 @@ class GNNMetrics_V2(Callback):
 
         """Get the relevant outputs from each batch"""
 
-        self.preds.append(outputs["preds"])
+        self.preds.append(outputs["score"])  # ADAK: preds to score
         self.truth.append(outputs["truth"])
 
     def on_test_end(self, trainer, pl_module):
@@ -183,7 +183,7 @@ class GNNMetrics_V2(Callback):
         # Plotting: ROC
         axs[0].plot([0, 1], [0, 1], color="navy", linestyle="--")
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "roc_curve.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "roc_curve.pdf"), format="pdf")
         
         
         
@@ -204,7 +204,7 @@ class GNNMetrics_V2(Callback):
         
         axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "prc_curve.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "prc_curve.pdf"), format="pdf")
         
         
 
@@ -225,13 +225,13 @@ class GNNMetrics_V2(Callback):
         
         axs[0].plot([0, 1], [1, 0], color="navy", linestyle="--")
         plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, "epc_curve.png"), format="png")
+        fig.savefig(os.path.join(output_dir, "epc_curve.pdf"), format="pdf")
 
     def make_plot(self, x_val, y_val, x_lab, y_lab, title, loc):
         """common function for creating plots"""
         
         # init subplots
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
         
         # plotting: data
@@ -272,7 +272,7 @@ class GNNTelemetry(Callback):
 
         """Get the relevant outputs from each batch"""
 
-        self.preds.append(outputs["preds"])
+        self.preds.append(outputs["score"])  # ADAK: preds to score
         self.truth.append(outputs["truth"])
 
     def on_test_end(self, trainer, pl_module):
@@ -302,7 +302,7 @@ class GNNTelemetry(Callback):
         logging.info("ROC AUC: %s", roc_auc)
 
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(roc_fpr, roc_tpr, color="darkorange", label="ROC Curve, AUC = %.5f" % roc_auc)
@@ -331,7 +331,7 @@ class GNNTelemetry(Callback):
         
         
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
 
         axs[0].plot(eff, pur, color="darkorange", label="EP Curve, AUC = %.5f" % epc_auc)
@@ -346,7 +346,7 @@ class GNNTelemetry(Callback):
 
         # ------------------------ EP vs Score Cuts 
         # Plotting
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
         axs = axs.flatten() if type(axs) is list else [axs]
         #axs2 = axs[0].twinx()
 
