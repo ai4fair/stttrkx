@@ -63,10 +63,15 @@ export EXATRKX_DATA=$SCRATCH
 
 # load "cgpu" module
 module load cgpu
+```
 
-# allocate resources (gpu)
-salloc -C gpu -N 1 -G 1 -c 16 -t 00:60:00 -q interactive -A m3443  # OR
-srun -C gpu -N 1 -G 1 -c 32 -t 4:00:00 -A m3443 --pty /bin/bash -l
+
+There are two ways to allocate resources interactivly: _(i)_ `salloc` _(ii)_ `srun --pty bash -l`
+
+```bash
+# allocate resources (gpu) interactively
+salloc -C gpu -N 1 -G 1 -c 32 -t 4:00:00 -A m3443  # OR
+  srun -C gpu -N 1 -G 1 -c 32 -t 4:00:00 -A m3443 --pty /bin/bash -l
 
 # run the pipeline
 traintrack configs/pipeline_fulltrain.yaml
