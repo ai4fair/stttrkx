@@ -1,0 +1,6 @@
+#!/bin/bash
+
+conda activate exatrkx-cori
+export EXATRKX_DATA=$CSCRATCH
+module load cgpu
+sbatch submit_cori.sh
