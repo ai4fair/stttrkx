@@ -1,6 +1,12 @@
 #!/bin/bash
 
+export SLURM_SUBMIT_DIR=$HOME"/ctd2022"
+export SLURM_WORKING_DIR=$HOME"/ctd2022/logs"
+mkdir -p $SLURM_WORKING_DIR;
+
 conda activate exatrkx-cori
 export EXATRKX_DATA=$CSCRATCH
 module load cgpu
-sbatch submit_cori.sh
+
+# sbatch $SLURM_SUBMIT_DIR/submit_perlm.sh
+sbatch $SLURM_SUBMIT_DIR/submit_cori.sh

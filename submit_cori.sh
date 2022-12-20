@@ -5,7 +5,7 @@
 #SBATCH -A m3443
 #SBATCH -J ctd
 #SBATCH -C gpu
-#SBATCH -q regular                      # special
+#SBATCH -q regular                 # special
 #SBATCH -t 4:00:00
 #SBATCH -n 1
 #SBATCH --ntasks-per-node=1

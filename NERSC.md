@@ -35,10 +35,11 @@ scp -i ~/.ssh/nersc train_40k.tar.gz aakram@dtn01.nersc.gov:/global/u2/a/aakram/
 
 ## Submit Jobs on Cori
 
-Use sbatch for job submission. For example, _`$ sbatch submit_cori.sh`_. However, one can work interactively using either `salloc` or `srun`.
+For interactive run, first use `tmux` to create a sesssion, attach/detach the session as needed. When logging in to **Cori** or **Perlmutter** clusters, one login to a random node. So note this node and `ssh` to that one in order to attach to a `tmux` session whenever needed.
 
+### _1. Interactive Jobs_
 
-In case of interactive run, use `tmux` and detach the session as needed. One Cori, one can login to a random node. Note the node and `ssh` to that to attach to `tmux` session.
+There are two ways to allocate resources **interactivly**: _(i)_ `salloc` _(ii)_ `srun --pty bash -l` commands. When using `srun` we span a new bash session using `--pty bash -l`.
 
 * **CPU Resources**
 
@@ -46,16 +47,18 @@ In case of interactive run, use `tmux` and detach the session as needed. One Cor
 # activate conda env
 conda activate exatrkx-cori
 export EXATRKX_DATA=$SCRATCH
-
+```
+```bash
 # allocate resources (cpu)
 salloc -N 1 -q interactive -C haswell -A m3443 -t 04:00:00
-
+  srun -N 1 -q interactive -C haswell -A m3443 -t 04:00:00 --pty /bin/bash -l
+```
+```bash
 # run the pipeline
 traintrack configs/pipeline_fulltrain.yaml
 ```
 
 * **GPU Resources**
-
 
 ```bash
 # activate conda env
@@ -66,14 +69,13 @@ export EXATRKX_DATA=$SCRATCH
 module load cgpu
 ```
 
-
-There are two ways to allocate resources interactivly: _(i)_ `salloc` _(ii)_ `srun --pty bash -l`
-
 ```bash
 # allocate resources (gpu) interactively
 salloc -C gpu -N 1 -G 1 -c 32 -t 4:00:00 -A m3443  # OR
   srun -C gpu -N 1 -G 1 -c 32 -t 4:00:00 -A m3443 --pty /bin/bash -l
+```
 
+```bash
 # run the pipeline
 traintrack configs/pipeline_fulltrain.yaml
 ```
@@ -91,5 +93,35 @@ module unload cgpu
 conda deactivate
 ```
 
+### _2. Non-interactive Jobs_
 
+For `sbatch` for jobs, two scripts are available: _`submit_cori.sh`_ and _`submit_perlm.sh`_. For **_Cori_**, do the following:
 
+```bash
+# load environment
+conda activate exatrkx-cori
+export EXATRKX_DATA=$CSCRATCH
+
+# load gpu settings (cori)
+module load cgpu
+
+# submit job
+sbatch submit_cori.sh
+```
+
+Alternatively, just run the `submit.jobs` script that will set everything together. The `submit.jobs` looks like the following:
+
+```bash
+#!/bin/bash
+export SLURM_SUBMIT_DIR=$HOME"/ctd2022"
+export SLURM_WORKING_DIR=$HOME"/ctd2022/logs"
+mkdir -p $SLURM_WORKING_DIR;
+
+conda activate exatrkx-cori
+export EXATRKX_DATA=$CSCRATCH
+module load cgpu
+
+sbatch $SLURM_SUBMIT_DIR/submit_cori.sh
+```
+
+The same logic applied to the **_Perlmutter_** cluster.
