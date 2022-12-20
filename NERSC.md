@@ -21,6 +21,7 @@ ssh -i ~/.ssh/nersc aakram@cori.nersc.gov
 ```bash
 # Login to Perlmutter
 ssh -i ~/.ssh/nersc aakram@perlmutter-p1.nersc.gov
+ssh -i ~/.ssh/nersc aakram@saul-p1.nersc.gov
 ```
 
 ### _(c) - Data Transfer to NERSC_
