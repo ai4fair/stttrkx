@@ -22,7 +22,7 @@
 #SBATCH -D .                                                 # Set CWD as Wroking Dir. for SBatch Script
 #SBATCH -o logs/%x-%j.out                                    # Standard Output (--output=<filename pattern>)
 #SBATCH -e logs/%x-%j.err                                    # Standard Error (--error=<filename pattern>)
-#SBATCH --mail-type=END                                      # Notification Type
+#SBATCH --mail-type=ALL                                      # Notification Type
 #SBATCH --mail-user=a.akram@gsi.de                           # Email for notification
 
 echo "== --------------------------------------------"
@@ -59,3 +59,4 @@ echo "EXATRKX_DATA: $EXATRKX_DATA"
 CENV=exatrkx
 CONT=gpu_stttrkx.sif
 singularity run --nv $LUSTRE_HOME/containers/$CONT -c "conda activate $CENV && traintrack configs/pipeline_quickstart.yaml"
+

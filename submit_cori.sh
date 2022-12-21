@@ -16,8 +16,9 @@
 #SBATCH -D .
 #SBATCH -o logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
-#SBATCH --mail-type=END
+#SBATCH --mail-type=ALL
 #SBATCH --mail-user=a.akram@gsi.de
 
 export SLURM_CPU_BIND="cores"
 srun traintrack configs/pipeline_fulltrain.yaml
+

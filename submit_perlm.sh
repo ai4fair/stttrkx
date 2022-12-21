@@ -5,8 +5,8 @@
 #SBATCH -A m3443
 #SBATCH -J ctd
 #SBATCH -C gpu
-#SBATCH -q regular
-#SBATCH -t 4:00:00                 # special
+#SBATCH -q regular                 # special
+#SBATCH -t 4:00:00
 #SBATCH -n 1
 #SBATCH --ntasks-per-node=1
 #SBATCH -c 128
@@ -16,8 +16,9 @@
 #SBATCH -D .
 #SBATCH -o logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
-#SBATCH --mail-type=END
+#SBATCH --mail-type=ALL
 #SBATCH --mail-user=a.akram@gsi.de
 
 export SLURM_CPU_BIND="cores"
 srun traintrack configs/pipeline_fulltrain.yaml
+
