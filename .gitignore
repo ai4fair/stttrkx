@@ -58,6 +58,7 @@
 __pycache__
 *.sif
 run*
+logs
 data_sets
 train_all
 lightning_logs
