@@ -23,8 +23,8 @@ fi
 
 
 # Data Directories
-inputdir="run/gnn_evaluation/test"
-outputdir="run/trkx_from_gnn"
+inputdir="../run_all/gnn_processed/test"
+outputdir="../run_all/seg_processed"
 mkdir -p $outputdir
 
 # Tracks from GNN

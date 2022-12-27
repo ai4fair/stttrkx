@@ -11,6 +11,7 @@ import torch
 import scipy as sp
 import numpy as np
 import pandas as pd
+import uproot
 
 from multiprocessing import Pool
 from functools import partial
@@ -80,18 +81,32 @@ def process(filename, output_dir, score_name, **kwargs):
     score = gnn_data.scores[:gnn_data.edge_index.shape[1]]  # score has twice the size of edge_index (flip(0) was used)
     senders = gnn_data.edge_index[0]
     receivers = gnn_data.edge_index[1]
+    
+    # TODO: Its better to have TClonesArray Index for STTHit as "gnn_data.cid". To make 
+    # the code work without complicated modifications, just replace hit_id = gnn_data.cid
     hit_id = gnn_data.hid
     
     # predicted tracks from the GNN stage
     predicted_tracks = tracks_from_gnn(hit_id, score, senders, receivers, **kwargs)
  
     # save reconstructed tracks into a file
-    # PyTorch convention is to save tensors using .pt file extension
-    # See https://pytorch.org/docs/stable/notes/serialization.html#preserve-storage-sharing
-    # torch.save(predicted_tracks, os.path.join(output_dir, "{}.pt".format(evtid)))
-    torch.save(predicted_tracks, os.path.join(output_dir, "{}".format(evtid)))
     
-
+    # (i) DataFrame to Torch
+    # torch.save(predicted_tracks, os.path.join(output_dir, "{}.pt".format(evtid)))
+    output_file = os.path.join(output_dir, "{}.pt".format(evtid))
+    with open(output_file, "wb") as pickle_file:
+        torch.save(predicted_tracks, pickle_file)
+    
+    # (ii) DataFrame to CSV
+    output_file = os.path.join(output_dir, "{}.csv".format(evtid))
+    predicted_tracks.to_csv(output_file, index=False)
+    
+    # (iii) DataFrame to ROOT
+    output_file = os.path.join(output_dir, "{}.root".format(evtid))
+    with uproot.recreate(output_file) as root_file:
+        root_file["TrackML"] = predicted_tracks
+    
+    
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Build Tracks after GNN Evaluation (GNN Test Step).")
@@ -128,6 +143,18 @@ if __name__ == "__main__":
     n_tot_files = len(all_files)
     max_evts = args.max_evts if 0 < args.max_evts <= n_tot_files else n_tot_files
     print("Out of {} events processing {} events with {} workers.\n".format(n_tot_files, max_evts, args.num_workers))
+    
+    
+    # TODO: Use UpROOT to Create File to Save Tracks as TTrees. Due to Multiprocessing
+    # I can only creat ROOT files event by event. So I moved this code to "process()".
+    # If we have a single trackml.root, then differnt worker tries to write it at the 
+    # same time. So only solution is creat files event by event.
+        
+    # with uproot.open(os.path.join(outputdir, "/trackml.root")) as root_file:
+    #    print("ROOT created at ", root_file)
+    # root_file = uproot.open(os.path.join(outputdir, "trackml.root"))
+    # root_file.close()
+        
     
     # Multiprocess to Build Tracks
     with Pool(args.num_workers) as p:
