@@ -33,7 +33,7 @@ Use special data nodes for data transfers to NERSC.
 scp -i ~/.ssh/nersc train_40k.tar.gz aakram@dtn01.nersc.gov:/global/u2/a/aakram/
 ```
 
-## Submit Jobs on Cori
+## _Submit Jobs on Cori/Perlmutter_
 
 For interactive run, first use `tmux` to create a sesssion, attach/detach the session as needed. When logging in to **Cori** or **Perlmutter** clusters, one login to a random node. So note this node and `ssh` to that one in order to attach to a `tmux` session whenever needed.
 
