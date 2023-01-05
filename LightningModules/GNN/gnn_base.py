@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# NOTE: gnn_base (let's say v2) is exactly same as ctd2022p/gnn_base (from ctd2022p repo.)
+# NOTE: gnn_base is exactly same as gnn_base (from ctd2022p repo.)
 
 import os
 import torch
