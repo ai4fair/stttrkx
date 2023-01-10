@@ -15,6 +15,7 @@ sorted_events: True
 
 noise: False
 overwrite: True
+n_workers: 8
 
 # Model parameters
 spatial_channels: 3
