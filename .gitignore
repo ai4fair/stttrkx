@@ -57,10 +57,10 @@
 .virtual_documents
 __pycache__
 *.sif
-run*
 logs
 data_sets
-train_all
+train_*
+run_*
 lightning_logs
 tutorials
 gnn4itk
