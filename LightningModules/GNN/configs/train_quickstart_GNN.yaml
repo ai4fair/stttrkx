@@ -1,6 +1,6 @@
 # Input/output configuration
 input_dir: ${EXATRKX_DATA}/run_quick/feature_store
-output_dir: ${EXATRKX_DATA}/run_quick/gnn_processed
+output_dir: ${EXATRKX_DATA}/run_quick/agnn_processed
 project: GNNStudy
 edge_cut: 0.5
 
@@ -10,7 +10,7 @@ pt_background_min: 0.
 datatype_names: [[train, val, test]]
 datatype_split: [[8000, 1000, 1000]]
 
-train_split: [[8000, 1000, 1000]]     # ADAK: for data_utils.py
+train_split: [[8000, 1000, 1000]]      # ADAK:: for data_utils.py
 sorted_events: True
 
 noise: False
@@ -25,8 +25,11 @@ n_graph_iters: 8
 nb_node_layer: 3
 nb_edge_layer: 3
 emb_channels: 0
-layernorm: True
-aggregation: sum_max
+layernorm: True                        # ADAK:: LayerNorm
+batchnorm: False                       # ADAK:: BatchNorm
+directed: False                        # ADAK:: Directed Graph
+batchsize: 1                           # ADAK:: Batch size
+aggregation: sum_max                   # ADAK:: options are sum, max and sum_max
 hidden_activation: ReLU
 weight: 2
 warmup: 200
@@ -37,4 +40,4 @@ regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. va
 max_epochs: 10
 
 # Post-processing
-callbacks: [[GNNBuilder,GNNTelemetry]]
+callbacks: [[GNNBuilder]]

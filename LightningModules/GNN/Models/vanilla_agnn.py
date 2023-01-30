@@ -35,10 +35,11 @@ class VanillaAGNN(GNNBase):
 
         # Setup edge network
         self.edge_network = make_mlp(
-            # (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"])* 2,
-            # [hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]* hparams["nb_edge_layer"] + [1],
-            (hparams["hidden"]) * 2, 
-            [hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
+            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"])
+            * 2,
+            [hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]
+            * hparams["nb_edge_layer"]
+            + [1],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
@@ -47,8 +48,8 @@ class VanillaAGNN(GNNBase):
 
         # Setup node network
         self.node_network = make_mlp(
-            # (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"])* 2,
-            (hparams["hidden"]) * 2,
+            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"])
+            * 2,
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
