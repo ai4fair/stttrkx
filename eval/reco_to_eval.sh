@@ -24,14 +24,14 @@ fi
 
 
 # Data Directories
-inputdir="run/gnn_evaluation/test"
-reco_trkx_dir="run/trkx_from_gnn"
-mkdir -p $reco_trkx_dir
+inputdir="../run_all/dnn_processed/test"     # input from gnn_processed/test or pred/
+outputdir="../run_all/dnn_segmenting/seg"    # output of trkx_from_gnn.sh to gnn_segmenting/seg
+mkdir -p $outputdir
 
 # Tracks from GNN
 python trkx_from_gnn.py \
     --input-dir $inputdir \
-    --output-dir $reco_trkx_dir \
+    --output-dir $outputdir \
     --max-evts $maxevts \
     --num-workers 8 \
     --score-name "score" \
@@ -41,14 +41,16 @@ python trkx_from_gnn.py \
 
 
 # Data Directories
-eval_trkx_dir="run/trkx_reco_eval/eval"
-mkdir -p $eval_trkx_dir
+raw_inputdir=$inputdir
+rec_inputdir=$outputdir
+outputdir="../run_all/dnn_segmenting/eval/"  # output of eval_reco_trkx.sh
+mkdir -p $outputdir
 
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --reco-tracks-path $reco_trkx_dir \
-    --raw-tracks-path $inputdir \
-    --outname $eval_trkx_dir \
+    --raw-tracks-path $raw_inputdir \
+    --reco-tracks-path $rec_inputdir \
+    --outname $outputdir \
     --max-evts $maxevts \
     --force \
     --min-hits-truth 7 \

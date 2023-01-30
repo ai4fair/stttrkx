@@ -5,7 +5,7 @@
 # params
 epsilon=0.25
 maxevts=5000
-edge_score_cut=0.0
+edge_score_cut=0.5
 
 
 # input
@@ -23,8 +23,8 @@ fi
 
 
 # Data Directories
-inputdir="../run_all/gnn_processed/test"
-outputdir="../run_all/seg_processed"
+inputdir="../run_all/dnn_processed/test"  # input from gnn_processed/test or pred/
+outputdir="../run_all/dnn_segmenting/seg" # output of trkx_from_gnn.sh, track candidates
 mkdir -p $outputdir
 
 # Tracks from GNN

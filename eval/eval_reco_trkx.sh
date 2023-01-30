@@ -12,19 +12,20 @@ fi
 
 
 # Data Directories
-gnn_pred="run/gnn_evaluation/test"
-reco_tracks="run/trkx_from_gnn"
-outputdir="run/trkx_reco_eval/eval"
+raw_inputdir="../run_all/dnn_processed/test"     # output of DNN stage in test/pred
+rec_inputdir="../run_all/dnn_segmenting/seg"     # output of trkx_from_gnn.sh 
+   outputdir="../run_all/dnn_segmenting/eval/"   # output of eval_reco_trkx.sh
+mkdir -p $outputdir
 
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --reco-tracks-path $reco_tracks \
-    --raw-tracks-path $gnn_pred \
+    --reco-tracks-path $rec_inputdir \
+    --raw-tracks-path $raw_inputdir \
     --outname $outputdir \
     --max-evts $maxevts \
     --force \
     --min-hits-truth 7 \
-    --min-hits-reco 4 \
+    --min-hits-reco 5 \
     --min-pt 0. \
-    --frac-reco-matched 0.5 \
-    --frac-truth-matched 0.5
+    --frac-reco-matched 0.7 \
+    --frac-truth-matched 0.7
