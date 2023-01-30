@@ -1,6 +1,6 @@
 # I/O Configuration
-input_dir: ${EXATRKX_DATA}/train_all
-output_dir: ${SCRATCH}/run_all/feature_store
+input_dir: ${EXATRKX_DATA}/train_all1
+output_dir: ${EXATRKX_DATA}/run_all/feature_store_pred
 
 n_files: 100000
 n_workers: 64
