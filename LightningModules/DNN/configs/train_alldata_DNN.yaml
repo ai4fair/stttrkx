@@ -10,7 +10,7 @@ pt_background_min: 0.
 datatype_names: [[train, val, test]]
 datatype_split: [[90000, 5000, 5000]]
 
-train_split: [[90000, 5000, 5000]]     # ADAK: for data_utils.py
+train_split: [[90000, 5000, 5000]]     # ADAK:: for data_utils.py
 sorted_events: True
 
 noise: False
@@ -25,8 +25,11 @@ n_graph_iters: 8
 nb_node_layer: 3
 nb_edge_layer: 3
 emb_channels: 0
-layernorm: True
-aggregation: sum_max
+layernorm: True                       # ADAK:: LayerNorm
+batchnorm: False                      # ADAK:: BatchNorm
+directed: True                        # ADAK:: Directed Graph
+batchsize: 128                        # ADAK:: Batch size
+aggregation: sum_max                  # ADAK:: options are sum, max and sum_max
 hidden_activation: ReLU
 weight: 2
 warmup: 200
