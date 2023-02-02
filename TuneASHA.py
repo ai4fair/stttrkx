@@ -94,7 +94,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
                                              num_epochs=num_epochs,
                                              num_gpus=gpus_per_trial
                                              )
-    resources_per_trial = {"cpu": 1, "gpu": gpus_per_trial}
+    resources_per_trial = {"cpu": 32, "gpu": gpus_per_trial}
 
     # (2) Param Space
     tune_config = {
@@ -103,8 +103,6 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         "l3_size": tune.choice([128, 256, 512, 1024]),
         "l4_size": tune.choice([128, 256, 512, 1024]),
         "l5_size": tune.choice([128, 256, 512, 1024]),
-        "layernorm": tune.choice([False, True]),
-        "batchnorm": tune.choice([False, True]),
         "batch_size": tune.choice([64, 128, 256])
     }
 
