@@ -39,7 +39,7 @@ class DNNBase(pl.LightningModule):
         # Instance Variables
         self.trainset, self.valset, self.testset = None, None, None
 
-    def setup(self, stage):
+    def setup(self, stage="fit"):
         if self.trainset is None:
             self.trainset, self.valset, self.testset = split_datasets(**self.hparams)
 

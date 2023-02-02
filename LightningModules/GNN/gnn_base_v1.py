@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# NOTE: gnn_base is exactly same as gnn_base_v1 (from ctd2022p repo). Only difference
-# is the 'setup()', where "stages='fit', 'test'" are introduced for traing & testing.
+# NOTE: gnn_base_v1 is exactly same as gnn_base except for setup()
 
 import os
 import torch
@@ -20,14 +19,14 @@ def roc_auc_score_robust(y_true, y_pred):
         return accuracy_score(y_true, np.rint(y_pred))
     else:
         return roc_auc_score(y_true, y_pred)
-        
+
 
 class GNNBase(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         """Initialise LightningModule to scan different GNN training regimes"""
         
-        # Assign hyperparameters
+        # Save hyperparameters
         self.save_hyperparameters(hparams)
         
         # Set workers from hparams
@@ -36,40 +35,29 @@ class GNNBase(pl.LightningModule):
             if "n_workers" in self.hparams
             else len(os.sched_getaffinity(0))
         )
-        
+
         # Instance Variables
         self.trainset, self.valset, self.testset = None, None, None
 
-    def setup(self, stage):
-    
+    def setup(self, stage="fit"):
         # Handle any subset of [train, val, test] data split, assuming that ordering
+        
         input_subdirs = [None, None, None]
         input_subdirs[: len(self.hparams["datatype_names"])] = [
             os.path.join(self.hparams["input_dir"], datatype)
             for datatype in self.hparams["datatype_names"]
         ]
-        
-        if stage == "fit":
-            self.trainset, self.valset, self.testset = [
-                load_dataset(
-                    input_subdir=input_subdir,
-                    num_events=self.hparams["datatype_split"][i],
-                    **self.hparams
-                )
-                for i, input_subdir in enumerate(input_subdirs)
-            ]
-        
-        if stage == "test":
-            print("Size of Test Dataset: ", self.hparams["datatype_split"][2])
-            self.testset = load_dataset(
-                    input_subdir=input_subdirs[2],
-                    num_events=self.hparams["datatype_split"][2],
-                    **self.hparams
-                )
+        self.trainset, self.valset, self.testset = [
+            load_dataset(
+                input_subdir=input_subdir,
+                num_events=self.hparams["datatype_split"][i],
+                **self.hparams
+            )
+            for i, input_subdir in enumerate(input_subdirs)
+        ]
 
     def setup_data(self):
         self.setup(stage="fit")
-
 
     # Data Loaders
     def train_dataloader(self):
@@ -80,7 +68,6 @@ class GNNBase(pl.LightningModule):
                 self.trainset, batch_size=1, num_workers=self.n_workers
             )  # , pin_memory=True, persistent_workers=True)
 
-
     def val_dataloader(self):
         if self.valset is not None:
             return DataLoader(
@@ -89,7 +76,6 @@ class GNNBase(pl.LightningModule):
         else:
             return None
 
-
     def test_dataloader(self):
         if self.testset is not None:
             return DataLoader(
@@ -97,7 +83,6 @@ class GNNBase(pl.LightningModule):
             )  # , pin_memory=True, persistent_workers=True)
         else:
             return None
-
 
     # Configure Optimizer & Scheduler
     def configure_optimizers(self):
@@ -124,13 +109,12 @@ class GNNBase(pl.LightningModule):
         ]
         return optimizer, scheduler
 
-
     # 1 - Helper Function
     def get_input_data(self, batch):
 
         if self.hparams["cell_channels"] > 0:
             input_data = torch.cat(
-                [batch.cell_data[:, : self.hparams["cell_channels"]], batch.x], axis=-1
+                [batch.cell_data[:, :self.hparams["cell_channels"]], batch.x], dim=-1
             )
             input_data[input_data != input_data] = 0
         else:
@@ -138,7 +122,6 @@ class GNNBase(pl.LightningModule):
             input_data[input_data != input_data] = 0
 
         return input_data
-
 
     # 2 - Helper Function
     def handle_directed(self, batch, edge_sample, truth_sample):
@@ -152,7 +135,6 @@ class GNNBase(pl.LightningModule):
             truth_sample = truth_sample[direction_mask]
 
         return edge_sample, truth_sample
-
 
     # 3 - Helper Function
     def log_metrics(self, score, preds, truth, batch, loss):
@@ -179,7 +161,6 @@ class GNNBase(pl.LightningModule):
                 "current_lr": current_lr,
             }, on_step=False, on_epoch=True, prog_bar=False, batch_size=10240
         )
-
 
     # Train Step
     def training_step(self, batch, batch_idx):
@@ -210,7 +191,6 @@ class GNNBase(pl.LightningModule):
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=False, batch_size=10240)
 
         return loss
-
 
     # Shared Evaluation for Validation and Test Steps
     def shared_evaluation(self, batch, batch_idx, log=False):
@@ -247,7 +227,6 @@ class GNNBase(pl.LightningModule):
 
         return {"loss": loss, "score": score, "preds": preds, "truth": truth_sample}
 
-
     # Validation Step
     def validation_step(self, batch, batch_idx):
 
@@ -255,14 +234,12 @@ class GNNBase(pl.LightningModule):
 
         return outputs["loss"]
 
-
     # Test Step
     def test_step(self, batch, batch_idx):
 
         outputs = self.shared_evaluation(batch, batch_idx, log=False)
 
         return outputs
-
 
     # Optimizer Step
     def optimizer_step(

@@ -16,6 +16,7 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 
 # TODO: Make it work with Ray Tune
 
+
 def roc_auc_score_robust(y_true, y_pred):
     # Handle if y_true holds only one class
     if len(np.unique(y_true)) == 1:
@@ -43,11 +44,10 @@ class TuneBase(pl.LightningModule):
         self.train_acc = tm.Accuracy()
         self.valid_acc = tm.Accuracy()
 
-        
         # Instance Variables
         self.trainset, self.valset, self.testset = None, None, None
 
-    def setup(self, stage):
+    def setup(self, stage="fit"):
         if self.trainset is None:
             self.trainset, self.valset, self.testset = split_datasets(**self.hparams)
 
@@ -214,11 +214,11 @@ class TuneBase(pl.LightningModule):
         loss = F.binary_cross_entropy_with_logits(
             output, truth_sample.float(), weight=manual_weights, pos_weight=weight
         )
-                
+
         # Edge filter performance
         score = torch.sigmoid(output)
         preds = score > self.hparams["edge_cut"]
-        acc =  self.valid_acc(score, truth_sample)
+        acc = self.valid_acc(score, truth_sample)
         
         if log:
             self.log_metrics(score, preds, truth_sample, batch, loss)
@@ -238,11 +238,9 @@ class TuneBase(pl.LightningModule):
         #   print(out["loss"].item(), out["acc"].item())
         
         # Accuracy from Score and Truth
-        avg_acc  = torch.stack([
-                    self.valid_acc(x["score"], x["truth"]) 
-                                for x in validation_step_outputs
-                                
-                                ]).mean()
+        avg_acc = torch.stack([self.valid_acc(x["score"], x["truth"])
+                               for x in validation_step_outputs
+                               ]).mean()
         
         # avg_acc  = torch.stack([x["acc"]  for x in validation_step_outputs]).mean()                        
         avg_loss = torch.stack([x["loss"] for x in validation_step_outputs]).mean()

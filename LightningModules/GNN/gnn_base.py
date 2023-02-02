@@ -3,7 +3,6 @@
 
 # NOTE: gnn_base is exactly same as gnn_base (from ctd2022p repo).
 
-
 import os
 import torch
 import numpy as np
@@ -27,7 +26,7 @@ class GNNBase(pl.LightningModule):
         super().__init__()
         """Initialise LightningModule to scan different GNN training regimes"""
 
-        # Assign hyperparameters
+        # Save hyperparameters
         self.save_hyperparameters(hparams)
 
         # Set workers from hparams
@@ -40,11 +39,9 @@ class GNNBase(pl.LightningModule):
         # Instance Variables
         self.trainset, self.valset, self.testset = None, None, None
 
-
-    def setup(self, stage):
+    def setup(self, stage="fit"):
         if self.trainset is None:
             self.trainset, self.valset, self.testset = split_datasets(**self.hparams)
-
 
     # Data Loaders
     def train_dataloader(self):
@@ -54,7 +51,6 @@ class GNNBase(pl.LightningModule):
             )  # , pin_memory=True, persistent_workers=True)
         else:
             return None
-
 
     def val_dataloader(self):
         if self.valset is not None:
@@ -71,7 +67,6 @@ class GNNBase(pl.LightningModule):
             )  # , pin_memory=True, persistent_workers=True)
         else:
             return None
-
 
     # Configure Optimizer & Scheduler
     def configure_optimizers(self):
@@ -98,7 +93,6 @@ class GNNBase(pl.LightningModule):
         ]
         return optimizer, scheduler
 
-
     # 1 - Helper Function
     def get_input_data(self, batch):
 
@@ -113,7 +107,6 @@ class GNNBase(pl.LightningModule):
 
         return input_data
 
-
     # 2 - Helper Function
     def handle_directed(self, batch, edge_sample, truth_sample):
 
@@ -126,7 +119,6 @@ class GNNBase(pl.LightningModule):
             truth_sample = truth_sample[direction_mask]
 
         return edge_sample, truth_sample
-
 
     # 3 - Helper Function
     def log_metrics(self, score, preds, truth, batch, loss):
@@ -153,7 +145,6 @@ class GNNBase(pl.LightningModule):
                 "current_lr": current_lr,
             }, on_step=False, on_epoch=True, prog_bar=False, batch_size=10240
         )
-
 
     # Train Step
     def training_step(self, batch, batch_idx):
@@ -184,7 +175,6 @@ class GNNBase(pl.LightningModule):
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=False, batch_size=10240)
 
         return loss
-
 
     # Shared Evaluation for Validation and Test Steps
     def shared_evaluation(self, batch, batch_idx, log=False):
@@ -221,7 +211,6 @@ class GNNBase(pl.LightningModule):
 
         return {"loss": loss, "score": score, "preds": preds, "truth": truth_sample}
 
-
     # Validation Step
     def validation_step(self, batch, batch_idx):
 
@@ -229,14 +218,12 @@ class GNNBase(pl.LightningModule):
 
         return outputs["loss"]
 
-
     # Test Step
     def test_step(self, batch, batch_idx):
 
         outputs = self.shared_evaluation(batch, batch_idx, log=False)
 
         return outputs
-
 
     # Optimizer Step
     def optimizer_step(
