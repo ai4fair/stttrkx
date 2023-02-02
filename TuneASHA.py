@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
 import yaml
 import math
 import argparse
@@ -27,14 +28,14 @@ def headline(message):
 # Argument Parser
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser("3_Train_GNN.py")
+    parser = argparse.ArgumentParser("TuneASHA.py")
     add_arg = parser.add_argument
     add_arg("config", nargs="?", default="pipeline_config.yaml")
     return parser.parse_args()
 
 
 # Trainable (Functional API)
-def trainer_dense(combo_config, num_epochs=10, num_gpus=0):
+def trainer_dense(combo_config, num_epochs=10, num_gpus=1):
     """PyTorch-Lighting Trainer (RayTune Function API)"""
 
     # Model Config
@@ -49,8 +50,11 @@ def trainer_dense(combo_config, num_epochs=10, num_gpus=0):
 
     # Loggers, Callbacks, etc
     save_directory = common_configs["artifact_directory"]
+    experiment_dir = common_configs["experiment_name"]
+    os.makedirs(experiment_dir, exist_ok=True)
+    
     logger = TensorBoardLogger(save_directory,
-                               name=common_configs["experiment_name"],
+                               name=experiment_dir,
                                version=None)
 
     metrics = {"loss": "ptl/val_loss", "mean_accuracy": "ptl/val_accuracy"}
@@ -99,7 +103,9 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         "l3_size": tune.choice([128, 256, 512, 1024]),
         "l4_size": tune.choice([128, 256, 512, 1024]),
         "l5_size": tune.choice([128, 256, 512, 1024]),
-        "batch_size": tune.choice([32, 64, 128])
+        "layernorm": tune.choice([False, True]),
+        "batchnorm": tune.choice([False, True]),
+        "batch_size": tune.choice([64, 128, 256])
     }
 
     # Combo Config   
@@ -177,4 +183,4 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_asha(config, num_samples=5, num_epochs=10, gpus_per_trial=0)
+    tuner_asha(config, num_samples=10, num_epochs=10, gpus_per_trial=1)
