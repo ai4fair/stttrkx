@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 from ..tune_base import TuneBase
 from ..utils.dnn_utils import make_mlp
 
-class EdgeClassifier(TuneBase):
+class EdgeClassifier_Tune(TuneBase):
     """A Dense Network for Edge Classification. Norm Options: Layer or Batch Norms."""
     
     def __init__(self, hparams):

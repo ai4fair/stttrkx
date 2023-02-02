@@ -40,4 +40,4 @@ regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. va
 max_epochs: 10
 
 # Post-processing
-callbacks: [[GNNBuilder]]
+callbacks: [[GNNBuilder, GNNTelemetry]]

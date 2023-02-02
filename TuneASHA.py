@@ -14,7 +14,7 @@ from ray import air, tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
-from LightningModules.DNN.Models.tune_network import EdgeClassifier
+from LightningModules.DNN.Models.tune_network import EdgeClassifier_Tune
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 pp = pprint.PrettyPrinter(indent=2)
@@ -44,7 +44,7 @@ def trainer_dense(combo_config, num_epochs=10, num_gpus=1):
 
     # Build Model
     logging.info(headline("a) Initialising model"))
-    model = EdgeClassifier(dnn_configs)
+    model = EdgeClassifier_Tune(dnn_configs)
 
     logging.info(headline("b) Running training"))
 
