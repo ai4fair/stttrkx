@@ -1,4 +1,5 @@
-import sys
+#!/usr/bin/env python
+# coding: utf-8
 
 import torch.nn as nn
 from torch.nn import Linear

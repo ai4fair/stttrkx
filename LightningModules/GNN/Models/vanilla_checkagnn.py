@@ -4,6 +4,7 @@
 import torch
 from torch_scatter import scatter_add
 from torch.utils.checkpoint import checkpoint
+
 from ..gnn_base import GNNBase
 from ..utils.gnn_utils import make_mlp
 

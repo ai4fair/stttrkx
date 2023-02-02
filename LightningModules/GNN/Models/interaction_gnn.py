@@ -1,16 +1,8 @@
-import sys
-import torch
-import torch.nn as nn
-from torch.nn import Linear
-from torch.nn.init import (
-    uniform_,
-    normal_,
-    xavier_uniform_,
-    xavier_normal_,
-    kaiming_uniform_,
-    kaiming_normal_,
-)
+#!/usr/bin/env python
+# coding: utf-8
 
+import torch
+from torch.nn import Linear
 from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
@@ -149,4 +141,3 @@ class InteractionGNN(GNNBase):
 
         # Compute final edge scores; use original edge directions only
         return checkpoint(self.output_step, x, start, end, e)
-

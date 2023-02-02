@@ -3,6 +3,7 @@
 
 import torch
 from torch_scatter import scatter_add
+
 from ..gnn_base import GNNBase
 from ..utils.gnn_utils import make_mlp
 
@@ -36,8 +37,10 @@ class VanillaAGNN(GNNBase):
 
         # Setup edge network
         self.edge_network = make_mlp(
-            # (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"])* 2,
-            # [hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]* hparams["nb_edge_layer"]+ [1],
+            # (hparams["spatial_channels"] + hparams["cell_channels"]
+            # + hparams["hidden"])* 2,
+            # [hparams["spatial_channels"] + hparams["cell_channels"]
+            # + hparams["hidden"]]* hparams["nb_edge_layer"]+ [1],
             (hparams["hidden"]) * 2,
             [hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
             hidden_activation=hparams["hidden_activation"],
@@ -95,5 +98,3 @@ class VanillaAGNN(GNNBase):
 
         edge_inputs = torch.cat([x[start], x[end]], dim=1)
         return self.edge_network(edge_inputs)
-
-

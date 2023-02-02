@@ -1,17 +1,14 @@
-import sys
+#!/usr/bin/env python
+# coding: utf-8
 
-import torch.nn as nn
-from torch.nn import Linear
 import torch
-from torch_scatter import scatter_add, scatter_mean, scatter_max
-from torch.utils.checkpoint import checkpoint
+import torch.nn as nn
 
 from ...utils.hetero_gnn_utils import make_mlp
 
+
 class HeteroEncoder(torch.nn.Module):
-    """
-    The node and edge encoder(s) that can handle heterogeneous models        
-    """
+    """The node and edge encoder(s) that can handle heterogeneous models"""
     
     def __init__(self, hparams):
         super(HeteroEncoder, self).__init__()
@@ -49,10 +46,12 @@ class HeteroEncoder(torch.nn.Module):
         Fill the heterogeneous nodes with the corresponding encoders
         """
 
-        features_to_fill = torch.empty((input_node_features.shape[0], self.hparams["hidden"])).to(input_node_features.device)
+        features_to_fill = torch.empty((input_node_features.shape[0],
+                                        self.hparams["hidden"])).to(input_node_features.device)
 
         for encoder, model in zip(self.node_encoders, self.hparams["model_ids"]):
-            node_id_mask = torch.isin(volume_id, torch.tensor(model["volume_ids"]).to(input_node_features.device))
+            node_id_mask = torch.isin(volume_id,
+                                      torch.tensor(model["volume_ids"]).to(input_node_features.device))
             features_to_fill[node_id_mask] = encoder(input_node_features[node_id_mask, :model["num_features"]])
         
         return features_to_fill
@@ -65,7 +64,12 @@ class HeteroEncoder(torch.nn.Module):
         features_to_fill = torch.empty((start.shape[0], self.hparams["hidden"])).to(start.device)
 
         for encoder, combo in zip(self.edge_encoders, self.all_combos):
-            vol_ids_0, vol_ids_1 = torch.tensor(self.hparams["model_ids"][combo[0]]["volume_ids"], device=features_to_fill.device), torch.tensor(self.hparams["model_ids"][combo[1]]["volume_ids"], device=features_to_fill.device)                        
+            vol_ids_0, vol_ids_1 = torch.tensor(
+                self.hparams["model_ids"][combo[0]]["volume_ids"],
+                device=features_to_fill.device), \
+                torch.tensor(
+                    self.hparams["model_ids"][combo[1]]["volume_ids"],
+                    device=features_to_fill.device)
             vol_edge_mask = torch.isin(volume_id[start], vol_ids_0) & torch.isin(volume_id[end], vol_ids_1)
             
             features_to_encode = torch.cat([
@@ -81,8 +85,11 @@ class HeteroEncoder(torch.nn.Module):
         """
         Forward pass of the heterogeneous encoder
 
-        x is the input node features. It is expected to be of shape (num_nodes, max number of input features), where rows that have fewer features than the max are padded with zeros.
-        It creates an empty tensor of the same shape as x, and fills it with the encoded nodes, for each node encoder. The same is done for encoded edges.
+        x is the input node features. It is expected to be of shape (num_nodes,
+        max number of input features), where rows that have fewer features than
+        the max are padded with zeros. It creates an empty tensor of the same
+        shape as x, and fills it with the encoded nodes, for each node encoder.
+        The same is done for encoded edges.
         """
 
         start, end = edge_index
@@ -91,6 +98,7 @@ class HeteroEncoder(torch.nn.Module):
         encoded_edges = self.fill_hetero_edges(encoded_nodes, start, end, volume_id)        
 
         return encoded_nodes, encoded_edges
+
 
 class HomoEncoder(torch.nn.Module):
     """
