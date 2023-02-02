@@ -21,10 +21,12 @@ if test "$3" != ""; then
   edge_score_cut=$3
 fi
 
+# Stage [dnn, gnn, agnn,...]
+ann=gnn
 
 # Data Directories
-inputdir="../run_all/dnn_processed/test"  # input from gnn_processed/test or pred/
-outputdir="../run_all/dnn_segmenting/seg" # output of trkx_from_gnn.sh, track candidates
+inputdir="../run_all/"$ann"_processed/pred"  # input from GNN stage as in test/pred
+outputdir="../run_all/"$ann"_segmenting/seg" # output of trkx_from_gnn.sh i.e. TrackCands
 mkdir -p $outputdir
 
 # Tracks from GNN
@@ -37,3 +39,4 @@ python trkx_from_gnn.py \
     --edge-score-cut $edge_score_cut \
     --epsilon $epsilon \
     --min-samples 2
+

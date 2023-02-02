@@ -35,11 +35,9 @@ eta_configs = {
 
 
 # get a plot
-def get_plot(nrows=1, ncols=1, figsize=8, nominor=False):
+def get_plot(nrows=1, ncols=1, figsize=(8,7), nominor=False):
 
-    fig, axs = plt.subplots(nrows, ncols,
-                            figsize=(figsize*ncols, figsize*nrows),
-                            constrained_layout=True)
+    fig, axs = plt.subplots(nrows, ncols, figsize=figsize, constrained_layout=True)
 
     def format_axis(axis):
         axis.xaxis.set_minor_locator(AutoMinorLocator())
@@ -108,7 +106,7 @@ def make_cmp_plot(arrays, legends, configs,
     add_up_xaxis(ax)
     ax.legend(loc='upper right', fontsize=12)
     ax.grid(False)
-    fig.savefig("{}.png".format(outname))
+    fig.savefig("{}.pdf".format(outname))
 
     # make a ratio plot
     fig, ax = get_plot()
@@ -130,4 +128,4 @@ def make_cmp_plot(arrays, legends, configs,
         ax.legend(loc='lower right', fontsize=12)
 
     ax.grid(False)
-    fig.savefig("{}_ratio.png".format(outname))
+    fig.savefig("{}_ratio.pdf".format(outname))
