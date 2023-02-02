@@ -148,7 +148,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         ),
         run_config=air.RunConfig(
             local_dir=combo_config["common_configs"]["artifact_directory"],
-            name="ASHAResult",
+            name="ASHResult",
             progress_reporter=reporter,
             # log_to_file=True,
             log_to_file=("my_stdout.log", "my_stderr.log")
