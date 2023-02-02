@@ -31,50 +31,61 @@ class InteractionGNN(GNNBase):
         concatenation_factor = (
             3 if (self.hparams["aggregation"] in ["sum_max", "mean_max"]) else 2
         )
+        hparams["output_activation"] = (
+            None if "output_activation" not in hparams else hparams["output_activation"]
+        )
+        hparams["batchnorm"] = (
+            False if "batchnorm" not in hparams else hparams["batchnorm"]
+        )
         
         # Setup input network
         self.node_encoder = make_mlp(
             hparams["spatial_channels"] + hparams["cell_channels"],
             [hparams["hidden"]] * hparams["nb_node_layer"],
-            output_activation=None,
             hidden_activation=hparams["hidden_activation"],
+            output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
+            batch_norm=hparams["batchnorm"]
         )
         
         # The edge network computes new edge features from connected nodes
         self.edge_encoder = make_mlp(
             2 * (hparams["hidden"]),
             [hparams["hidden"]] * hparams["nb_edge_layer"],
-            layer_norm=hparams["layernorm"],
-            output_activation=None,
             hidden_activation=hparams["hidden_activation"],
+            output_activation=hparams["output_activation"],
+            layer_norm=hparams["layernorm"],
+            batch_norm=hparams["batchnorm"]
         )
         
         # The edge network computes new edge features from connected nodes
         self.edge_network = make_mlp(
             3 * hparams["hidden"],
             [hparams["hidden"]] * hparams["nb_edge_layer"],
-            layer_norm=hparams["layernorm"],
-            output_activation=None,
             hidden_activation=hparams["hidden_activation"],
+            output_activation=hparams["output_activation"],
+            layer_norm=hparams["layernorm"],
+            batch_norm=hparams["batchnorm"]
         )
         
         # The node network computes new node features
         self.node_network = make_mlp(
             concatenation_factor * hparams["hidden"],
             [hparams["hidden"]] * hparams["nb_node_layer"],
-            layer_norm=hparams["layernorm"],
-            output_activation=None,
             hidden_activation=hparams["hidden_activation"],
+            output_activation=hparams["output_activation"],
+            layer_norm=hparams["layernorm"],
+            batch_norm=hparams["batchnorm"]
         )
         
         # Final edge output classification network
         self.output_edge_classifier = make_mlp(
             3 * hparams["hidden"],
             [hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
-            layer_norm=hparams["layernorm"],
-            output_activation=None,
             hidden_activation=hparams["hidden_activation"],
+            output_activation=hparams["output_activation"],
+            layer_norm=hparams["layernorm"],
+            batch_norm=hparams["batchnorm"]
         )
     
     def reset_parameters(self):

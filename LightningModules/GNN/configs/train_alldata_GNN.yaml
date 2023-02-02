@@ -26,8 +26,8 @@ nb_node_layer: 3
 nb_edge_layer: 3
 emb_channels: 0
 layernorm: True                        # ADAK:: LayerNorm
-#batchnorm: False                       # ADAK:: BatchNorm
-#directed: False                        # ADAK:: Directed Graph
+batchnorm: False                       # ADAK:: BatchNorm
+directed: False                        # ADAK:: Directed Graph
 batchsize: 1                           # ADAK:: Batch size
 aggregation: sum_max                   # ADAK:: options are sum, max and sum_max
 hidden_activation: ReLU
