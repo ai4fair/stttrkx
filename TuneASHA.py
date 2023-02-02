@@ -84,7 +84,7 @@ def trainer_dense(combo_config, num_epochs=10, num_gpus=1):
 
 
 # Tuner :: ASHA Scheduler 
-def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, gpus_per_trial=0):
+def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=1):
     # (0) Model Config
     with open(config_file) as file:
         model_config = yaml.load(file, Loader=yaml.FullLoader)
@@ -94,7 +94,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
                                              num_epochs=num_epochs,
                                              num_gpus=gpus_per_trial
                                              )
-    resources_per_trial = {"cpu": 32, "gpu": gpus_per_trial}
+    resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
 
     # (2) Param Space
     tune_config = {
@@ -181,4 +181,4 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_asha(config, num_samples=10, num_epochs=10, gpus_per_trial=1)
+    tuner_asha(config, num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=0)

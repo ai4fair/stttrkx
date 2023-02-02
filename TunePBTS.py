@@ -27,7 +27,7 @@ def headline(message):
 # Argument Parser
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser("3_Train_GNN.py")
+    parser = argparse.ArgumentParser("TunePBTS.py")
     add_arg = parser.add_argument
     add_arg("config", nargs="?", default="pipeline_config.yaml")
     return parser.parse_args()
@@ -49,8 +49,11 @@ def trainer_dense(combo_config, checkpoint_dir=None, num_epochs=10, num_gpus=0):
 
     # Loggers, Callbacks, etc
     save_directory = common_configs["artifact_directory"]
+    experiment_dir = common_configs["experiment_name"]
+    os.makedirs(experiment_dir, exist_ok=True)
+    
     logger = TensorBoardLogger(save_directory,
-                               name=common_configs["experiment_name"],
+                               name=experiment_dir,
                                version=None)
 
     metrics = {"loss": "ptl/val_loss", "mean_accuracy": "ptl/val_accuracy"}
@@ -84,7 +87,7 @@ def trainer_dense(combo_config, checkpoint_dir=None, num_epochs=10, num_gpus=0):
 
 
 # Tuner :: ASHA Scheduler 
-def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, gpus_per_trial=0):
+def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=1):
     # (0) Model Config
     with open(config_file) as file:
         model_config = yaml.load(file, Loader=yaml.FullLoader)
@@ -94,7 +97,7 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
                                              num_epochs=num_epochs,
                                              num_gpus=gpus_per_trial
                                              )
-    resources_per_trial = {"cpu": 1, "gpu": gpus_per_trial}
+    resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
 
     # (2) Param Space
     tune_config = {
@@ -184,4 +187,4 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_pbt(config, num_samples=5, num_epochs=10, gpus_per_trial=0)
+    tuner_pbt(config, num_samples=5, num_epochs=10, cpus_per_trial=1, gpus_per_trial=0)
