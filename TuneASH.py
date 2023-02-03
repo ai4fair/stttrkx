@@ -102,7 +102,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         "l2_size": tune.choice([128, 256, 512, 1024]),
         "l3_size": tune.choice([128, 256, 512, 1024]),
         "l4_size": tune.choice([128, 256, 512, 1024]),
-        "l5_size": tune.choice([128, 256, 512, 1024]),
+        #"l5_size": tune.choice([128, 256, 512, 1024]),
         "batch_size": tune.choice([64, 128, 256])
     }
 
@@ -125,7 +125,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
                            "l2_size",
                            "l3_size",
                            "l4_size",
-                           "l5_size",
+                           #"l5_size",
                            "batch_size"],
         metric_columns=["loss",
                         "mean_accuracy",
@@ -181,4 +181,4 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_asha(config, num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=0)
+    tuner_asha(config, num_samples=3, num_epochs=2, cpus_per_trial=1, gpus_per_trial=0)

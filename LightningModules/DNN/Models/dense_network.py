@@ -17,9 +17,14 @@ class EdgeClassifier(DNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
         
-        # Input Size: 2*(Node Features)
+        # Input Size: (Node Features)*2
         input_dim = (hparams["spatial_channels"]+hparams["cell_channels"])*2
-        layer_dim = [1000,2000,2000,2000,1000,1]
+        
+        # Layer Dimensions, 6 Layer NN
+        layer_dim = [1000,2000,2000,2000,1000,1]             # with directed:False
+        layer_dim = [128,512,128,1024,512,1]                 # with directed:False
+        layer_dim = [128,128,1024,1024,128,1]                # with directed:True
+        
         # Create a Dense Network
         self.dense = make_mlp(
             input_size=input_dim,                            # Features

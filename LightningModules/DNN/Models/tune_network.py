@@ -22,7 +22,7 @@ class EdgeClassifier_Tune(TuneBase):
                           hparams["l2_size"],
                           hparams["l3_size"],
                           hparams["l4_size"],
-                          hparams["l5_size"],
+                          #hparams["l5_size"],
                           1]
         
         self.hidden_activation = hparams["hidden_activation"]

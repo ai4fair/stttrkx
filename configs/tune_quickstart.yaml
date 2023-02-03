@@ -3,16 +3,18 @@ common_configs:
 
   experiment_name: TuneStudy
   artifact_directory: ./ray_tune
-  gpus: 1
+  gpus: 0
   clear_directories: True
 
 
 model_configs:
 
     # Input/output configuration
-    input_dir: /global/homes/a/aakram/cscratch/run/feature_store
-    output_dir: /global/homes/a/aakram/cscratch/run/tune_processed
-    project: TuneStudy
+    # input_dir: /global/homes/a/aakram/cscratch/run/feature_store
+    # output_dir: /global/homes/a/aakram/cscratch/run/tune_processed
+    input_dir: /shared/adeel/data_sets/ctd2022/run_10k/feature_store
+    output_dir: /shared/adeel/data_sets/ctd2022/run_10k/tune_processed
+    project: DNNStudy
     edge_cut: 0.5
 
     # Dataset parameters
@@ -37,9 +39,9 @@ model_configs:
     nb_edge_layer: 3
     emb_channels: 0
     layernorm: False                      # ADAK:: LayerNorm
-    batchnorm: True                       # ADAK:: BatchNorm
+    batchnorm: False                      # ADAK:: BatchNorm
     directed: True                        # ADAK:: Directed Graph
-    batchsize: 128                        # ADAK:: Batch size
+    batchsize: 1                          # ADAK:: Batch size
     aggregation: sum_max
     hidden_activation: ReLU
     weight: 2
