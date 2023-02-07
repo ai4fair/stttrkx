@@ -74,10 +74,10 @@ def clustering(hit_id, e_csr_bi, epsilon=0.25, min_samples=2):
 
 
 # Process
-def process(filename, output_dir, edge_score_cut, **kwargs):
+def process(filename, output_dir, edge_score_cut, epsilon=0.25, min_samples=2, **kwargs):
     """Prepare a multiprocessing function for track building"""
 
-    print("Args: {}, {}, {}, {}".format(filename, output_dir, edge_score_cut, kwargs))
+    # print("Args: {}, {}, {}, {}".format(filename, output_dir, edge_score_cut, kwargs))
 
     # get the event_id from the filename
     evtid = int(os.path.basename(filename))
@@ -89,18 +89,23 @@ def process(filename, output_dir, edge_score_cut, **kwargs):
     hit_id = graph.hid
     senders = graph.edge_index[0]
     receivers = graph.edge_index[1]
-    scores = graph.scores                 # scores is twice the size of edge_index
+    
+    # "scores" is twice the size of "edge_index"
+    # scores = graph.scores
     
     # FIXME (DONE!): What to do with double size of "scores"?
-    scores = graph.scores[:gnn_data.edge_index.shape[1]]
+    scores = graph.scores[:graph.edge_index.shape[1]]
     
     # additional params
     n_nodes = hit_id.shape[0]
     
     # apply edge_score_cut
-    edge_mask = graph.scores > edge_score_cut
+    edge_mask = scores > edge_score_cut
     scores, senders, receivers = scores[edge_mask], senders[edge_mask], receivers[edge_mask]
-
+    
+    # check dimensions
+    # print("Dims: {}, {}, {}, {}".format(senders.shape[0], receivers.shape[0], scores.shape[0], edge_mask.shape[0]))
+    
     # prepare sparse matrix
     coo_matrix = prepare(scores, senders, receivers, n_nodes)
     
@@ -149,7 +154,7 @@ if __name__ == "__main__":
     
     n_tot_files = len(all_files)
     max_evts = args.max_evts if 0 < args.max_evts <= n_tot_files else n_tot_files
-    print("Out of {} events processing {} events with {} workers.\n".format(n_tot_files, max_evts, args.num_workers))
+    print("Out of {} events processing {} events with {} workers.".format(n_tot_files, max_evts, args.num_workers))
     
     # Multiprocess to Build Tracks (Torch Files)
     print("Write Track Candidates as TORCH")

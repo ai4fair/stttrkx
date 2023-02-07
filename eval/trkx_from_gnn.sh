@@ -22,20 +22,24 @@ if test "$3" != ""; then
 fi
 
 # Stage [dnn, gnn, agnn,...]
-ann=gnn
+ann=dnn
 
 # Data Directories
 inputdir="../run_all/"$ann"_processed/pred"  # input from GNN stage as in test/pred
 outputdir="../run_all/"$ann"_segmenting/seg" # output of trkx_from_gnn.sh i.e. TrackCands
 mkdir -p $outputdir
 
+# original: trkx_from_gnn_v1
+# uproot  : trkx_from_gnn_uproot
+# cleaned : trkx_from_gnn_v2
+
 # Tracks from GNN
-python trkx_from_gnn.py \
+python trkx_from_gnn_v2.py \
     --input-dir $inputdir \
     --output-dir $outputdir \
     --max-evts $maxevts \
     --num-workers 8 \
-    --score-name "score" \
+    --score-name "scores" \
     --edge-score-cut $edge_score_cut \
     --epsilon $epsilon \
     --min-samples 2
