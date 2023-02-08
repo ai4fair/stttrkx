@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# From: exatrkx-iml2020
 """Modified version of 'tracks_from_gnn.py' (runs after 'eval_gnn_tf.py') script from the
 exatrkx-iml2020. The code breakdown of the script is given in 'stt4_seg.ipynb' notebook."""
 
@@ -24,9 +25,9 @@ def prepare(scores, senders, receivers, n_nodes):
     """Prepare Input for DBSCAN"""
     
     # adjancy matrix with its value being the edge socre.
-    e_csr = sp.sparse.csr_matrix((scores, (senders, receivers)), 
-                                    shape=(n_nodes, n_nodes), 
-                                    dtype=np.float32)
+    e_csr = sp.sparse.csr_matrix((scores, (senders, receivers)),
+                                 shape=(n_nodes, n_nodes),
+                                 dtype=np.float32)
     
     # rescale the duplicated edges
     e_csr.data[e_csr.data > 1] = e_csr.data[e_csr.data > 1]/2.
@@ -161,4 +162,5 @@ if __name__ == "__main__":
     with Pool(args.num_workers) as p:
         process_fnc = partial(process, **vars(args))
         p.map(process_fnc, all_files[:max_evts])
-
+        
+    print("Finished Writing Track Candidates as TORCH")

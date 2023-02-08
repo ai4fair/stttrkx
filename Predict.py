@@ -144,10 +144,9 @@ def eval_model(model, data_loader):
             truths.append(truth_sample)
         
         # merge all batched
-        score_all = torch.cat(scores)
-        truth_all = torch.cat(truths)
-        
-    return score_all, truth_all
+        score = torch.cat(scores)
+        truth = torch.cat(truths)
+    return score, truth
 
 
 # 4 - Main Function

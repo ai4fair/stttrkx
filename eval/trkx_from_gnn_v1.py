@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Modified version of 'tracks_from_gnn.py' (runs after 'eval_gnn_tf.py') script from the
-exatrkx-iml2020. The code breakdown of the script is given in 'stt4_seg.ipynb' notebook."""
+# From gnn4itk repo
+"""Modified version of 'tracks_from_gnn.py' (runs after 'eval_gnn_tf.py') script from
+gnn4itk repo. The code breakdown of the script is given in 'stt4_seg.ipynb' notebook."""
 
 import os
 import glob

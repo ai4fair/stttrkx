@@ -22,7 +22,7 @@ if test "$3" != ""; then
 fi
 
 # Stage [dnn, gnn, agnn,...]
-ann=dnn
+ann=gnn
 
 # Data Directories
 inputdir="../run_all/"$ann"_processed/pred"  # input from GNN stage as in test/pred
@@ -31,10 +31,10 @@ mkdir -p $outputdir
 
 # original: trkx_from_gnn_v1
 # uproot  : trkx_from_gnn_uproot
-# cleaned : trkx_from_gnn_v2
+# cleaned : trkx_from_gnn
 
 # Tracks from GNN
-python trkx_from_gnn_v2.py \
+python trkx_from_gnn.py \
     --input-dir $inputdir \
     --output-dir $outputdir \
     --max-evts $maxevts \
@@ -43,4 +43,3 @@ python trkx_from_gnn_v2.py \
     --edge-score-cut $edge_score_cut \
     --epsilon $epsilon \
     --min-samples 2
-
