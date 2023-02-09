@@ -12,7 +12,7 @@ fi
 
 
 # Stage [dnn, gnn, agnn,...]
-ann=dnn
+ann=gnn
 
 
 # Data Directories
@@ -30,9 +30,10 @@ python eval_reco_trkx.py \
     --outname $outfile \
     --max-evts $maxevts \
     --force \
-    --min-pt 0. \
+    --min-pt 0.5 \
+    --max-pt 1.0 \
     --min-hits-truth 7 \
-    --min-hits-reco 4 \
+    --min-hits-reco 5 \
     --frac-reco-matched 0.5 \
     --frac-truth-matched 0.5
 

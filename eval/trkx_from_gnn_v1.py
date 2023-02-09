@@ -8,16 +8,16 @@ gnn4itk repo. The code breakdown of the script is given in 'stt4_seg.ipynb' note
 import os
 import glob
 import torch
-
-import scipy as sp
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 
 from multiprocessing import Pool
 from functools import partial
 from sklearn.cluster import DBSCAN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def tracks_from_gnn(hit_ids, score, senders, receivers,
                     edge_score_cut=0., epsilon=0.25, min_samples=2,
@@ -32,7 +32,9 @@ def tracks_from_gnn(hit_ids, score, senders, receivers,
         score, senders, receivers = score[cuts], senders[cuts], receivers[cuts]
         
     # prepare the DBSCAN input, which the adjancy matrix with its value being the edge socre.
-    e_csr = sp.sparse.csr_matrix((score, (senders, receivers)), shape=(n_nodes, n_nodes), dtype=np.float32)
+    e_csr = sps.csr_matrix((score, (senders, receivers)),
+                           shape=(n_nodes, n_nodes),
+                           dtype=np.float32)
     
     # rescale the duplicated edges
     e_csr.data[e_csr.data > 1] = e_csr.data[e_csr.data > 1]/2.
@@ -41,7 +43,7 @@ def tracks_from_gnn(hit_ids, score, senders, receivers,
     e_csr.data = 1 - e_csr.data
     
     # make it symmetric
-    e_csr_bi = sp.sparse.coo_matrix(
+    e_csr_bi = sps.coo_matrix(
         (np.hstack([e_csr.tocoo().data, e_csr.tocoo().data]),
          np.hstack([np.vstack([e_csr.tocoo().row, e_csr.tocoo().col]),
                     np.vstack([e_csr.tocoo().col, e_csr.tocoo().row])]
@@ -62,14 +64,14 @@ def tracks_from_gnn(hit_ids, score, senders, receivers,
     track_labels.columns = ["hit_id", "track_id"]
     
     new_hit_id = np.apply_along_axis(
-        lambda x: hit_id[x], 0, track_labels.hit_id.values)
+        lambda x: hit_ids[x], 0, track_labels.hit_id.values)
     
     tracks = pd.DataFrame.from_dict(
         {"hit_id": new_hit_id, "track_id": track_labels.track_id})
     return tracks
 
 
-def process(filename, output_dir, score_name, **kwargs):
+def process(filename, output_dir, **kwargs):
     """prepare a multiprocessing function for track building"""
 
     # print("Args: {}, {}, {}, {}".format(filename, output_dir, score_name, kwargs))
@@ -84,13 +86,13 @@ def process(filename, output_dir, score_name, **kwargs):
     hit_ids = graph.hid
     senders = graph.edge_index[0]
     receivers = graph.edge_index[1]
-    score = graph.scores
+    scores = graph.scores
     
     # score has twice the size of edge_index (flip(0) was used), cut-off the size
-    score = graph.scores[:graph.edge_index.shape[1]]  
+    scores = scores[:graph.edge_index.shape[1]]
         
     # predicted tracks from the GNN stage
-    predicted_tracks = tracks_from_gnn(hit_ids, score, senders, receivers, **kwargs)
+    predicted_tracks = tracks_from_gnn(hit_ids, scores, senders, receivers, **kwargs)
     
     # all columns with sampe dtype
     predicted_tracks = predicted_tracks.astype(np.int32)  
@@ -147,4 +149,3 @@ if __name__ == "__main__":
     with Pool(args.num_workers) as p:
         process_fnc = partial(process, **vars(args))
         p.map(process_fnc, all_files[:max_evts])
-

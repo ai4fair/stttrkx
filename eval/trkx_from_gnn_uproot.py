@@ -7,10 +7,9 @@ exatrkx-iml2020. The code breakdown of the script is given in 'stt4_seg.ipynb' n
 import os
 import glob
 import torch
-
-import scipy as sp
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 
 import uproot
 import awkward as ak
@@ -20,6 +19,7 @@ from functools import partial
 from sklearn.cluster import DBSCAN
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def tracks_from_gnn(hit_id, score, senders, receivers,
                     edge_score_cut=0., epsilon=0.25, min_samples=2,
@@ -34,7 +34,9 @@ def tracks_from_gnn(hit_id, score, senders, receivers,
         score, senders, receivers = score[cuts], senders[cuts], receivers[cuts]
         
     # prepare the DBSCAN input, which the adjancy matrix with its value being the edge socre.
-    e_csr = sp.sparse.csr_matrix((score, (senders, receivers)), shape=(n_nodes, n_nodes), dtype=np.float32)
+    e_csr = sps.csr_matrix((score, (senders, receivers)),
+                           shape=(n_nodes, n_nodes),
+                           dtype=np.float32)
     
     # rescale the duplicated edges
     e_csr.data[e_csr.data > 1] = e_csr.data[e_csr.data > 1]/2.
@@ -43,7 +45,7 @@ def tracks_from_gnn(hit_id, score, senders, receivers,
     e_csr.data = 1 - e_csr.data
     
     # make it symmetric
-    e_csr_bi = sp.sparse.coo_matrix(
+    e_csr_bi = sps.coo_matrix(
         (np.hstack([e_csr.tocoo().data, e_csr.tocoo().data]),
          np.hstack([np.vstack([e_csr.tocoo().row, e_csr.tocoo().col]),
                     np.vstack([e_csr.tocoo().col, e_csr.tocoo().row])]
@@ -71,7 +73,7 @@ def tracks_from_gnn(hit_id, score, senders, receivers,
     return tracks
 
 
-def process(filename, output_dir, score_name, **kwargs):
+def process(filename, output_dir, **kwargs):
     """prepare a multiprocessing function for track building"""
 
     # print("Args: {}, {}, {}, {}".format(filename, output_dir, score_name, kwargs))
@@ -95,11 +97,8 @@ def process(filename, output_dir, score_name, **kwargs):
     
     # all columns with sampe dtype
     predicted_tracks = predicted_tracks.astype(np.int32)  
-    
-    
-    
-    # save reconstructed tracks into files
 
+    # save reconstructed tracks into files
     # (i) DataFrame to Torch
     output_file = os.path.join(output_dir, "{}".format(evtid))
     with open(output_file, "wb") as pickle_file:
@@ -161,8 +160,8 @@ if __name__ == "__main__":
     # Multiprocess to Build Tracks (Torch Files)
     print("Write Track Candidates as TORCH")
     with Pool(args.num_workers) as p:
-      process_fnc = partial(process, **vars(args))
-      p.map(process_fnc, all_files[:max_evts])
+        process_fnc = partial(process, **vars(args))
+        p.map(process_fnc, all_files[:max_evts])
 
     print("Write Track Candidates as ROOT")
     # Skip Multiprocessing, Write Output as ROOT File
@@ -173,8 +172,7 @@ if __name__ == "__main__":
         ]
         array_c = ak.concatenate(arrays, axis=0)
         root_file["TrackML"] = {"ml": array_c}
-    
-   
+
     """
     Earlier Attempts:
                   
@@ -200,4 +198,3 @@ if __name__ == "__main__":
             # root_file["pndsim"] = {"TrackCand": akarray}
             root_file["pndsim"].extend({"TrackCand": aka}) 
     """
-

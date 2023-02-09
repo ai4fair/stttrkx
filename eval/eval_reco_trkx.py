@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Modified version of 'eval_reco_trkx.py' (runs after 'tracks_from_gnn.py') script from the
-exatrkx-iml2020. The code breakdown of the script is given in 'stt6_eval.ipynb' notebook."""
+"""Modified version of 'eval_reco_trkx.py' (runs after 'tracks_from_gnn.py') script from
+gnn4itk repo. The code breakdown of the script is given in 'stt6_eval.ipynb' notebook."""
 
 import os
 import glob
@@ -12,6 +12,7 @@ import pandas as pd
 from typing import Any
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 class SttTorchDataReader(object):
     """Torch Geometric Data Reader from an Input Directory."""
@@ -39,7 +40,8 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
                          particles_df: pd.DataFrame,
                          min_hits_truth: int = 9,
                          min_hits_reco: int = 5,
-                         # min_pt: float = 1.,
+                         min_pt: float = 1.,
+                         max_pt: float = 1.5,
                          frac_reco_matched: float = 0.5,
                          frac_truth_matched=0.5,
                          **kwargs):
@@ -53,7 +55,8 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
             ['vx', 'vy', 'vz'] are the production vertex of the particle
         min_hits_truth: minimum number of hits for truth tracks
         min_hits_reco:  minimum number of hits for reconstructed tracks
-        # min_pt: minimum pT to filter out
+        min_pt: minimum pT to filter out
+        max_pt: maximum pT to filter out
         frac_reco_matched: frac of reco tracks matched ??? (ADAK)
         frac_truth_matched: frac of true tracks matched ??? (ADAK)
 
@@ -86,7 +89,10 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
     # only particles leaves at least min_hits_truth spacepoints 
     # and with pT >= min_pt are considered.
     particles_df = particles_df.merge(n_true_hits, on=['particle_id'], how='left')
-
+    
+    # FIXME (DONE) ADAK: Apply pT cuts
+    particles_df = particles_df[(particles_df.pt > min_pt) & (particles_df.pt < max_pt)]
+   
     is_trackable = particles_df.n_true_hits >= min_hits_truth
 
     # event has 3 columnes [track_id, particle_id, hit_id]
@@ -213,6 +219,7 @@ if __name__ == '__main__':
     add_arg("--min-hits-reco", help='minimum number of hits in a reconstructed track',
             default=4, type=int)
     add_arg('--min-pt', help='minimum pT of true track', type=float, default=1.0)
+    add_arg('--max-pt', help='maximum pT of true track', type=float, default=10.)
     add_arg("--frac-reco-matched", help='fraction of matched hits over total hits in a reco track',
             default=0.5, type=float)
     add_arg("--frac-truth-matched", help='fraction of matched hits over total hits in a truth track',
@@ -277,18 +284,18 @@ if __name__ == '__main__':
     out_sum = "{}_summary.txt".format(outname)
     ctime = time.strftime('%Y%m%d-%H%M%S', time.localtime())
     summary = ["".join(['-'] * 50),
-               "Run Time: {:>20}".format(ctime),
-               "Reconstructed tracks: {}".format(os.path.abspath(reco_track_path)),
-               "# of events: {}".format(max_evts if not args.event_id else 1),
-               "Truth tracks: {:>20}".format(n_true_tracks),
-               "Truth tracks matched: {:>20}".format(n_matched_true_tracks),
-               "Reco. tracks: {:>20}".format(n_reco_tracks),
-               "Reco. tracks matched: {:>20}".format(n_matched_reco_tracks),
-               "Reco. tracks matched to POI: {:>20}".format(n_matched_reco_tracks_poi),
-               "Reco. tracks duplicated: {:>20}".format(n_duplicated_reco_tracks),
-               "Tracking Eff.: {:>20.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
-               "Fake rate:     {:>20.4f}%".format(100 - 100 * n_matched_reco_tracks / n_reco_tracks),
-               "Duplication Rate: {:>20.4f}%".format(100 * n_duplicated_reco_tracks / n_reco_tracks)
+               "                   Run Time: {:>10}".format(ctime),
+               "       Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
+               "                # of events: {:>10}".format(max_evts if not args.event_id else 1),
+               "               Truth tracks: {:>10}".format(n_true_tracks),
+               "       Truth tracks matched: {:>10}".format(n_matched_true_tracks),
+               "       Reconstructed tracks: {:>10}".format(n_reco_tracks),
+               "       Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),
+               "Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
+               "    Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
+               "        Tracking Efficiency: {:>10.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
+               "                  Fake rate: {:>10.4f}%".format(100 - 100 * n_matched_reco_tracks / n_reco_tracks),
+               "           Duplication Rate: {:>10.4f}%".format(100 * n_duplicated_reco_tracks / n_reco_tracks)
                ]
 
     with open(out_sum, 'a') as f:

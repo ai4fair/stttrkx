@@ -8,10 +8,9 @@ exatrkx-iml2020. The code breakdown of the script is given in 'stt4_seg.ipynb' n
 import os
 import glob
 import torch
-
-import scipy as sp
 import numpy as np
 import pandas as pd
+import scipy.sparse as sps
 
 from multiprocessing import Pool
 from functools import partial
@@ -25,9 +24,9 @@ def prepare(scores, senders, receivers, n_nodes):
     """Prepare Input for DBSCAN"""
     
     # adjancy matrix with its value being the edge socre.
-    e_csr = sp.sparse.csr_matrix((scores, (senders, receivers)),
-                                 shape=(n_nodes, n_nodes),
-                                 dtype=np.float32)
+    e_csr = sps.csr_matrix((scores, (senders, receivers)),
+                           shape=(n_nodes, n_nodes),
+                           dtype=np.float32)
     
     # rescale the duplicated edges
     e_csr.data[e_csr.data > 1] = e_csr.data[e_csr.data > 1]/2.
@@ -36,7 +35,7 @@ def prepare(scores, senders, receivers, n_nodes):
     e_csr.data = 1 - e_csr.data
     
     # make it symmetric
-    e_csr_bi = sp.sparse.coo_matrix(
+    e_csr_bi = sps.coo_matrix(
         (np.hstack([e_csr.tocoo().data, e_csr.tocoo().data]),
          np.hstack([np.vstack([e_csr.tocoo().row, e_csr.tocoo().col]),
                     np.vstack([e_csr.tocoo().col, e_csr.tocoo().row])]
@@ -52,14 +51,14 @@ def clustering(hit_id, e_csr_bi, epsilon=0.25, min_samples=2):
     """"Get Track Candidates using DBSCAN"""
     
     # DBSCAN Clustering on Ajacency Matrix
-    clustering = DBSCAN(
+    clusters = DBSCAN(
         eps=epsilon, metric='precomputed',
         min_samples=min_samples).fit_predict(e_csr_bi)
     
     # Track Lables
     track_labels = np.vstack(
         [np.unique(e_csr_bi.tocoo().row),
-         clustering[np.unique(e_csr_bi.tocoo().row)]])
+         clusters[np.unique(e_csr_bi.tocoo().row)]])
     
     # Convert to DataFrame
     track_labels = pd.DataFrame(track_labels.T)
@@ -90,12 +89,11 @@ def process(filename, output_dir, edge_score_cut, epsilon=0.25, min_samples=2, *
     hit_id = graph.hid
     senders = graph.edge_index[0]
     receivers = graph.edge_index[1]
-    
+    scores = graph.scores
+
     # "scores" is twice the size of "edge_index"
-    # scores = graph.scores
-    
     # FIXME (DONE!): What to do with double size of "scores"?
-    scores = graph.scores[:graph.edge_index.shape[1]]
+    scores = scores[:graph.edge_index.shape[1]]
     
     # additional params
     n_nodes = hit_id.shape[0]
