@@ -28,33 +28,56 @@ def parse_args():
 
 
 def train(config_file="pipeline_config.yaml"):
-
+    
     logging.info(headline("Step 3: Running GNN training "))
-
+    
     with open(config_file) as file:
         all_configs = yaml.load(file, Loader=yaml.FullLoader)
     
     common_configs = all_configs["common_configs"]
     dnn_configs = all_configs["model_configs"]
-
+    
     logging.info(headline("a) Initialising model" ))
-
+    
     model = EdgeClassifier(dnn_configs)
     print(model)
-
+    
     logging.info(headline("b) Running training"))
-
+    
+    # Experiment Tracking
     save_directory = common_configs["artifact_directory"]
-    logger = TensorBoardLogger(save_directory, name=common_configs["experiment_name"], version=None)
-
+    
+    # From TrainTrack
+    logger_choice = "wandb"
+    
+    if logger_choice == "wandb":
+        logger = WandbLogger(
+            save_dir=save_directory,
+            project=model_config["project"],
+            id=model_config["resume_id"],
+        )
+    
+    elif logger_choice == "tb":
+        logger = TensorBoardLogger(
+            save_dir=save_directory,
+            name=common_configs["experiment_name"],
+            # version=model_config["resume_id"],
+            version=None,
+            )
+    
+    elif logger_choice is None:
+        logger = None
+    
+    # Trainer
     trainer = pl.Trainer(
         gpus=common_configs["gpus"],
         max_epochs=1,  # dnn_configs["max_epochs"],
         logger=logger
     )
-
+    
+    # Training
     trainer.fit(model)
-
+    
     logging.info(headline("c) Saving model"))
     
     os.makedirs(save_directory, exist_ok=True)
@@ -64,7 +87,8 @@ def train(config_file="pipeline_config.yaml"):
 
 
 if __name__ == "__main__":
-
+    
     args = parse_args()
     config_file = args.config
     train(config_file)
+    
