@@ -27,9 +27,10 @@ def headline(message):
 # Argument Parser
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser("TunePBTS.py")
+    parser = argparse.ArgumentParser("TuneASHA.py")
     add_arg = parser.add_argument
-    add_arg("config", nargs="?", default="pipeline_config.yaml")
+    parser.add_argument("--smoke-test", action="store_true", help="Quick Testing")
+    parser.add_argument("config", nargs="?", default="pipeline_config.yaml")
     return parser.parse_args()
 
 
@@ -88,6 +89,7 @@ def trainer_dense(combo_config, checkpoint_dir=None, num_epochs=10, num_gpus=0):
 
 # Tuner :: ASHA Scheduler 
 def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=1):
+    
     # (0) Model Config
     with open(config_file) as file:
         model_config = yaml.load(file, Loader=yaml.FullLoader)
@@ -105,7 +107,7 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
         "l2_size": tune.choice([128, 256, 512, 1024]),
         "l3_size": tune.choice([128, 256, 512, 1024]),
         "l4_size": tune.choice([128, 256, 512, 1024]),
-        "l5_size": tune.choice([128, 256, 512, 1024]),
+        # "l5_size": tune.choice([128, 256, 512, 1024]),
         "batch_size": tune.choice([32, 64, 128])
     }
 
@@ -125,20 +127,19 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
     )
 
     # (4) Run Config
-
     reporter = CLIReporter(  # CLIReporter Callback
         parameter_columns=["l1_size",
                            "l2_size",
                            "l3_size",
                            "l4_size",
-                           "l5_size",
+                           # "l5_size",
                            "batch_size"],
         metric_columns=["loss",
                         "mean_accuracy",
                         "training_iteration"]
     )
 
-    # Init Tuner
+    # (5) Init Tuner
     tuner = tune.Tuner(
         trainable=tune.with_resources(
             trainable_w_param,
@@ -148,7 +149,7 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
         tune_config=tune.TuneConfig(
             metric="loss",
             mode="min",
-            # search_alg=BayesOptSearch(),
+            # search_alg=BayesOptSearch(),  # Optimization Algorithm, Default: Random Search
             scheduler=scheduler,  # Trial Schedular
             num_samples=num_samples,
         ),
@@ -161,10 +162,10 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
         )
     )
 
-    # Fit Tuner
+    # (6) Fit Tuner
     result_grid = tuner.fit()
 
-    # Iterate over results
+    # (7) Iterate over results
     for i, result in enumerate(result_grid):
         if result.error:
             print(f"Trial #{i} had an error:", result.error)
@@ -175,7 +176,7 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
             result.metrics["mean_accuracy"]
         )
 
-    # Print Best Hyperparameters
+    # (8) Print Best Hyperparameters
     best_result = result_grid.get_best_result()
     print("\nBest Result: ", result_grid.get_best_result(metric="loss", mode="min"))
     print("\nWorst Result: ", result_grid.get_best_result(metric="mean_accuracy", mode="min"))
@@ -187,4 +188,10 @@ def tuner_pbt(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10,
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_pbt(config, num_samples=5, num_epochs=10, cpus_per_trial=1, gpus_per_trial=0)
+    
+    if args.smoke_test:
+        print("Running Smoke Test...")
+        tuner_pbt(config, num_samples=1, num_epochs=1, cpus_per_trial=1, gpus_per_trial=0)
+    else:
+        tuner_pbt(config, num_samples=10, num_epochs=10, cpus_per_trial=32, gpus_per_trial=1)
+    

@@ -5,12 +5,13 @@
 #SBATCH -A m3443
 #SBATCH -J ctd
 #SBATCH -C gpu
-#SBATCH -q regular                 # special
+#SBATCH -q regular                 # special, early_science
 #SBATCH -t 4:00:00
 #SBATCH -n 1
 #SBATCH --ntasks-per-node=1
 #SBATCH -c 128
 #SBATCH --gpus-per-task=1
+#SBATCH --signal=SIGUSR1@90        # wall signal
 
 # *** I/O ***
 #SBATCH -D .

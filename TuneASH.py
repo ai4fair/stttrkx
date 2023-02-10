@@ -30,7 +30,8 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser("TuneASHA.py")
     add_arg = parser.add_argument
-    add_arg("config", nargs="?", default="pipeline_config.yaml")
+    parser.add_argument("--smoke-test", action="store_true", help="Quick Testing")
+    parser.add_argument("config", nargs="?", default="pipeline_config.yaml")
     return parser.parse_args()
 
 
@@ -85,6 +86,7 @@ def trainer_dense(combo_config, num_epochs=10, num_gpus=1):
 
 # Tuner :: ASHA Scheduler 
 def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10, cpus_per_trial=1, gpus_per_trial=1):
+    
     # (0) Model Config
     with open(config_file) as file:
         model_config = yaml.load(file, Loader=yaml.FullLoader)
@@ -132,7 +134,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
                         "training_iteration"]
     )
 
-    # Init Tuner
+    # (5) Init Tuner
     tuner = tune.Tuner(
         trainable=tune.with_resources(
             trainable_w_param,
@@ -142,7 +144,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         tune_config=tune.TuneConfig(
             metric="loss",
             mode="min",
-            # search_alg=BayesOptSearch(),         # Optimization Algorithm
+            # search_alg=BayesOptSearch(),  # Optimization Algorithm, Default: Random Search
             scheduler=scheduler,  # Trial Schedular
             num_samples=num_samples,
         ),
@@ -155,10 +157,10 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
         )
     )
 
-    # Fit Tuner
+    # (6) Fit Tuner
     result_grid = tuner.fit()
 
-    # Iterate over results
+    # (7) Iterate over results
     for i, result in enumerate(result_grid):
         if result.error:
             print(f"Trial #{i} had an error:", result.error)
@@ -169,7 +171,7 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
             result.metrics["mean_accuracy"]
         )
 
-    # Print Best Hyperparameters
+    # (8) Print Best Hyperparameters
     best_result = result_grid.get_best_result()
     print("\nBest Result: ", result_grid.get_best_result(metric="loss", mode="min"))
     print("\nWorst Result: ", result_grid.get_best_result(metric="mean_accuracy", mode="min"))
@@ -181,4 +183,10 @@ def tuner_asha(config_file="pipeline_config.yaml", num_samples=10, num_epochs=10
 if __name__ == "__main__":
     args = parse_args()
     config = args.config
-    tuner_asha(config, num_samples=3, num_epochs=2, cpus_per_trial=1, gpus_per_trial=0)
+    
+    if args.smoke_test:
+        print("Running Smoke Test...")
+        tuner_asha(config, num_samples=1, num_epochs=2, cpus_per_trial=1, gpus_per_trial=0)
+    else:
+        tuner_asha(config, num_samples=10, num_epochs=10, cpus_per_trial=32, gpus_per_trial=1)
+
