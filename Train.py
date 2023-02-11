@@ -8,8 +8,8 @@ import logging
 import pprint
 import torch
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
-from LightningModules.DNN.Models.tune_network import EdgeClassifier
+from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+from LightningModules.DNN import EdgeClassifier
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -37,7 +37,7 @@ def train(config_file="pipeline_config.yaml"):
     common_configs = all_configs["common_configs"]
     dnn_configs = all_configs["model_configs"]
     
-    logging.info(headline("a) Initialising model" ))
+    logging.info(headline("a) Initialising model"))
     
     model = EdgeClassifier(dnn_configs)
     print(model)
@@ -48,13 +48,14 @@ def train(config_file="pipeline_config.yaml"):
     save_directory = common_configs["artifact_directory"]
     
     # From TrainTrack
+    logger = None
     logger_choice = "wandb"
     
     if logger_choice == "wandb":
         logger = WandbLogger(
             save_dir=save_directory,
-            project=model_config["project"],
-            id=model_config["resume_id"],
+            project=common_configs["experiment_name"],
+            id=common_configs["resume_id"],
         )
     
     elif logger_choice == "tb":
@@ -89,6 +90,4 @@ def train(config_file="pipeline_config.yaml"):
 if __name__ == "__main__":
     
     args = parse_args()
-    config_file = args.config
-    train(config_file)
-    
+    train(args.config)

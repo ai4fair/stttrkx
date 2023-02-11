@@ -1,28 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import glob, os, sys, yaml
-import argparse
-import logging
-
-import numpy as np
-import scipy as sp
-import pandas as pd
-import matplotlib.pyplot as plt
+import os
 import pprint
-pp = pprint.PrettyPrinter(indent=2)
-import seaborn as sns
-import trackml.dataset
 import torch
-from torch_geometric.data import Data
-import itertools
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-from LightningModules.GNN import EdgeClassifier
-from LightningModules.DNN import InteractionGNN
-from LightningModules.GNN import GNNBuilder, GNNMetrics
-from LightningModules.GNN.Models.infer import GNNTelemetry
+import pytorch_lightning as pl
+from torch_geometric.loader import DataLoader
+from LightningModules.GNN import InteractionGNN
 from LightningModules.GNN.utils.data_utils import split_datasets, load_dataset
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+pp = pprint.PrettyPrinter(indent=2)
 
 
 class SttDataModule(pl.LightningDataModule):
@@ -43,13 +30,12 @@ class SttDataModule(pl.LightningDataModule):
         self.data_split = (
             self.hparams["train_split"]
             if "train_split" in self.hparams
-            else [0,0,5000]
+            else [0, 0, 5000]
         )
         
         self.trainset, self.valset, self.testset = None, None, None
         self.predset = None
-        
-        
+
     def print_params(self):
         pp.pprint(self.hparams)
         
@@ -90,76 +76,69 @@ class SttDataModule(pl.LightningDataModule):
         else:
             return None
 
-    #def predict_dataloader(self):
+    # def predict_dataloader(self):
     #    if self.predset is not None:
     #        return DataLoader(
     #            self.predset, batch_size=1, num_workers=self.n_workers
-    #        )  # , pin_memory=True, persistent_workers=True)
+    #        )  # , pin_memory=True, persistent_workers=True,)
     #    else:
     #        return None
 
 
 # 1 - Helper Function
 def get_input_data(batch):
-    """Get Input Data"""
     input_data = batch.x
     input_data[input_data != input_data] = 0
-
     return input_data
 
 
 # 2 - Helper Function
 def handle_directed(batch, edge_sample, truth_sample, directed=False):
-    """Handle Directed Edges"""
     edge_sample = torch.cat([edge_sample, edge_sample.flip(0)], dim=-1)
     truth_sample = truth_sample.repeat(2)
-
     if directed:
         direction_mask = batch.x[edge_sample[0], 0] < batch.x[edge_sample[1], 0]
         edge_sample = edge_sample[:, direction_mask]
         truth_sample = truth_sample[direction_mask]
-
     return edge_sample, truth_sample
 
 
 # 3 - Helper Function
-def eval_model(model, data_loader):
+def eval_model(model, test_dataloader):
     """Function to Evaluate a Model"""
-    model.eval();
-    
-    scores = []
-    truths = []
-
-    # Deactivate gradients for the following code
+    scores, truths = [], []
+    model.eval()
     with torch.no_grad():  
-        for batch in testset:
-            truth = batch.y_pid
-            edge_sample, truth_sample = handle_directed(batch, batch.edge_index, truth)
+        for batch_idx, batch in enumerate(test_dataloader):
+            
+            # logging
+            if batch_idx % 1000 == 0:
+                print("Processed Batches: ", batch_idx)
+            
+            # predictions
             input_data = get_input_data(batch)
+            edge_sample, truth_sample = handle_directed(batch, batch.edge_index, batch.y_pid)
             output = model(input_data, edge_sample).squeeze()
             score = torch.sigmoid(output)
             
             # append each batch
             scores.append(score)
             truths.append(truth_sample)
-        
-        # merge all batched
-        score = torch.cat(scores)
-        truth = torch.cat(truths)
-    return score, truth
+            
+    return scores, truths
 
 
 # 4 - Main Function
-def main ():
-    
+def main():
+
     # Load Model Checkpoint
     ckpnt_path = "run_all/lightning_models/lightning_checkpoints/GNNStudy/version_1/checkpoints/last.ckpt"
     checkpoint = torch.load(ckpnt_path, map_location=device)
     pp.pprint(checkpoint.keys())
-    
+
     # View Hyperparameters
     hparams = checkpoint["hyper_parameters"]
-    
+
     # One Can Modify Hyperparameters
     hparams["checkpoint_path"] = ckpnt_path
     hparams["input_dir"] = "run/feature_store"
@@ -172,20 +151,22 @@ def main ():
     model = InteractionGNN(hparams)
     model = model.load_from_checkpoint(**hparams)
 
-    # Init DataModule
-    dm = SttDataModule(hparams)
-    dm.setup(stage="test")
+    # (1) Dataset:: LightningModule
+    model.setup(stage="fit")
+    # testset = model.testset
+    test_dataloader = model.test_dataloader()
 
-    # get test_dataloader
-    test_dataloader = dm.test_dataloader()
+    # (2) Dataset:: LightningDataModule
+    # dm = SttDataModule(hparams)
+    # dm.setup(stage="test")
+    # test_dataloader = dm.test_dataloader()
 
-    # evaluate model
-    score_all, truth_all = eval_model(model, test_dataloader)
-    
-      
+    # evaluate model, returns lists
+    scores, truths = eval_model(model, test_dataloader)
+
     print("Prediction Finished")
-    print("\nScores: {}, Truth: {}".format(score_all.shape[0], truth_all.shape[0]) 
-    
+    print("\nScores: {}, Truth: {}".format(len(scores), len(truths)))
+
+
 if __name__ == "__main__":
     main()
-
