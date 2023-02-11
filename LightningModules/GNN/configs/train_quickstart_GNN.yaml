@@ -1,6 +1,6 @@
 # Input/output configuration
 input_dir: ${EXATRKX_DATA}/run_quick/feature_store
-output_dir: ${EXATRKX_DATA}/run_quick/agnn_processed
+output_dir: ${EXATRKX_DATA}/run_quick/gnn_processed
 project: GNNStudy
 edge_cut: 0.5
 
