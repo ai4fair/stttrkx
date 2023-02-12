@@ -1,8 +1,8 @@
 stage_list:
     #- {set: Processing, name: TrackMLFeatureStore, config: prepare_quickstart.yaml, batch_config: configs/batch_cpu_default.yaml, batch_setup: False}
-    #- {set: GNN, name: VanillaAGNN, config: train_quickstart_GNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }       # directed: True
-    #- {set: GNN, name: ResAGNN, config: train_quickstart_GNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }           # directed: True
-    #- {set: GNN, name: InteractionGNN, config: train_quickstart_GNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }     # directed: False
+    #- {set: GNN, name: VanillaCheckAGNN, config: train_quickstart_AGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
+    #- {set: GNN, name: ResCheckAGNN, config: train_quickstart_ResAGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
+    #- {set: GNN, name: InteractionGNN, config: train_quickstart_GNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }
     #- {set: DNN, name: EdgeClassifier, config: train_quickstart_DNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }
     - {set: Segmenting, name: TrackMLSegment, config: segment_quickstart.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
     
