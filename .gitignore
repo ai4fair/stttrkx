@@ -63,6 +63,7 @@ train_*
 run_*
 run
 lightning_logs
+lightning_models
 tutorials
 gnn4itk
 ray_tune

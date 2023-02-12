@@ -9,7 +9,7 @@ from ..gnn_base import GNNBase
 from ..utils.gnn_utils import make_mlp
 
 
-class CheckpointedResAGNN(GNNBase):
+class ResCheckAGNN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
         """
@@ -57,16 +57,23 @@ class CheckpointedResAGNN(GNNBase):
         )
 
     def forward(self, x, edge_index):
+        
+        # Senders and receivers
         start, end = edge_index
+        
+        # Residual connection
         input_x = x
-
+        
+        # Apply input network
         x = self.input_network(x)
 
-        # Shortcut connect the inputs onto the hidden representation
+        # Residual connect the inputs onto the hidden representation
         x = torch.cat([x, input_x], dim=-1)
 
         # Loop over iterations of edge and node networks
         for i in range(self.hparams["n_graph_iters"]):
+            
+            # Residual connection
             x_inital = x
 
             # Apply edge network
@@ -74,17 +81,23 @@ class CheckpointedResAGNN(GNNBase):
             e = checkpoint(self.edge_network, edge_inputs)
             e = torch.sigmoid(e)
 
-            # Apply node network
+            # Bidirectional message-passing for unidirectional edges
+            # messages = scatter_add(
+            #    e * x[start], end, dim=0, dim_size=x.shape[0]
+            # ) + scatter_add(
+            #    e * x[end], start, dim=0, dim_size=x.shape[0]
+            # )
+            
+            # Bidirectional message-passing for bidirectional edges
             messages = scatter_add(
-                e * x[start], end, dim=0, dim_size=x.shape[0]
-            ) + scatter_add(
-                e * x[end], start, dim=0, dim_size=x.shape[0]
+                e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
             )
-
+            
+            # Apply node network
             node_inputs = torch.cat([messages, x], dim=1)
             x = checkpoint(self.node_network, node_inputs)
 
-            # Shortcut connect the inputs onto the hidden representation
+            # Residual connect the inputs onto the hidden representation
             x = torch.cat([x, input_x], dim=-1)
 
             # Residual connection
