@@ -24,22 +24,26 @@ class ResCheckAGNN(GNNBase):
         hparams["batchnorm"] = (
             False if "batchnorm" not in hparams else hparams["batchnorm"]
         )
-
+        
+        # FIXME: in_channels = spatial_channels + cell_channels
+        
         # Setup input network
         self.input_network = make_mlp(
-            (hparams["in_channels"]),
+            # (hparams["in_channels"]),
+            (hparams["spatial_channels"] + hparams["cell_channels"]),
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
             batch_norm=hparams["batchnorm"],
         )
-
+        
         # Setup edge network
         self.edge_network = make_mlp(
-            (hparams["in_channels"] + hparams["hidden"]) * 2,
-            [hparams["in_channels"] + hparams["hidden"]] * hparams["nb_edge_layer"]
-            + [1],
+            # (hparams["in_channels"] + hparams["hidden"]) * 2,
+            # [hparams["in_channels"] + hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
+            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
+            ([hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]*hparams["nb_edge_layer"] + [1]),
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
@@ -48,7 +52,8 @@ class ResCheckAGNN(GNNBase):
 
         # Setup node network
         self.node_network = make_mlp(
-            (hparams["in_channels"] + hparams["hidden"]) * 2,
+            # (hparams["in_channels"] + hparams["hidden"]) * 2,
+            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
@@ -90,7 +95,8 @@ class ResCheckAGNN(GNNBase):
             
             # Bidirectional message-passing for bidirectional edges
             messages = scatter_add(
-                e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                e * x[start], end, dim=0, dim_size=x.shape[0]
             )
             
             # Apply node network

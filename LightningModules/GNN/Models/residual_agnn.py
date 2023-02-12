@@ -86,7 +86,10 @@ class NodeNetwork(nn.Module):
         # )
         
         # Bidirectional message-passing for bidirectional edges
-        messages = scatter_add(e[:, None] * x[start], end, dim=0, dim_size=x.shape[0])
+        messages = scatter_add(
+            # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+            e * x[start], end, dim=0, dim_size=x.shape[0]
+        )
         
         node_inputs = torch.cat([messages, x], dim=1)
         return self.network(node_inputs)
