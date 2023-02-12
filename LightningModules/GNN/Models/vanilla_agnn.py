@@ -81,7 +81,8 @@ class VanillaAGNN(GNNBase):
             
             # Bidirectional message-passing for bidirectional edges
             messages = scatter_add(
-                e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                e * x[start], end, dim=0, dim_size=x.shape[0]
             )
             
             # Apply node network

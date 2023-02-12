@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import torch
 from torch_scatter import scatter_add
 from torch.utils.checkpoint import checkpoint
 from ..gnn_base import GNNBase
 from ..utils.gnn_utils import make_mlp
+
 
 # Attention GNN [Ref. GAT: arXiv:1710.10903 ?]
 class VanillaCheckAGNN(GNNBase):
@@ -35,20 +35,20 @@ class VanillaCheckAGNN(GNNBase):
             layer_norm=hparams["layernorm"],
             batch_norm=hparams["batchnorm"],
         )
-        
+
         # Setup edge network
         self.edge_network = make_mlp(
-            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
-            [hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]*hparams["nb_edge_layer" + [1],
+            (hparams["hidden"]) * 2,
+            [hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
             batch_norm=hparams["batchnorm"],
         )
-        
+
         # Setup node network
         self.node_network = make_mlp(
-            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
+            (hparams["hidden"]) * 2,
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
@@ -81,7 +81,8 @@ class VanillaCheckAGNN(GNNBase):
             
             # Bidirectional message-passing for bidirectional edges
             messages = scatter_add(
-                e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
+                e * x[start], end, dim=0, dim_size=x.shape[0]
             )
             
             # Apply node network
@@ -90,4 +91,3 @@ class VanillaCheckAGNN(GNNBase):
 
         edge_inputs = torch.cat([x[start], x[end]], dim=1)
         return checkpoint(self.edge_network, edge_inputs)
-
