@@ -41,7 +41,8 @@ class ResCheckAGNN(GNNBase):
         # Setup edge network
         self.edge_network = make_mlp(
             (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
-            ([hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]*hparams["nb_edge_layer"] + [1]),
+            ([hparams["spatial_channels"] + hparams["cell_channels"]
+              + hparams["hidden"]]*hparams["nb_edge_layer"] + [1]),
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
             layer_norm=hparams["layernorm"],
@@ -99,6 +100,7 @@ class ResCheckAGNN(GNNBase):
             # )
             
             # aggregation: sum, mean, max, sum_max, mean_sum, mean_max
+            messages = None
             if self.hparams["aggregation"] == "sum":
                 messages = scatter_add(e * x[start], end, dim=0, dim_size=x.shape[0])
             

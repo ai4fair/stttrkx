@@ -1,17 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
-
-import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
-from pytorch_lightning.callbacks import Callback
-import torch.nn as nn
-from torch.nn import Linear
-import torch.nn.functional as F
-
-
 import torch
+import torch.nn.functional as F
 from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
@@ -94,9 +85,9 @@ class ResCheckGCN(GNNBase):
             # messages = scatter_add(  # sum
             #    x[start], end, dim=0, dim_size=x.shape[0]
             # )
-            
-            
+
             # aggregation: sum, mean, max, sum_max, mean_sum, mean_max
+            messages = None
             if self.hparams["aggregation"] == "sum":
                 messages = scatter_add(x[start], end, dim=0, dim_size=x.shape[0])
             
