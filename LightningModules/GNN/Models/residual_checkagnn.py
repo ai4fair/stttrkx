@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import torch
-from torch_scatter import scatter_add
+from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
 from ..gnn_base import GNNBase
@@ -13,11 +13,14 @@ class ResCheckAGNN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
         """
-        The model `ResAGNN` is the attention model with residual (aka "skip") connection.
+        The model `ResCheckAGNN` is the attention model with residual/skip connection.
         It was tested in "Performance of a geometric deep learning pipeline for HL-LHC
         particle tracking" [arXiv:2103.06995] by Exa.TrkX. No other study exist so far.
         """
-
+        
+        concatenation_factor = (
+            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max"]) else 2
+        )
         hparams["output_activation"] = (
             None if "output_activation" not in hparams else hparams["output_activation"]
         )
@@ -25,11 +28,8 @@ class ResCheckAGNN(GNNBase):
             False if "batchnorm" not in hparams else hparams["batchnorm"]
         )
         
-        # FIXME: in_channels = spatial_channels + cell_channels
-        
         # Setup input network
         self.input_network = make_mlp(
-            # (hparams["in_channels"]),
             (hparams["spatial_channels"] + hparams["cell_channels"]),
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
@@ -40,8 +40,6 @@ class ResCheckAGNN(GNNBase):
         
         # Setup edge network
         self.edge_network = make_mlp(
-            # (hparams["in_channels"] + hparams["hidden"]) * 2,
-            # [hparams["in_channels"] + hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
             (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
             ([hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]]*hparams["nb_edge_layer"] + [1]),
             hidden_activation=hparams["hidden_activation"],
@@ -52,8 +50,7 @@ class ResCheckAGNN(GNNBase):
 
         # Setup node network
         self.node_network = make_mlp(
-            # (hparams["in_channels"] + hparams["hidden"]) * 2,
-            (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]) * 2,
+            concatenation_factor * (hparams["spatial_channels"] + hparams["cell_channels"] + hparams["hidden"]),
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],

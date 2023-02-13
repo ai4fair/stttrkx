@@ -9,12 +9,14 @@ from pytorch_lightning.callbacks import Callback
 import torch.nn as nn
 from torch.nn import Linear
 import torch.nn.functional as F
+
+
 import torch
 from torch_scatter import scatter_add, scatter_mean, scatter_max
 from torch.utils.checkpoint import checkpoint
 
 from ..gnn_base import GNNBase
-from ..utils import make_mlp
+from ..utils.gnn_utils import make_mlp
 
 
 class ResCheckGCN(GNNBase):
@@ -25,7 +27,17 @@ class ResCheckGCN(GNNBase):
         Thomas Kipf in his paper [arXiv:1609.02907]. In includes residual/skip
         connection. It is tested for reconstruction by Exa.TrkX collaboration.
         """
-
+        
+        concatenation_factor = (
+            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max"]) else 2
+        )
+        hparams["output_activation"] = (
+            None if "output_activation" not in hparams else hparams["output_activation"]
+        )
+        hparams["batchnorm"] = (
+            False if "batchnorm" not in hparams else hparams["batchnorm"]
+        )
+        
         # Setup input network
         self.node_encoder = make_mlp(
             hparams["spatial_channels"] + hparams["cell_channels"],
@@ -48,7 +60,7 @@ class ResCheckGCN(GNNBase):
 
         # The node network computes new node features
         self.node_network = make_mlp(
-            (hparams["hidden"]) * 2,
+            concatenation_factor*(hparams["hidden"]),
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
@@ -60,9 +72,6 @@ class ResCheckGCN(GNNBase):
         
         # Senders and receivers
         start, end = edge_index
-        
-        # Residual connection
-        input_x = x
         
         # Apply input network
         x = self.node_encoder(x)
@@ -106,18 +115,10 @@ class ResCheckGCN(GNNBase):
                     dim=-1,
                 ) 
             
-            
-            
-            
-            
             # Apply node network
             node_inputs = torch.cat([x, messages], dim=-1)
             node_inputs = F.softmax(node_inputs, dim=-1)
             x = checkpoint(self.node_network, node_inputs)
-            
-            # Residual connect the inputs onto the hidden representation
-            # FIXME: I added this line myself, wasn't in original file.
-            x = torch.cat([x, input_x], dim=-1)
             
             # Residual connection
             x = x + x_initial
