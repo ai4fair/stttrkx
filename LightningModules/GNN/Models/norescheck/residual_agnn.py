@@ -78,14 +78,16 @@ class NodeNetwork(nn.Module):
         
         # New Aggregation Operation (i.e. CTD 2019):
         
-        # Bidirectional message-passing for unidirectional edges
+        # Message-passing (aggregation) for unidirectional edges.
+        # Old aggregation fixed for GNNBase when directed=True.
         # messages = scatter_add(
         #    e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
         # ) + scatter_add(
         #    e[:, None] * x[end], start, dim=0, dim_size=x.shape[0]
         # )
         
-        # Bidirectional message-passing for bidirectional edges
+        # Message-passing (aggregation) for bidirectional edges.
+        # New aggregation fixed for new GNNBase when directed=False.
         messages = scatter_add(
             # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
             e * x[start], end, dim=0, dim_size=x.shape[0]

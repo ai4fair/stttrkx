@@ -1,33 +1,38 @@
-#!/usr/bin/env python
-# coding: utf-8
+import sys
 
+import pytorch_lightning as pl
+from pytorch_lightning import LightningModule
+from pytorch_lightning.callbacks import Callback
+import torch.nn as nn
+from torch.nn import Linear
+import torch.nn.functional as F
 import torch
-from torch_scatter import scatter_add
+from torch_scatter import scatter_add, scatter_mean, scatter_max
+from torch.utils.checkpoint import checkpoint
+
 from ..gnn_base import GNNBase
-from ..utils.gnn_utils import make_mlp
+from ..utils import make_mlp
 
+# Graph Convolution Network (GCN) by T. Kipf [arXiv:1609.02907]
 
-# Attention GNN [Ref. GAT: arXiv:1710.10903 ?]
-class VanillaAGNN(GNNBase):
+class VanillaGCN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
-        
         """
-        The model `VanillaAGNN` is the attention model without a residual aka `skip` 
-        connection. It is the new implimentation of `GNNSegmentClassifier` model that
-        was developed by Steven S. Farrell and presented in the CTD 2018 conference.
+        The model `VanillaGCN` is the graph convolutional network proposed by 
+        Thomas Kipf in his paper [arXiv:1609.02907]. It is tested for the sake
+        of particle track reconstruction by the Exa.TrkX collaboration.
         """
         
         hparams["output_activation"] = (
             None if "output_activation" not in hparams else hparams["output_activation"]
         )
-        
         hparams["batchnorm"] = (
             False if "batchnorm" not in hparams else hparams["batchnorm"]
         )
-
+        
         # Setup input network
-        self.input_network = make_mlp(
+        self.node_encoder = make_mlp(
             hparams["spatial_channels"] + hparams["cell_channels"],
             [hparams["hidden"]] * hparams["nb_node_layer"],
             hidden_activation=hparams["hidden_activation"],
@@ -36,9 +41,9 @@ class VanillaAGNN(GNNBase):
             batch_norm=hparams["batchnorm"],
         )
 
-        # Setup edge network
+        # The edge network computes new edge features from connected nodes
         self.edge_network = make_mlp(
-            (hparams["hidden"]) * 2,
+            2 * (hparams["hidden"]),
             [hparams["hidden"]] * hparams["nb_edge_layer"] + [1],
             hidden_activation=hparams["hidden_activation"],
             output_activation=hparams["output_activation"],
@@ -46,7 +51,7 @@ class VanillaAGNN(GNNBase):
             batch_norm=hparams["batchnorm"],
         )
 
-        # Setup node network
+        # The node network computes new node features
         self.node_network = make_mlp(
             (hparams["hidden"]) * 2,
             [hparams["hidden"]] * hparams["nb_node_layer"],
@@ -57,37 +62,27 @@ class VanillaAGNN(GNNBase):
         )
 
     def forward(self, x, edge_index):
-        
-        # senders, receivers
+
+        x = self.node_encoder(x)
         start, end = edge_index
 
-        # Apply input network
-        x = self.input_network(x)
-
-        # Loop over iterations of edge and node networks
         for i in range(self.hparams["n_graph_iters"]):
 
-            # Apply edge network
-            edge_inputs = torch.cat([x[start], x[end]], dim=1)
-            e = self.edge_network(edge_inputs)
-            e = torch.sigmoid(e)
-
-            # Bidirectional message-passing for unidirectional edges
-            # messages = scatter_add (
-            #    e * x[start], end, dim=0, dim_size=x.shape[0]
-            # ) + scatter_add (
-            #    e * x[end], start, dim=0, dim_size=x.shape[0]
-            # )
+            # Message-passing (aggregation) for unidirectional edges.
+            # Old aggregation fixed for GNNBase when directed=True.
+            # messages = scatter_add(
+            #    x[start], end, dim=0, dim_size=x.shape[0]
+            # ) + scatter_add(x[end], start, dim=0, dim_size=x.shape[0])
             
-            # Bidirectional message-passing for bidirectional edges
+            # Message-passing (aggregation) for bidirectional edges.
+            # New aggregation fixed for new GNNBase when directed=False.
             messages = scatter_add(
-                # e[:, None] * x[start], end, dim=0, dim_size=x.shape[0]
-                e * x[start], end, dim=0, dim_size=x.shape[0]
+                x[start], end, dim=0, dim_size=x.shape[0]
             )
             
-            # Apply node network
-            node_inputs = torch.cat([messages, x], dim=1)
+            node_inputs = torch.cat([x, messages], dim=-1)
             x = self.node_network(node_inputs)
-            
+
         edge_inputs = torch.cat([x[start], x[end]], dim=1)
         return self.edge_network(edge_inputs)
+

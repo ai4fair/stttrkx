@@ -1,8 +1,8 @@
 stage_list:
     #- {set: Processing, name: TrackMLFeatureStore, config: prepare_alldata.yaml, batch_config: configs/batch_cpu_default.yaml, batch_setup: False}
-    #- {set: GNN, name: VanillaCheckAGNN, config: train_alldata_AGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
-    #- {set: GNN, name: ResCheckAGNN, config: train_alldata_ResAGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
-    #- {set: GNN, name: InteractionGNN, config: train_alldata_GNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }
+    #- {set: GNN, name: ResCheckGCN, config: train_alldata_GCN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
+    #- {set: GNN, name: ResCheckAGNN, config: train_alldata_AGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id: }
+    #- {set: GNN, name: InteractionGNN, config: train_alldata_IGNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }
     #- {set: DNN, name: EdgeClassifier, config: train_alldata_DNN.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: True, resume_id: }
     - {set: Segmenting, name: TrackMLSegment, config: segment_alldata.yaml, batch_config: configs/batch_gpu_default.yaml, batch_setup: False, resume_id:}
     
