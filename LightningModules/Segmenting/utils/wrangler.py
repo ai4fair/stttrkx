@@ -87,8 +87,8 @@ def fit_road(G, road):
     """use a linear function to fit phi as a function of z."""
     road_chi2 = []
     for path in road:
-        z = np.array([G.nodes[i]['x'][2] for i in path[:-1]])  # ADAK: G.node (v1.x) to G.nodes (v2.x)
-        phi = np.array([G.nodes[i]['x'][1] for i in path[:-1]])  # ADAK: 'pos' to 'x'
+        z = np.array([G.nodes[i]['x'][2] for i in path[:-1]])   # ADAK: G.node (v1.x) to G.nodes (v2.x)
+        phi = np.array([G.nodes[i]['x'][1] for i in path[:-1]]) # ADAK: 'pos' to 'x'
         if len(z) > 1:
             _, _, diff = poly_fit_phi(z, phi)
             road_chi2.append(np.sum(diff) / len(z))
@@ -136,14 +136,11 @@ def get_tracks(G, th=0.1, th_re=0.8, feature_name='scores', with_fit=True):
     return sub_graphs
 
 
-def label_graph_wrangler(
-        input_file: str, output_dir: str, edge_cut: float = 0.5, overwrite: bool = True, **kwargs
-) -> None:
-
+def wrangler_labelling(input_file, output_dir, edge_cut=0.5, overwrite=True, **kwargs):
+    """Find tracks using a Walktrhough method..."""
+    
     try:
-
         output_file = os.path.join(output_dir, os.path.split(input_file)[-1])
-
         if not os.path.exists(output_file) or overwrite:
 
             logging.info("Preparing event {}".format(output_file))
@@ -166,3 +163,4 @@ def label_graph_wrangler(
 
     except Exception as inst:
         print("File:", input_file, "had exception", inst)
+

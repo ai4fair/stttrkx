@@ -2,11 +2,14 @@
 # coding: utf-8
 
 # CCL
-from .utils.ccl import label_graph_ccl
+from .utils.ccl import ccl_labelling
 
 # DBSCAN
-from .utils.dbscan import label_graph_dbscan
+from .utils.dbscan import dbscan_labelling
 
 # Wrangler
-from .utils.wrangler import get_tracks
+from .utils.wrangler import wrangler_labelling
+
+# Walkthrough
+# from .utils.walkthrough import walkthrough_labelling
 
