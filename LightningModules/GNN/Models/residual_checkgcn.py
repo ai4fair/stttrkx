@@ -10,6 +10,7 @@ from ..gnn_base import GNNBase
 from ..utils.gnn_utils import make_mlp
 
 
+# Checkpointed Residual AGNN
 class ResCheckGCN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
@@ -20,7 +21,7 @@ class ResCheckGCN(GNNBase):
         """
         
         concatenation_factor = (
-            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max"]) else 2
+            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max", "mean_sum"]) else 2
         )
         hparams["output_activation"] = (
             None if "output_activation" not in hparams else hparams["output_activation"]
@@ -76,38 +77,57 @@ class ResCheckGCN(GNNBase):
             
             # Message-passing (aggregation) for unidirectional edges.
             # Old aggregation fixed for GNNBase when directed=True.
-            # messages = scatter_add(
+            # edge_messages = scatter_add(
             #    x[start], end, dim=0, dim_size=x.shape[0]
             # ) + scatter_add(x[end], start, dim=0, dim_size=x.shape[0])
             
             # Message-passing (aggregation) for bidirectional edges.
             # New aggregation fixed for new GNNBase when directed=False.
-            # messages = scatter_add(  # sum
+            # edge_messages = scatter_add(  # sum
             #    x[start], end, dim=0, dim_size=x.shape[0]
             # )
 
             # aggregation: sum, mean, max, sum_max, mean_sum, mean_max
-            messages = None
+            edge_messages = None
             if self.hparams["aggregation"] == "sum":
-                messages = scatter_add(x[start], end, dim=0, dim_size=x.shape[0])
-            
-            elif self.hparams["aggregation"] == "mean":
-                messages = scatter_mean(x[start], end, dim=0, dim_size=x.shape[0])
-            
+                edge_messages = scatter_add(
+                    x[start], end, dim=0, dim_size=x.shape[0]
+                )
             elif self.hparams["aggregation"] == "max":
-                messages = scatter_max(x[start], end, dim=0, dim_size=x.shape[0])[0]
-            
+                edge_messages = scatter_max(
+                    x[start], end, dim=0, dim_size=x.shape[0]
+                )[0]
             elif self.hparams["aggregation"] == "sum_max":
-                messages = torch.cat(
+                edge_messages = torch.cat(
                     [
                         scatter_max(x[start], end, dim=0, dim_size=x.shape[0])[0],
                         scatter_add(x[start], end, dim=0, dim_size=x.shape[0]),
                     ],
                     dim=-1,
-                ) 
+                )
+            elif self.hparams["aggregation"] == "mean":
+                edge_messages = scatter_mean(
+                    x[start], end, dim=0, dim_size=x.shape[0]
+                )
+            elif self.hparams["aggregation"] == "mean_sum":
+                edge_messages = torch.cat(
+                    [
+                        scatter_mean(x[start], end, dim=0, dim_size=x.shape[0]),
+                        scatter_add(x[start], end, dim=0, dim_size=x.shape[0]),
+                    ],
+                    dim=-1,
+                )
+            elif self.hparams["aggregation"] == "mean_max":
+                edge_messages = torch.cat(
+                    [
+                        scatter_max(x[start], end, dim=0, dim_size=x.shape[0])[0],
+                        scatter_mean(x[start], end, dim=0, dim_size=x.shape[0]),
+                    ],
+                    dim=-1,
+                )
             
             # Apply node network
-            node_inputs = torch.cat([x, messages], dim=-1)
+            node_inputs = torch.cat([x, edge_messages], dim=-1)
             node_inputs = F.softmax(node_inputs, dim=-1)
             x = checkpoint(self.node_network, node_inputs)
             

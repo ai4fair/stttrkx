@@ -21,7 +21,7 @@ class InteractionGNN(GNNBase):
         """
         
         concatenation_factor = (
-            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max"]) else 2
+            3 if (self.hparams["aggregation"] in ["sum_max", "mean_max", "mean_sum"]) else 2
         )
         hparams["output_activation"] = (
             None if "output_activation" not in hparams else hparams["output_activation"]
@@ -90,12 +90,15 @@ class InteractionGNN(GNNBase):
     def message_step(self, x, start, end, e):
         
         # Compute new node features
+        edge_messages = None
         if self.hparams["aggregation"] == "sum":
-            edge_messages = scatter_add(e, end, dim=0, dim_size=x.shape[0])
-        
+            edge_messages = scatter_add(
+                e, end, dim=0, dim_size=x.shape[0]
+            )
         elif self.hparams["aggregation"] == "max":
-            edge_messages = scatter_max(e, end, dim=0, dim_size=x.shape[0])[0]
-        
+            edge_messages = scatter_max(
+                e, end, dim=0, dim_size=x.shape[0]
+            )[0]
         elif self.hparams["aggregation"] == "sum_max":
             edge_messages = torch.cat(
                 [
@@ -104,16 +107,34 @@ class InteractionGNN(GNNBase):
                 ],
                 dim=-1,
             )
+        elif self.hparams["aggregation"] == "mean":
+            edge_messages = scatter_mean(
+                e, end, dim=0, dim_size=x.shape[0]
+            )
+        elif self.hparams["aggregation"] == "mean_sum":
+            edge_messages = torch.cat(
+                [
+                    scatter_mean(e, end, dim=0, dim_size=x.shape[0]),
+                    scatter_add(e, end, dim=0, dim_size=x.shape[0]),
+                ],
+                dim=-1,
+            )            
+        elif self.hparams["aggregation"] == "mean_max":
+            edge_messages = torch.cat(
+                [
+                    scatter_max(e, end, dim=0, dim_size=x.shape[0])[0],
+                    scatter_mean(e, end, dim=0, dim_size=x.shape[0]),
+                ],
+                dim=-1,
+            )    
+        
         node_inputs = torch.cat([x, edge_messages], dim=-1)
-        
         x_out = self.node_network(node_inputs)
-        
         x_out += x
         
         # Compute new edge features
         edge_inputs = torch.cat([x[start], x[end], e], dim=-1)
         e_out = self.edge_network(edge_inputs)
-        
         e_out += e
         
         return x_out, e_out
@@ -121,11 +142,12 @@ class InteractionGNN(GNNBase):
     def output_step(self, x, start, end, e):
         
         classifier_inputs = torch.cat([x[start], x[end], e], dim=1)
-        
+
         return self.output_edge_classifier(classifier_inputs).squeeze(-1)
 
     def forward(self, x, edge_index):
         
+        # Senders and receivers
         start, end = edge_index
         
         # Encode the graph features into the hidden space
@@ -133,7 +155,6 @@ class InteractionGNN(GNNBase):
         x = checkpoint(self.node_encoder, x)
         e = checkpoint(self.edge_encoder, torch.cat([x[start], x[end]], dim=1))
 
-        # edge_outputs = []
         # Loop over iterations of edge and node networks
         for i in range(self.hparams["n_graph_iters"]):
 

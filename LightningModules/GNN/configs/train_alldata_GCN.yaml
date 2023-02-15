@@ -1,6 +1,6 @@
 # Input/output configuration
-input_dir: ${EXATRKX_DATA}/run_quick/feature_store
-output_dir: ${EXATRKX_DATA}/run_quick/gnn_processed
+input_dir: ${EXATRKX_DATA}/run_all/feature_store
+output_dir: ${EXATRKX_DATA}/run_all/gcn_processed
 project: GNNStudy
 edge_cut: 0.5
 
@@ -8,9 +8,9 @@ edge_cut: 0.5
 pt_signal_min: 0.
 pt_background_min: 0.
 datatype_names: [[train, val, test]]
-datatype_split: [[20000, 2500, 2500]]
+datatype_split: [[90000, 5000, 5000]]
 
-train_split: [[8000, 1000, 1000]]      # ADAK:: for data_utils.py
+train_split: [[90000, 5000, 5000]]     # ADAK:: for data_utils.py
 sorted_events: True
 
 noise: False
@@ -37,7 +37,7 @@ lr: 0.001
 factor: 0.3
 patience: 10
 regime: [[pid]] # NOTE: [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
-max_epochs: 20
+max_epochs: 50
 
 # Post-processing
-callbacks: [[GNNBuilder, GNNTelemetry]]
+callbacks: [[GNNBuilder]]
