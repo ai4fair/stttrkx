@@ -11,8 +11,13 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sps
 
-import uproot
-import awkward as ak
+try:
+    import uproot
+    import awkward as ak
+except ImportError:
+    logging.warning("Uproot is not found")
+    
+
 
 from multiprocessing import Pool
 from functools import partial

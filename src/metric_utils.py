@@ -23,10 +23,7 @@ Metrics = namedtuple('Metrics', ['accuracy', 'precision', 'recall', 'f1',
                                  'roc_fpr', 'roc_tpr', 'roc_thresh', 'roc_auc'])
 
 def compute_metrics(preds, targets, threshold=0.5):
-    """Input preds, target as Numpy"""
-    preds = np.concatenate(preds)
-    targets = np.concatenate(targets)
-    
+    """Input preds, target as Numpy"""    
     # Decision boundary metrics
     y_pred, y_true = (preds > threshold), (targets > threshold)
     
@@ -51,8 +48,6 @@ def compute_metrics(preds, targets, threshold=0.5):
 
 def plot_metrics(preds, targets, metrics, name="gnn", scale='linear'):
     # Prepare the values
-    preds = np.concatenate(preds)
-    targets = np.concatenate(targets)
     labels = targets > 0.5
 
     # Create the Figure
@@ -85,8 +80,6 @@ def plot_metrics(preds, targets, metrics, name="gnn", scale='linear'):
     
 def plot_outputs_roc(preds, targets, metrics, name="gnn"):
     # Prepare the values
-    preds = np.concatenate(preds)
-    targets = np.concatenate(targets)
     labels = targets > 0.5
 
     # Figure & Axes
@@ -124,8 +117,6 @@ def plot_outputs_roc(preds, targets, metrics, name="gnn"):
  
 def plot_model_output(preds, targets, name="gnn"):
     # Prepare the values
-    preds = np.concatenate(preds)
-    targets = np.concatenate(targets)
     labels = targets > 0.5
 
     # Figure & Axes

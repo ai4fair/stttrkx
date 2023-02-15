@@ -125,7 +125,7 @@ def eval_model(model, test_dataloader):
             scores.append(score)
             truths.append(truth_sample)
             
-    return scores, truths
+    return torch.cat(scores), torch.cat(truths)
 
 
 # 4 - Main Function
@@ -165,7 +165,7 @@ def main():
     scores, truths = eval_model(model, test_dataloader)
 
     print("Prediction Finished")
-    print("\nScores: {}, Truth: {}".format(len(scores), len(truths)))
+    print("\nScores: {}, Truth: {}".format(scores.size(0), truths.size(0)))
 
 
 if __name__ == "__main__":

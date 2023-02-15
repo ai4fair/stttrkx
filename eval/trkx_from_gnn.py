@@ -20,8 +20,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 # Sparse Matrix
-def prepare(scores, senders, receivers, n_nodes):
-    """Prepare Input for DBSCAN"""
+def GetCooMatrix(scores, senders, receivers, n_nodes):
+    """Prepare Sparse Matrix in COO format for DBSCAN"""
     
     # adjancy matrix with its value being the edge socre.
     e_csr = sps.csr_matrix((scores, (senders, receivers)),
@@ -42,12 +42,12 @@ def prepare(scores, senders, receivers, n_nodes):
                    )
          )
     )
-
+    
     return e_csr_bi
 
 
 # DBSCAN Clustering
-def clustering(hit_id, e_csr_bi, epsilon=0.25, min_samples=2):
+def DBSCANClustering(hit_id, e_csr_bi, epsilon=0.25, min_samples=2):
     """"Get Track Candidates using DBSCAN"""
     
     # DBSCAN Clustering on Ajacency Matrix
@@ -99,17 +99,17 @@ def process(filename, output_dir, edge_score_cut, epsilon=0.25, min_samples=2, *
     n_nodes = hit_id.shape[0]
     
     # apply edge_score_cut
-    edge_mask = scores > edge_score_cut
-    scores, senders, receivers = scores[edge_mask], senders[edge_mask], receivers[edge_mask]
+    e_mask = scores > edge_score_cut
+    scores, senders, receivers = scores[e_mask], senders[e_mask], receivers[e_mask]
     
     # check dimensions
-    # print("Dims: {}, {}, {}, {}".format(senders.shape[0], receivers.shape[0], scores.shape[0], edge_mask.shape[0]))
+    # print("Dims: {}, {}, {}, {}".format(senders.shape[0], receivers.shape[0], scores.shape[0], e_mask.shape[0]))
     
     # prepare sparse matrix
-    coo_matrix = prepare(scores, senders, receivers, n_nodes)
+    coo_matrix = GetCooMatrix(scores, senders, receivers, n_nodes)
     
     # track candidates from DBSCAN
-    predicted_tracks = clustering(hit_id, coo_matrix, epsilon, min_samples)
+    predicted_tracks = DBSCANClustering(hit_id, coo_matrix, epsilon, min_samples)
     
     # all columns with sampe dtype
     predicted_tracks = predicted_tracks.astype(np.int32)
