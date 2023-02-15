@@ -5,7 +5,9 @@ import os
 import logging
 import torch
 import numpy as np
+import pandas as pd
 from torch_geometric.utils import to_networkx, from_networkx
+from itertools import chain
 from functools import partial
 from .utils_fit import pairwise, poly_fit_phi
 
@@ -87,8 +89,8 @@ def fit_road(G, road):
     """use a linear function to fit phi as a function of z."""
     road_chi2 = []
     for path in road:
-        z = np.array([G.nodes[i]['x'][2] for i in path[:-1]])   # ADAK: G.node (v1.x) to G.nodes (v2.x)
-        phi = np.array([G.nodes[i]['x'][1] for i in path[:-1]]) # ADAK: 'pos' to 'x'
+        z = np.array([G.nodes[i]['x'][2] for i in path[:-1]])    # ADAK: G.node (v1.x) to G.nodes (v2.x)
+        phi = np.array([G.nodes[i]['x'][1] for i in path[:-1]])  # ADAK: 'pos' to 'x'
         if len(z) > 1:
             _, _, diff = poly_fit_phi(z, phi)
             road_chi2.append(np.sum(diff) / len(z))
@@ -136,31 +138,51 @@ def get_tracks(G, th=0.1, th_re=0.8, feature_name='scores', with_fit=True):
     return sub_graphs
 
 
-def wrangler_labelling(input_file, output_dir, edge_cut=0.5, overwrite=True, **kwargs):
+def wrangler_labelling(input_file, output_dir, edge_cut=0.5, **kwargs):
     """Find tracks using a Walktrhough method..."""
     
     try:
         output_file = os.path.join(output_dir, os.path.split(input_file)[-1])
-        if not os.path.exists(output_file) or overwrite:
+        if not os.path.exists(output_file) or kwargs["overwrite"]:
 
             logging.info("Preparing event {}".format(output_file))
             graph = torch.load(input_file, map_location="cpu")
 
-            # to NetworkX
-            G = to_networkx(graph, node_attrs=['x'], edge_attrs=['scores', 'y_pid'])
+            # edge scores
+            scores = graph.scores
 
-            # build tracks
-            pred_graphs = get_tracks(G, th=0.1, th_re=0.8, feature_name='scores', with_fit=False)
+            # half the length, gnn gives scores for bidirected graphs
+            scores = scores[:graph.edge_index.shape[1]]
+
+            # apply edge score cut
+            edge_mask = scores > edge_cut
+
+            # Convert to sparse scipy array
+            new_graph = graph.clone()
+            new_graph.edge_index = new_graph.edge_index[:, edge_mask]
+            new_graph.scores = new_graph.scores[edge_mask]
+
+            # Convert to networkx graph
+            G = to_networkx(new_graph, node_attrs=['x'], edge_attrs=['scores', 'y_pid'], to_undirected=False)
+
+            # Build tracks
+            paths = get_tracks(G, th=0.1, th_re=0.8, feature_name='scores', with_fit=False)
+
+            track_df = pd.DataFrame(
+                {
+                    "hit_id": list(chain.from_iterable(paths)),
+                    "track_id": list(chain.from_iterable([[i] * len(p) for i, p in enumerate(paths)])),
+                }
+            )
 
             # list subgraphs as pyg data
-            pyg_graph = [from_networkx(graph) for graph in pred_graphs]
+            # pyg_graph = [from_networkx(graph) for graph in paths]
 
             with open(output_file, "wb") as pickle_file:
-                torch.save(pyg_graph, pickle_file)
+                torch.save(track_df, pickle_file)
 
         else:
             logging.info("{} already exists".format(output_file))
 
     except Exception as inst:
         print("File:", input_file, "had exception", inst)
-

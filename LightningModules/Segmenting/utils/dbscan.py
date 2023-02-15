@@ -57,12 +57,12 @@ def DBSCAN_Clustering(e_csr_bi, epsilon=0.25, min_samples=2):
 
 
 # Main Function For DBSCAN Labelling
-def dbscan_labelling(input_file, output_dir, edge_cut, overwrite, **kwargs):
+def dbscan_labelling(input_file, output_dir, edge_cut, **kwargs):
     """prepare a multiprocessing function for track building"""
     
     try:
         output_file = os.path.join(output_dir, os.path.split(input_file)[-1])
-        if not os.path.exists(output_file) or overwrite:
+        if not os.path.exists(output_file) or kwargs["overwrite"]:
 
             logging.info("Preparing event {}".format(output_file))
             

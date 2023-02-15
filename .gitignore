@@ -52,10 +52,14 @@
 # Saved Models and Checkpoints
 # ----------------------------------
 *.h5
+*.sif
 *.ckpt
+
 .ipynb_checkpoints
 .virtual_documents
+lightning_logs
 __pycache__
+
 *.sif
 logs
 data
@@ -69,5 +73,4 @@ lightning_models
 tutorials
 gnn4itk
 ray_tune
-
 
