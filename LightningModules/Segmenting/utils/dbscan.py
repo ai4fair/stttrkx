@@ -17,12 +17,12 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 # Sparse Matrix
-def GetCOO_Matrix(senders, receivers, scores, n_nodes):
+def GetCOO_Matrix(senders, receivers, scores, num_nodes):
     """Prepare Sparse Matrix in COO format for DBSCAN"""
     
     # adjancy matrix with its value being the edge socre.
     e_csr = sps.csr_matrix((scores, (senders, receivers)),
-                           shape=(n_nodes, n_nodes),
+                           shape=(num_nodes, num_nodes),
                            dtype=np.float32)
     
     # rescale the duplicated edges
@@ -75,20 +75,19 @@ def dbscan_labelling(input_file, output_dir, edge_cut, **kwargs):
             receivers = graph.edge_index[1]
             scores = graph.scores
             
-            # "scores" is twice the size of "edge_index"
-            # FIXME (DONE!): What to do with double size of "scores"?
-            
+            # make lenghth of scores equal to edge_index
             scores = scores[:graph.edge_index.shape[1]]
 
             # number of nodes
-            n_nodes = hit_id.shape[0]           
+            # num_nodes = graph.x.size(0)
+            num_nodes = hit_id.shape[0]
 
             # apply edge score cut
             e_mask = scores > edge_cut
             scores, senders, receivers = scores[e_mask], senders[e_mask], receivers[e_mask]
             
             # prepare sparse matrix
-            e_csr_bi = GetCOO_Matrix(senders, receivers, scores, n_nodes)
+            e_csr_bi = GetCOO_Matrix(senders, receivers, scores, num_nodes)
 
             # DBSCAN Clustering on Ajacency Matrix
             clustering = DBSCAN(
@@ -111,7 +110,7 @@ def dbscan_labelling(input_file, output_dir, edge_cut, **kwargs):
 
             predicted_tracks = pd.DataFrame.from_dict(
                 {"hit_id": new_hit_id, "track_id": track_labels.track_id})
-            
+
             # all columns with sampe dtype
             predicted_tracks = predicted_tracks.astype(np.int32)
             
@@ -119,7 +118,7 @@ def dbscan_labelling(input_file, output_dir, edge_cut, **kwargs):
             with open(output_file, "wb") as pickle_file:
                 torch.save(predicted_tracks, pickle_file)
             
-            # FIXME: How about adding predicted_tracks as torch tensor in graph?
+            # save predicted_tracks as torch tensor in the graph
             # labelled_graph.reco_tracks = torch.Tensor(predicted_tracks.values)
             
             # Save labelled graph

@@ -37,18 +37,20 @@ def ccl_labelling(input_file, output_dir, edge_cut=0.5, **kwargs):
             # filter passing edges
             passing_edges = graph.edge_index[:, e_mask]
 
-            # convert to sparse array
+            # convert to sparse matrix representation of the graph with elements 0/1
             sparse_edges = to_scipy_sparse_matrix(passing_edges, num_nodes=graph.x.size(0))
             
             # run connected components
-            labels = sps.csgraph.connected_components(
-                        sparse_edges, directed=False, return_labels=True
-            )[1]
-
+            n, labels = sps.csgraph.connected_components(
+                csgraph=sparse_edges, directed=False, return_labels=True
+            )
+            
+            print("Number Components: ", n)
+            
             # attach labels to data
-            # graph.labels = torch.from_numpy(labels).long()  # .astype(np.int32)
             graph.labels = torch.from_numpy(labels).type_as(passing_edges)
-
+            
+            # save graph with labeled compononets
             with open(output_file, "wb") as pickle_file:
                 torch.save(graph, pickle_file)
 
@@ -67,7 +69,7 @@ def ccl_labelling_v2(input_file, output_dir, edge_cut=0.5, **kwargs):
 
         output_file = os.path.join(output_dir, os.path.split(input_file)[-1])
         if not os.path.exists(output_file) or kwargs["overwrite"]:
-            
+
             logging.info("Preparing event {}".format(output_file))
             graph = torch.load(input_file, map_location=device)
             
@@ -83,21 +85,26 @@ def ccl_labelling_v2(input_file, output_dir, edge_cut=0.5, **kwargs):
             # filter passing edges
             passing_edges = graph.edge_index[:, e_mask]
             
-            # convert to sparse array
-            num_nodes = graph.x.size(0)      # or graph.hid.shape[0]
+            # number of nodes
+            num_nodes = graph.x.size(0)
+            
+            # convert to sparse matrix representation of the graph with elements 0/1
             sparse_edges = sps.coo_matrix(
                 (np.ones(passing_edges.shape[1]), passing_edges.cpu().numpy()),
-                shape=(num_nodes, num_nodes),
-            )
+                shape=(num_nodes, num_nodes)
+            )  # equivalent to to_scipy_sparse_matrix()
             
             # run connected components
-            labels = sps.csgraph.connected_components(
-                        sparse_edges, directed=False, return_labels=True
-            )[1]
+            n, labels = sps.csgraph.connected_components(
+                csgraph=sparse_edges, directed=False, return_labels=True
+            )
+            
+            print("Number Components: ", n)
             
             # attach labels to data
             graph.labels = torch.from_numpy(labels).type_as(passing_edges)
-
+            
+            # save graph with labeled compononets
             with open(output_file, "wb") as pickle_file:
                 torch.save(graph, pickle_file)
 
