@@ -21,6 +21,7 @@ import trackml.dataset
 
 import torch
 from torch_geometric.data import Data
+from .graph_utils import get_input_edges, graph_intersection
 
 # Device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -51,52 +52,7 @@ def get_layerwise_edges(hits):
             
     true_edges = np.array(true_edges).T
     return true_edges, hits
-    
-    
-"""
-def get_layerwise_edges(hits):
-    
-    # Calculate and assign parameter R = sqrt(x**2 + y**2 + z**2), 
-    hits = hits.assign(
-        R=np.sqrt(
-            (hits.x - hits.vx) ** 2 + (hits.y - hits.vy) ** 2 + (hits.z - hits.vz) ** 2
-        )
-    )
-    
-    # Sort the hits according to R. First, reset_index and drop. Second, reset_index 
-    # again to get the 'index' column which we can use later on.
-    hits = hits.sort_values("R").reset_index(drop=True).reset_index(drop=False)
-    
-    # Find hits for particle_id == 0 and assign to -nan value 
-    hits.loc[hits["particle_id"] == 0, "particle_id"] = np.nan
-    
-    # Get hit_list by particle_id, layer_id. It will return indice of hits
-    # from each particle_id in all layers. The .agg(), are just to format the
-    # the output for better handling, as we will see later.
-    hit_list = (
-        hits.groupby(["particle_id", "layer_id"], sort=False)["index"]
-        .agg(lambda x: list(x))
-        .groupby(level=0)
-        .agg(lambda x: list(x))
-    )
-    
-    # Build True Edges. First, get one row and cascade it (row[0:-1]: 0 to n-1 elements,
-    # row[1:]: 1 to n elements). One can use itertools.product(b, b) to creat cartesian
-    # product which is set of ordered pairs (a, b) provided a E row[0:-1] and b E row[1:].
-    # The itertools.product(b, b) returns an iterable (list, set, etc), so use list.extend() 
-    # to append the true_edges list. Note: list.append() add only one element to end of list.
-    true_edges = []
-    for row in hit_list.values:
-        for i, j in zip(row[0:-1], row[1:]):
-            true_edges.extend(list(itertools.product(i, j))) # extend(): extends existi
-    
-    # Convert to ndarray and transpose it.
-    true_edges = np.array(true_edges).T
-    
-    # As hits are modified due R param so return it as well.
-    return true_edges, hits
-"""
-    
+
     
 def get_modulewise_edges(hits):
     """Get modulewise (layerless) true edge list. Here hits represent complete event."""
@@ -136,108 +92,6 @@ def get_modulewise_edges(hits):
     true_edges = signal.unsorted_index.values[true_edges]
 
     return true_edges
-
-
-# ADAK 1: Processing to GNN
-def select_edges(hits1, hits2, filtering=True):
-    """Select edges using a particular phi range or sectors. Currently, I am selecting edges 
-    only in the neighboring sectors i.e. hit1 is paired with hit2 in immediate sectors only."""
-    
-    # Start with all possible pairs of hits, sector_id is for sectorwise selection
-    keys = ['event_id', 'r', 'phi', 'isochrone', 'sector_id']
-    hit_pairs = hits1[keys].reset_index().merge(hits2[keys].reset_index(), on='event_id', suffixes=('_1', '_2'))
-    
-    if filtering:
-        dSector = (hit_pairs['sector_id_1'] - hit_pairs['sector_id_2'])
-        sector_mask = ((dSector.abs() < 2) | (dSector.abs() == 5))
-        edges = hit_pairs[['index_1', 'index_2']][sector_mask]
-    else:
-        edges = hit_pairs[['index_1', 'index_2']]
-        
-    return edges
-
-
-# ADAK 2: Processing to GNN
-def construct_edges(hits, layer_pairs, filtering=True):
-    """Construct edges between hit pairs in adjacent layers"""
-
-    # Loop over layer pairs and construct edges
-    layer_groups = hits.groupby('layer')
-    edges = []
-    for (layer1, layer2) in layer_pairs:
-        
-        # Find and join all hit pairs
-        try:
-            hits1 = layer_groups.get_group(layer1)
-            hits2 = layer_groups.get_group(layer2)
-        # If an event has no hits on a layer, we get a KeyError.
-        # In that case we just skip to the next layer pair
-        except KeyError as e:
-            logging.info('skipping empty layer: %s' % e)
-            continue
-        
-        # Construct the edges
-        edges.append(select_edges(hits1, hits2, filtering))
-    
-    # Combine edges from all layer pairs
-    edges = pd.concat(edges)
-    return edges
-
-
-# ADAK 3: Processing to GNN
-def get_input_edges(hits, filtering=True):
-    """Build edge_index list for GNN stage."""
-    n_layers = hits.layer.unique().shape[0]
-    layers = np.arange(n_layers)
-    layer_pairs = np.stack([layers[:-1], layers[1:]], axis=1)
-    edges = construct_edges(hits, layer_pairs, filtering)
-    edge_index = edges.to_numpy().T
-    return edge_index
-
-
-# ADAK 4: Processing to GNN
-def graph_intersection(pred_graph, truth_graph):
-    """Get truth information about edge_index (function is from both Embedding/Filtering)"""
-    
-    array_size = max(pred_graph.max().item(), truth_graph.max().item()) + 1
-    
-    if torch.is_tensor(pred_graph):
-        l1 = pred_graph.cpu().numpy()
-    else:
-        l1 = pred_graph
-        
-    if torch.is_tensor(truth_graph):
-        l2 = truth_graph.cpu().numpy()
-    else:
-        l2 = truth_graph
-        
-    e_1 = sp.sparse.coo_matrix(
-        (np.ones(l1.shape[1]), l1), shape=(array_size, array_size)
-    ).tocsr()
-
-    e_2 = sp.sparse.coo_matrix(
-        (np.ones(l2.shape[1]), l2), shape=(array_size, array_size)
-    ).tocsr()
-    
-    del l1
-    del l2
-    
-    e_intersection = (e_1.multiply(e_2) - ((e_1 - e_2) > 0)).tocoo()
-    
-    del e_1
-    del e_2
-    
-    new_pred_graph = (
-        torch.from_numpy(np.vstack([e_intersection.row, e_intersection.col]))
-        .long()
-        .to(device)
-    )
-    
-    y = torch.from_numpy(e_intersection.data > 0).to(device)
-    
-    del e_intersection
-    
-    return new_pred_graph, y
 
 
 def select_hits(event_file=None, noise=False, skewed=False):
