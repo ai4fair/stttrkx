@@ -11,11 +11,11 @@ from ..utils.gnn_utils import make_mlp
 
 
 # Checkpointed Residual AGNN
-class ResCheckGCN(GNNBase):
+class CheckResGCN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
         """
-        The model `ResCheckGCN` is the graph convolutional network proposed by 
+        The model `CheckResGCN` is the graph convolutional network proposed by 
         Thomas Kipf in his paper [arXiv:1609.02907]. In includes residual/skip
         connection. It is tested for reconstruction by Exa.TrkX collaboration.
         """

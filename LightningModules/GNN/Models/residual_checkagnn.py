@@ -10,11 +10,11 @@ from ..utils.gnn_utils import make_mlp
 
 
 # Checkpointed Residual GCN
-class ResCheckAGNN(GNNBase):
+class CheckResAGNN(GNNBase):
     def __init__(self, hparams):
         super().__init__(hparams)
         """
-        The model `ResCheckAGNN` is the attention model with residual/skip connection.
+        The model `CheckResAGNN` is the attention model with residual/skip connection.
         It was tested in "Performance of a geometric deep learning pipeline for HL-LHC
         particle tracking" [arXiv:2103.06995] by Exa.TrkX. No other study exist so far.
         """
