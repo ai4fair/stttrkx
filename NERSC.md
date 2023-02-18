@@ -130,7 +130,7 @@ The same logic applied to the **_Perlmutter_** cluster.
 One can run TrainTrack in `batch` mode.
 
 ```
-traintrack --batch configs/pipeline_fulltrain.yaml
+traintrack --slurm configs/pipeline_fulltrain.yaml
 ```
 
 It will use `configs/batch_cpu_default` and `configs/batch_gpu_default` for cpu and gpu-based jobs on the cluster. TrainTrack uses [Simple Slurm](https://github.com/amq92/simple_slurm) to setup a batch job. For successfull laund of GPU jobs on **Perlmutter**, one needs to fix few settings:
@@ -162,6 +162,7 @@ This is equivalent to `sbatch` script:
 #SBATCH --ntasks-per-node=1
 #SBATCH -c 128
 #SBATCH --gpus-per-task=1
+#SBATCH --signal=SIGUSR1@90
 
 # *** I/O ***
 #SBATCH -D .
