@@ -29,7 +29,7 @@ layernorm: True                        # ADAK:: LayerNorm
 batchnorm: False                       # ADAK:: BatchNorm
 directed: False                        # ADAK:: Directed Graph
 batchsize: 1                           # ADAK:: Batch size
-aggregation: sum_max                   # ADAK:: sum, mean, max, sum_max
+aggregation: sum_max                   # ADAK:: sum, max, sum_max, mean, mea_sum, mean_max
 hidden_activation: ReLU
 weight: 2
 warmup: 200
