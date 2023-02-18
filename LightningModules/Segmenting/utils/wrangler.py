@@ -119,7 +119,7 @@ def get_tracks(G, th=0.1, th_re=0.8, feature_name='scores', with_fit=True):
     sub_graphs = []
     next_hit_fn = partial(find_next_hits, th=th, th_re=th_re, feature_name=feature_name)
     for node in G.nodes():
-        if node in used_nodes:
+        if node in used_nodes:  #TODO: ADAK: remove this condition to allow shared hits
             continue
         road = build_roads(G, node, next_hit_fn, used_nodes)
         diff = fit_road(G, road) if with_fit else [0.] * len(road)

@@ -52,25 +52,28 @@ print("# of true_edges : ", sum(true_e))
 print("# of false_edges: ", sum(false_e))
 
 colors=['blue', 'green', 'orange']
-names=['Total Pairs', 'False Pairs', 'True Pairs']
+names=['All Edges', 'False Edges', 'True Edges']
 x1 = np.asarray(input_e)
 x2 = np.asarray(false_e)
 x3 = np.asarray(true_e)
 
 # Plot Histograms
-fig = plt.figure(figsize=(12,9))
+fig = plt.figure(figsize=(10,7))
 ax = fig.add_subplot(111)
 
 nbins=100
+
+# All together
 ax.hist([x1, x2, x3], bins=nbins, color=colors, label=names, histtype='step', stacked=False, fill=False)
 
-#ax.hist(x1, bins=nbins, edgecolor='None', alpha=0.8, label='Total Pairs', color='blue')
-#ax.hist(x2, bins=nbins, edgecolor='None', alpha=0.8, label='False Pairs', color='orange')
-#ax.hist(x3, bins=nbins, edgecolor='None', alpha=0.8, label='True Pairs',  color='green')
+# Or, one by one
+# ax.hist(x1, bins=nbins, edgecolor='None', alpha=0.8, label='Total Pairs', color='blue')
+# ax.hist(x2, bins=nbins, edgecolor='None', alpha=0.8, label='False Pairs', color='orange')
+# ax.hist(x3, bins=nbins, edgecolor='None', alpha=0.8, label='True Pairs',  color='green')
 
 # plotting params
-ax.set_title('Hit Pair Construction')
-ax.set_xlabel('Hit Pairs', fontsize=20)
+# ax.set_title('Edge Construction')
+ax.set_xlabel('Number of Edges', fontsize=20)
 ax.set_ylabel('Counts', fontsize=20)
 ax.tick_params(axis='both', which='major', labelsize=15)
 ax.tick_params(axis='both', which='minor', labelsize=15)
@@ -81,36 +84,7 @@ ax.set_yscale('log')
 ax.grid(False)
 ax.legend(fontsize=20, loc='best')
 fig.tight_layout()
-fig.savefig("pair_hist.png")
-fig.savefig("pair_hist.pdf")
+fig.savefig("Edges.png")
+fig.savefig("Edges.pdf")
 fig.show()
-
-
-
-
-
-"""
-plt.figure(figsize=(12,9))
-
-plt.xlabel('Hit Pairs', size=20)
-plt.ylabel('Counts', size=20)
-plt.yscale('log')
-#plt.title('Histogram of IQ')
-#plt.xlim(40, 160)
-#plt.ylim(0, 0.03)
-plt.grid(False)
-plt.legend()
-plt.savefig("pair_hist.png")
-plt.savefig("pair_hist.pdf")
-plt.show()
-"""
-
-
-
-
-
-
-
-
-
 
