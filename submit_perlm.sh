@@ -20,6 +20,11 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=a.akram@gsi.de
 
+mkdir -p logs
+eval "$(conda shell.bash hook)"
+conda activate exatrkx-cori
+export EXATRKX_DATA=$CSCRATCH
+
 export SLURM_CPU_BIND="cores"
 srun traintrack configs/pipeline_fulltrain.yaml
 
