@@ -7,9 +7,9 @@ from functools import partial
 from tqdm.contrib.concurrent import process_map
 
 from ..segment_base import SegmentBase
-from ..utils.ccl import label_graph_ccl
-from ..utils.dbscan import label_graph_dbscan
-from ..utils.wrangler import label_graph_wrangler
+from ..utils.ccl import ccl_labelling
+from ..utils.dbscan import dbscan_labelling
+from ..utils.wrangler import wrangler_labelling
 
 
 # Segmentation data module specific to the TrackML pipeline
@@ -31,11 +31,11 @@ class TrackMLSegment(SegmentBase):
         
         # ADAK: Select a Labelling Method
         if self.method == 'ccl':
-            label_graph = label_graph_ccl
+            label_graph = ccl_labelling
         elif self.method == 'dbscan':
-            label_graph = label_graph_dbscan
+            label_graph = dbscan_labelling
         else:
-            label_graph = label_graph_wrangler
+            label_graph = wrangler_labelling
         
         print("Labelling method is " + label_graph.__name__)
                 
