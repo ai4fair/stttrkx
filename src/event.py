@@ -261,7 +261,9 @@ def Draw_Compose_Event(event=None, figsize=(10,10), save_fig=False):
 
     for i in p_ids:
         df_ = event.loc[event.particle_id == i]
-        ax.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*3000/45).values, label='particle_id: {}'.format(i))
+        ax.scatter(df_.x.values, df_.y.values,
+                   #s=(df_.isochrone*3000/45).values,
+                   label='particle_id: {}'.format(i))
     
     ax.set_title('Event ID # {}'.format(e_ids))
     ax.set_xlabel('x [cm]', fontsize=15)
@@ -298,7 +300,9 @@ def Draw_Single_Event(event=None, figsize=(10, 10), save_fig=False):
 
     for i in p_ids:
         df_ = event.loc[event.particle_id == i]
-        plt.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*150).values, label='particle_id: {}'.format(i))
+        plt.scatter(df_.x.values, df_.y.values,
+                    # s=(df_.isochrone*150).values, 
+                    label='particle_id: {}'.format(i))
     
     plt.title('Event ID # {}'.format(e_ids))
     plt.xlabel('x [cm]', fontsize=15)

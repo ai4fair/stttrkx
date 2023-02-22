@@ -100,6 +100,10 @@ def select_hits(event_file=None, noise=False, skewed=False):
     # load data using event_prefix (e.g. path/to/event0000000001)
     hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
+    # Drop duplicates (present due to "PndMLTracker")
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
+    
     # skip noise hits.
     if noise:
         # runs if noise=True
@@ -117,7 +121,7 @@ def select_hits(event_file=None, noise=False, skewed=False):
     
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
-
+    
     # skip skewed tubes
     if skewed is False:
         
@@ -149,7 +153,7 @@ def select_hits(event_file=None, noise=False, skewed=False):
     
     
 def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
-                inputedges=False, noise=False, skewed=False):
+                inputedges=False, noise=False, skewed=False, **kwargs):
     """
     Get true edge list using the ordering by R' = distance from production vertex of each particle.
     Return: [X=(r, phi, z), particle_id, layers, layerless_true_edges, layerwise_true_edges, hit_id]
@@ -192,7 +196,7 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
     
     # Get input edge list using order of layers.
     if inputedges:
-        layerwise_input_edges = get_input_edges(hits)
+        layerwise_input_edges = get_input_edges(hits, filtering=kwargs['filtering'])
         logging.info(
             "Layerwise input graph built for {} with size {}".format(
                 event_file, layerwise_input_edges.shape
@@ -267,7 +271,8 @@ def prepare_event(
                 modulewise=modulewise,
                 inputedges=inputedges,
                 noise=noise,
-                skewed=skewed
+                skewed=skewed,
+                **kwargs
             )
             
             # build pytorch_geometric Data module
