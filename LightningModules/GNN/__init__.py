@@ -5,10 +5,10 @@
 from .Models.interaction_gnn import InteractionGNN
 
 # residual attention gnn
-from .Models.residual_checkagnn import ResCheckAGNN
+from .Models.residual_checkagnn import CheckResAGNN
 
 # residual attention gnn
-from .Models.residual_checkgcn import ResCheckGCN
+from .Models.residual_checkgcn import CheckResGCN
 
 # inference callbacks
 from .Models.inference import GNNTelemetry, GNNBuilder
