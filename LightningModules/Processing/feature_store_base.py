@@ -15,6 +15,7 @@ class FeatureStoreBase(LightningDataModule):
         self.n_files = self.hparams["n_files"]
         
         self.skewed = self.hparams["skewed"]
+        self.chunksize = self.hparams["chunksize"]
         
         self.n_tasks = self.hparams["n_tasks"]
         self.task = 0 if "task" not in self.hparams else self.hparams["task"]

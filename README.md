@@ -1,6 +1,6 @@
-## Running CTD2022 Pipeline
+## Running STT Pipeline
 
-This code uses the Exa.TrkX pipeline as a baseline. It uses the `traintrack` to run different stages (_**Processing**_ and _**GNN**_) of the pipeline.
+This code uses the _**Exa.TrkX**_ pipeline as a baseline. It uses the `traintrack` to run different stages (_**Processing**_ and _**GNN**_) of the pipeline. This pipeline is intended for **Straw Tube Tracker (STT)** of **PANDA experiment**. STT is part of Central Tracking System (CTS) in the Target Spectrometer of PANDA experiment.
 
 &nbsp;
 

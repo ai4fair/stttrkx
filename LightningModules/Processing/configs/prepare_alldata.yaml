@@ -5,14 +5,15 @@ output_dir: ${EXATRKX_DATA}/run_all/feature_store
 n_files: 100000
 n_workers: 64
 n_tasks: 1
-overwrite: False
+overwrite: True
 chunksize: 10
 
-noise: True
-skewed: False
-layerwise: True             # True Edge List
-modulewise: True            # True Edge List
-inputedges: True            # Input Edge List
+noise: False                # handle noise hits
+skewed: False               # add/remove skewed layers
+layerwise: True             # get layerwise true edges
+modulewise: True            # get modulewise true edges
+inputedges: True            # get input edges (using layerwise as truth)
+filtering: False            # get input edges with (false)/without(true) adjacent sectors
 
 # if inputedges=True:
 # then 'edge_index' will be built in the Processing stage, so one can use GNN stage right after that i.e. skipping Embedding & Filtering

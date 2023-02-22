@@ -64,9 +64,10 @@ __pycache__
 logs
 data
 data_sets
-train_quick
-train_all
-run_*
+train_quick*
+train_all*
+run_quick*
+run_all*
 run
 lightning_logs
 lightning_models
