@@ -11,7 +11,7 @@ import torch
 import matplotlib.pyplot as plt
 sys.path.append('src')
 
-inputdir='./data_sets/ctd2022/run_100k/feature_store'
+inputdir='./run_quick/feature_store_fwp'
 proc_files = sorted(glob.glob(os.path.join(inputdir, "*")))
 
 i = 0
