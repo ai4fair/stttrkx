@@ -27,6 +27,21 @@ detector_path = os.path.join(output_base, 'stt.csv')
 
 Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'event_file'])
 
+
+def process_particles(p, selection=False):
+    """Special manipulation on particles dataframe"""
+    
+    # drop duplicates (present due to "PndMLTracker")
+    p['nhits'] = p.groupby(['particle_id'])['nhits'].transform('count')
+    p.drop_duplicates(inplace=True, ignore_index=True)
+    
+    if selection:
+        # just keep protons, pions, don't forget resetting index and dropping old one.
+        particles = p[p['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+    
+    return particles
+
+
 # SttCSVReader Class
 class SttCSVReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
@@ -66,6 +81,9 @@ class SttCSVReader(object):
         
         hits, cells, particles, truth = all_data
         
+        # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
+        particles = process_particles(particles, selection=False)
+    
         # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
         hits = hits.merge(cells[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
     
@@ -116,7 +134,7 @@ class SttCSVReader(object):
             
             # rename layers from 0,1,2...,17 & assign to "layer" column
             vlids = hits.layer_id.unique()
-            n_det_layers = hits.layer_id.unique().shape[0]
+            n_det_layers = len(vlids)
             vlid_groups = hits.groupby(['layer_id'])
             hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
             self._hits = hits.reset_index(drop=True)

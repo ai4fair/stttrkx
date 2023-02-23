@@ -197,6 +197,19 @@ class Event(object):
 
 
 # Compose DataFrames into Single Event DataFrame.
+def process_particles(p, selection=False):
+    """Special manipulation on particles dataframe"""
+    
+    # drop duplicates (present due to "PndMLTracker")
+    p['nhits'] = p.groupby(['particle_id'])['nhits'].transform('count')
+    p.drop_duplicates(inplace=True, ignore_index=True)
+    
+    if selection:
+        # just keep protons, pions, don't forget resetting index and dropping old one.
+        particles = p[p['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+    
+    return particles
+    
 def Compose_Event(event_prefix="", noise=False, skewed=True):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
@@ -204,7 +217,10 @@ def Compose_Event(event_prefix="", noise=False, skewed=True):
 
     # load data using event_prefix (e.g. path/to/event0000000001)
     hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
-
+    
+    # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
+    particles = process_particles(particles, selection=False)
+    
     # first merge truth & particles on particle_id, assuming
     if noise:
         # runs if noise=True
@@ -229,10 +245,13 @@ def Compose_Event(event_prefix="", noise=False, skewed=True):
 
         # rename layer_ids from 0,1,2...,17 & assign a new colmn named "layer"
         vlids = hits.layer_id.unique()
-        n_det_layers = hits.layer_id.unique().shape[0]
+        n_det_layers = len(vlids)
         vlid_groups = hits.groupby(['layer_id'])
         hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
-
+    else:
+        # rename 'layer_id' to 'layer'.
+        hits = hits.rename(columns={"layer_id": "layer"})
+        
     # merge hits with truth, but first find r & phi
     hits = hits.assign(r=np.sqrt(hits.x ** 2 + hits.y ** 2), phi=np.arctan2(hits.y, hits.x)).merge(truth, on="hit_id")
 
