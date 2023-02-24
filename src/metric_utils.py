@@ -55,8 +55,8 @@ def plot_metrics(preds, targets, metrics, name="gnn", scale='linear'):
 
     # Plot Model Outputs
     binning=dict(bins=25, range=(0,1), histtype='step', log=True)
-    ax0.hist(preds[labels==False], label='Fake Edges', **binning)
     ax0.hist(preds[labels==True], label='Real Edges', **binning)
+    ax0.hist(preds[labels==False], label='Fake Edges', **binning)
     ax0.set_xlabel('Model Output', size=14)
     ax0.legend(loc=0)
 
