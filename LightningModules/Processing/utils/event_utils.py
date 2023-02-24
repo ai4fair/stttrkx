@@ -94,28 +94,28 @@ def get_modulewise_edges(hits):
     return true_edges
 
 
-def process_particles(p, selection=False):
+def process_particles(particles, selection=False):
     """Special manipulation on particles dataframe"""
     
     # drop duplicates (present due to "PndMLTracker")
-    p['nhits'] = p.groupby(['particle_id'])['nhits'].transform('count')
-    p.drop_duplicates(inplace=True, ignore_index=True)
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
     
     if selection:
         # just keep protons, pions, don't forget resetting index and dropping old one.
-        particles = p[p['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
     
     return particles
 
 
-def select_hits(event_file=None, noise=False, skewed=False):
+def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
     """Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria."""
     
     # load data using event_prefix (e.g. path/to/event0000000001)
     hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
-    particles = process_particles(particles, selection=False)
+    particles = process_particles(particles, selection=kwargs['selection'])
 
     # skip noise hits.
     if noise:
@@ -175,7 +175,7 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
     # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # Select hits, add new/select columns, add event_id
-    hits = select_hits(event_file=event_file, noise=noise, skewed=skewed).assign(
+    hits = select_hits(event_file=event_file, noise=noise, skewed=skewed, **kwargs).assign(
         event_id=int(event_file[-10:])
     )
     

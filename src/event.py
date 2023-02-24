@@ -197,20 +197,20 @@ class Event(object):
 
 
 # Compose DataFrames into Single Event DataFrame.
-def process_particles(p, selection=False):
+def process_particles(particles, selection=False):
     """Special manipulation on particles dataframe"""
     
     # drop duplicates (present due to "PndMLTracker")
-    p['nhits'] = p.groupby(['particle_id'])['nhits'].transform('count')
-    p.drop_duplicates(inplace=True, ignore_index=True)
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
     
     if selection:
         # just keep protons, pions, don't forget resetting index and dropping old one.
-        particles = p[p['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
     
     return particles
     
-def Compose_Event(event_prefix="", noise=False, skewed=True):
+def Compose_Event(event_prefix="", selection=False, noise=False, skewed=True):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
     the necessary columns in the final dataframe."""
@@ -219,7 +219,7 @@ def Compose_Event(event_prefix="", noise=False, skewed=True):
     hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
     
     # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
-    particles = process_particles(particles, selection=False)
+    particles = process_particles(particles, selection)
     
     # first merge truth & particles on particle_id, assuming
     if noise:

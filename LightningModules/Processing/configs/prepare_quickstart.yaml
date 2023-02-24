@@ -3,7 +3,7 @@ input_dir: ${EXATRKX_DATA}/train_quick
 output_dir: ${EXATRKX_DATA}/run_quick/feature_store
 
 n_files: 10000
-n_workers: 8
+n_workers: 1
 n_tasks: 1
 overwrite: True
 chunksize: 1
@@ -13,7 +13,8 @@ skewed: False               # add/remove skewed layers
 layerwise: True             # get layerwise true edges
 modulewise: True            # get modulewise true edges
 inputedges: True            # get input edges (using layerwise as truth)
-filtering: False            # get input edges with (false)/without(true) adjacent sectors
+filtering: True             # get input edges with (false)/without(true) adjacent sectors
+selection: False            # particle selection
 
 # if inputedges=True:
 # then 'edge_index' will be built in the Processing stage, so one can use GNN stage right after that i.e. skipping Embedding & Filtering

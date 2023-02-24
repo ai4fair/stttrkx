@@ -13,7 +13,8 @@ skewed: False               # add/remove skewed layers
 layerwise: True             # get layerwise true edges
 modulewise: True            # get modulewise true edges
 inputedges: True            # get input edges (using layerwise as truth)
-filtering: False            # get input edges with (false)/without(true) adjacent sectors
+filtering: True             # get input edges with (false)/without(true) adjacent sectors
+selection: False            # particle selection
 
 # if inputedges=True:
 # then 'edge_index' will be built in the Processing stage, so one can use GNN stage right after that i.e. skipping Embedding & Filtering

@@ -28,16 +28,16 @@ detector_path = os.path.join(output_base, 'stt.csv')
 Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'event_file'])
 
 
-def process_particles(p, selection=False):
+def process_particles(particles, selection=False):
     """Special manipulation on particles dataframe"""
     
     # drop duplicates (present due to "PndMLTracker")
-    p['nhits'] = p.groupby(['particle_id'])['nhits'].transform('count')
-    p.drop_duplicates(inplace=True, ignore_index=True)
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
     
     if selection:
         # just keep protons, pions, don't forget resetting index and dropping old one.
-        particles = p[p['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
     
     return particles
 
@@ -46,11 +46,12 @@ def process_particles(p, selection=False):
 class SttCSVReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
     
-    def __init__(self, path: str, noise: bool, skewed: bool):
+    def __init__(self, path: str, selection: bool, noise: bool, skewed: bool):
         """Initialize Instance Variables in Constructor"""
         self._path = path
         self._noise = noise
         self._skewed = skewed
+        self._selection = selection
         self._detector = None
 
         self._evtid = None
@@ -82,7 +83,7 @@ class SttCSVReader(object):
         hits, cells, particles, truth = all_data
         
         # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
-        particles = process_particles(particles, selection=False)
+        particles = process_particles(particles, selection=self._selection)
     
         # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
         hits = hits.merge(cells[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
@@ -185,7 +186,9 @@ def Draw_Reader_Event(data=None, figsize=(10, 10), save_fig=False):
 
     for i in p_ids:
         df_ = event.loc[event.particle_id == i]
-        ax.scatter(df_.x.values, df_.y.values, s=(df_.isochrone*3000/45).values, label='particle_id: {}'.format(i))
+        ax.scatter(df_.x.values, df_.y.values, 
+                   # s=(df_.isochrone*3000/45).values,
+                   label='particle_id: {}'.format(i))
     
     ax.set_title('Event ID # {}'.format(e_ids))
     ax.set_xlabel('x [cm]', fontsize=10)
