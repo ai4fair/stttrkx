@@ -50,12 +50,12 @@ export EXATRKX_DATA=$SCRATCH        # PSCRATCH
 ```
 ```bash
 # allocate cpu resources (cori)
-salloc -N 1 -q interactive -C haswell -A m3443 -t 04:00:00  # OR
-  srun -N 1 -q interactive -C haswell -A m3443 -t 04:00:00 --pty /bin/bash -l
+salloc -N 1 -q regular -C haswell -A m3443 -t 04:00:00  # OR
+  srun -N 1 -q regular -C haswell -A m3443 -t 04:00:00 --pty /bin/bash -l
 
 # allocate cpu resources (perlmutter)
-salloc -N 1 -q interactive -C cpu -A m3443 -t 04:00:00      # OR
-  srun -N 1 -q interactive -C cpu -A m3443 -t 04:00:00 --pty /bin/bash -l
+salloc -N 1 -q regular -C cpu -A m3443 -t 04:00:00      # OR
+  srun -N 1 -q regular -C cpu -A m3443 -t 04:00:00 --pty /bin/bash -l
 ```
 
 ```bash
