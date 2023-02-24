@@ -2,7 +2,7 @@
 
 # 1 Node, 1 Task, 1 GPU
 
-#SBATCH -A m3443
+#SBATCH -A m3443_g
 #SBATCH -J ctd
 #SBATCH -C gpu
 #SBATCH -q regular                 # special, early_science
