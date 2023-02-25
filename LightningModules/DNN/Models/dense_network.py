@@ -63,8 +63,8 @@ class EdgeClassifier_BN(DNNBase):
             sizes=layer_dim,                                 # Nodes
             hidden_activation=hparams["hidden_activation"],  # Relu
             output_activation=None,                          # None
-            layer_norm=hparams["layernorm"],                 # LayerNorm
-            batch_norm=hparams["batchnorm"]                  # BatchNorm
+            layer_norm=False,                                # LayerNorm
+            batch_norm=True                                  # BatchNorm
             )
         
     
@@ -97,8 +97,8 @@ class EdgeClassifier_LN(DNNBase):
             sizes=layer_dim,                                 # Nodes
             hidden_activation=hparams["hidden_activation"],  # Relu
             output_activation=None,                          # None
-            layer_norm=hparams["layernorm"],                 # LayerNorm
-            batch_norm=hparams["batchnorm"]                  # BatchNorm
+            layer_norm=True,                                 # LayerNorm
+            batch_norm=False                                 # BatchNorm
             )
         
     
