@@ -6,6 +6,7 @@ This file contains some common helper code for the analysis notebooks.
 import os
 import yaml
 import pickle
+import logging
 from collections import namedtuple
 
 # Externals
@@ -19,7 +20,7 @@ from torch.utils.data import Subset, DataLoader
 
 # Define our Metrics class as a namedtuple
 Metrics = namedtuple('Metrics', ['accuracy', 'precision', 'recall', 'f1',
-                                 'prc_precision', 'prc_recall', 'prc_thresh',
+                                 'prc_precision', 'prc_recall', 'prc_thresh', 'prc_auc',
                                  'roc_fpr', 'roc_tpr', 'roc_thresh', 'roc_auc'])
 
 def compute_metrics(preds, targets, threshold=0.5):
@@ -34,6 +35,7 @@ def compute_metrics(preds, targets, threshold=0.5):
     
     # Precision-Recall Curve
     prc_precision, prc_recall, prc_thresh = sklearn.metrics.precision_recall_curve(y_true, preds)
+    prc_auc =  sklearn.metrics.auc(prc_recall, prc_precision)
     
     # ROC Curve
     roc_fpr, roc_tpr, roc_thresh = sklearn.metrics.roc_curve(y_true, preds)
@@ -41,7 +43,7 @@ def compute_metrics(preds, targets, threshold=0.5):
     
     # Organize metrics into a namedtuple
     metrics = Metrics(accuracy=accuracy, precision=precision, recall=recall, f1=f1,
-                   prc_precision=prc_precision, prc_recall=prc_recall, prc_thresh=prc_thresh,
+                   prc_precision=prc_precision, prc_recall=prc_recall, prc_thresh=prc_thresh, prc_auc=prc_auc,
                    roc_fpr=roc_fpr, roc_tpr=roc_tpr, roc_thresh=roc_thresh, roc_auc=roc_auc)
     return metrics
 
@@ -58,13 +60,13 @@ def plot_metrics(preds, targets, metrics, name="gnn", scale='linear'):
     ax0.hist(preds[labels==True], label='Real Edges', **binning)
     ax0.hist(preds[labels==False], label='Fake Edges', **binning)
     ax0.set_xlabel('Model Output', size=14)
-    ax0.legend(loc=0)
+    ax0.legend(loc='best')
 
     # Plot Precision & Recall
     ax1.plot(metrics.prc_thresh, metrics.prc_precision[:-1], label='Edge Purity')  # Purity
     ax1.plot(metrics.prc_thresh, metrics.prc_recall[:-1], label='Edge Efficiency') # Efficiency
     ax1.set_xlabel('Edge Score Cut', size=14) # Model Threshold
-    ax1.legend(loc=0)
+    ax1.legend(loc='best')
 
     # Plot the ROC curve
     ax2.plot(metrics.roc_fpr, metrics.roc_tpr, color="darkorange", label="AUC = %.5f" % metrics.roc_auc)
@@ -72,71 +74,165 @@ def plot_metrics(preds, targets, metrics, name="gnn", scale='linear'):
     ax2.set_xlabel('False Positive Rate', size=14)
     ax2.set_ylabel('True Positive Rate', size=14)
     ax2.set_xscale(scale)
-    ax2.legend(loc=0)
+    ax2.legend(loc='best')
     
     fig.tight_layout()
     fig.savefig(name+"_metrics.pdf")
 
-    
-def plot_outputs_roc(preds, targets, metrics, name="gnn"):
-    # Prepare the values
-    labels = targets > 0.5
-
+  
+def plot_roc(metrics, name="gnn"):
+    """ROC Curve: Plot of FPR (x) vs TPR (y)"""
     # Figure & Axes
-    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(12,5))
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
 
-    # Plot Model Outputs
-    binning=dict(bins=25, range=(0,1), histtype='step', log=True)
-    ax0.hist(preds[labels==True], label='True Edges', **binning)    # True Edges
-    ax0.hist(preds[labels==False], label='False Edges', **binning)  # False Edges
+    # ROC Curve with AUC
+    axs.plot(metrics.roc_fpr, metrics.roc_tpr, color="darkorange", label="GNN Classifier")
+    axs.plot([0, 1], [0, 1], color="navy", linestyle="--", label="Naive Classifier")
     
     # Axes Params
-    ax0.set_xlabel('Model Output', size=16)
-    ax0.set_ylabel('Counts', size=16)
-    ax0.tick_params(axis='both', which='major', labelsize=12)
-    ax0.tick_params(axis='both', which='minor', labelsize=12)
-    # ax0.set_ylim(ymin=0.005)
-    ax0.legend(fontsize=14, loc='best')
-
-
-    # Plot ROC Curve with AUC
-    ax1.plot(metrics.roc_fpr, metrics.roc_tpr, color="darkorange", label="AUC = %.5f" % metrics.roc_auc)
-    ax1.plot([0, 1], [0, 1], color="navy", linestyle="--")
-    
-    # Axes Params
-    ax1.set_xlabel('False Positive Rate', size=16)
-    ax1.set_ylabel('True Positive Rate', size=16)
-    ax1.tick_params(axis='both', which='major', labelsize=12)
-    ax1.tick_params(axis='both', which='minor', labelsize=12)
-    ax1.legend(fontsize=14, loc='best')
+    axs.set_title("ROC Curve, AUC = %.5f" % metrics.roc_auc, fontsize=15)
+    axs.set_xlabel('False Positive Rate', size=20)
+    axs.set_ylabel('True Positive Rate', size=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    axs.legend(fontsize=14, loc='lower right')
     
     # Fig Params
     fig.tight_layout()
-    fig.savefig(name+"_outputs_roc.pdf")
+    fig.savefig(name+"_roc.pdf", format="pdf")
  
- 
-def plot_model_output(preds, targets, name="gnn"):
+
+def plot_prc(metrics, name="gnn"):
+    """PR Curve: Plot of Recall (x) vs Precision (y)."""
+    
+    # Figure & Axes
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
+
+    # ROC Curve with AUC
+    axs.plot(metrics.prc_recall, metrics.prc_precision, color="darkorange", label="GNN Classifier")
+    axs.plot([0, 1], [0, 0], color="navy", linestyle="--", label="Naive Classifier")
+    
+    # Axes Params
+    axs.set_title("PRC Curve, AUC = %.5f" % metrics.prc_auc, fontsize=15)
+    axs.set_xlabel('Recall', size=20)
+    axs.set_ylabel('Precision', size=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    axs.legend(fontsize=14, loc='center right')
+    
+    # Fig Params
+    fig.tight_layout()
+    fig.savefig(name+"_prc.pdf", format="pdf")
+
+
+def plot_prc_thr(metrics, name="gnn"):
+    """PRC Curve: Plot of Threshold (x) vs Precision & Recall (y)"""
+    
+    # Efficiency, Purity and Threshold
+    eff = metrics.prc_recall[:-1]
+    pur = metrics.prc_precision[:-1]
+    score_cuts = metrics.prc_thresh
+    
+    # Potting
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
+    axs.plot(score_cuts, pur, color="darkblue", label="Edge Purity")  # Purity
+    axs.plot(score_cuts, eff, color="darkorange", label="Edge Efficiency")  # Efficiency
+    
+    # Axes Params
+    axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
+    axs.set_xlabel('Edge Score Cut', size=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    # axs.set_ylim(0.5,1.02)
+    axs.legend(fontsize=14, loc='lower center')
+    
+    # Fig Params
+    fig.tight_layout()
+    fig.savefig(name+"_prc_cut.pdf", format="pdf")
+
+
+def plot_epc(metrics, name="gnn"):
+    """EPC Curve: Plott Efficiency (x) vs Purity (y)"""
+    
+    # Efficiency, Purity
+    eff = metrics.roc_tpr
+    pur = 1 - metrics.roc_fpr
+    epc_auc = sklearn.metrics.auc(eff, pur)
+    logging.info("EPC AUC: %s", epc_auc)
+    
+    # Plotting
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
+    axs.plot(eff, pur, color="darkorange", label="GNN Classifier")
+    axs.plot([0, 1], [1, 0], color="navy", linestyle="--", label="Naive Classifier")
+    
+    # Axes Params
+    axs.set_title("EP Curve, AUC = %.5f" % epc_auc, fontsize=15)
+    axs.set_xlabel("Efficiency", fontsize=20)
+    axs.set_ylabel("Purity", fontsize=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    axs.legend(fontsize=14, loc='lower left')
+    
+    # Fig Params
+    fig.tight_layout()
+    fig.savefig(name+"_epc.pdf", format="pdf")
+
+
+def plot_epc_cut(metrics, name="gnn"):
+    """EPC Curve: Plott Edge Score (x) vs Efficiency & Purity (y)"""
+    
+    # Efficiency, Purity and Threshold
+    eff = metrics.roc_tpr
+    pur = 1 - metrics.roc_fpr
+    score_cuts = metrics.roc_thresh
+    
+    # Make sure this is nicely plottable!
+    eff, pur, score_cuts = (
+        eff[score_cuts <= 1],
+        pur[score_cuts <= 1],
+        score_cuts[score_cuts <= 1],
+    )  
+    
+    # Plotting
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
+    axs.plot(score_cuts, pur, color="darkblue", label="Edge Purity")  # Purity
+    axs.plot(score_cuts, eff, color="darkorange", label="Edge Efficiency")  # Efficiency
+
+    # Axes Params
+    axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
+    axs.set_xlabel("Edge Score Cut", fontsize=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    # axs.set_ylim(0.5,1.02)
+    axs.legend(fontsize=14, loc='lower center')
+    
+    # Fig Params
+    fig.tight_layout()
+    fig.savefig(name+"_epc_cut.pdf", format="pdf")
+    
+
+def plot_output(preds, targets, threshold=0.5, name="gnn"):
     # Prepare the values
-    labels = targets > 0.5
+    labels = targets > threshold
 
     # Figure & Axes
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8,7))
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,8))
 
     # Ploting
     binning=dict(bins=25, range=(0,1), histtype='step', log=True)
-    ax.hist(preds[labels==True], label='True Edges', **binning)    # True Edges
-    ax.hist(preds[labels==False], label='False Edges', **binning)  # False Edges
+    axs.hist(preds[labels==True], label='True Edges', **binning)    # True Edges
+    axs.hist(preds[labels==False], label='False Edges', **binning)  # False Edges
     
     # Axes Params
-    ax.set_xlabel('Model Output', size=20)
-    ax.set_ylabel('Counts', size=20)
-    ax.tick_params(axis='both', which='major', labelsize=12)
-    ax.tick_params(axis='both', which='minor', labelsize=12)
-    # ax.set_ylim(ymin=.005)
-    ax.legend(fontsize=14, loc='best')
+    axs.set_title("Classifier Output", fontsize=15)
+    axs.set_xlabel('Model Output', size=20)
+    axs.set_ylabel('Counts', size=20)
+    axs.tick_params(axis='both', which='major', labelsize=12)
+    axs.tick_params(axis='both', which='minor', labelsize=12)
+    # axs.set_ylim(ymin=.005)
+    axs.legend(fontsize=14, loc='upper left')
     
     # Fig Params
     fig.tight_layout()
     fig.savefig(name+"_outputs.pdf")
-    
 
