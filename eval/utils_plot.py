@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import itertools
 
-fontsize = 16
+fontsize = 20
 minor_size = 14
 
 # pt params
@@ -104,7 +104,7 @@ def make_cmp_plot(arrays, legends, configs,
     ax.set_xlabel(xlabel, fontsize=fontsize)
     ax.set_ylabel(ylabel, fontsize=fontsize)
     add_up_xaxis(ax)
-    ax.legend(loc='upper right', fontsize=12)
+    ax.legend(loc='upper right', fontsize=16)
     ax.grid(False)
     fig.savefig("{}.pdf".format(outname))
 

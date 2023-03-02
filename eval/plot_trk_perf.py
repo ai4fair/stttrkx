@@ -42,7 +42,8 @@ if __name__ == "__main__":
     make_cmp_plot_fn = partial(make_cmp_plot,
                                legends=["Generated", "Reconstructable", "Matched"],
                                ylabel="Events", ratio_label='Track Efficiency',
-                               ratio_legends=["Physics Eff.", "Technical Eff."])
+                               #ratio_legends=["Physics Eff.", "Technical Eff."])
+                               ratio_legends=["Tracking Efficiency", "Tracking Efficiency (Tech.)"])
     
     print("pt_bins: ", pt_configs['bins'])
     print("n_bins: ", len(pt_configs['bins']))
