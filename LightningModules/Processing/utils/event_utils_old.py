@@ -97,7 +97,7 @@ def get_modulewise_edges(hits):
 def process_particles(particles, selection=False):
     """Special manipulation on particles dataframe"""
     
-    # find nhits, and drop_duplicates
+    # drop duplicates (present due to "PndMLTracker")
     particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
     particles.drop_duplicates(inplace=True, ignore_index=True)
     
@@ -121,19 +121,16 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
     if noise:
         # runs if noise=True
         truth = truth.merge(
-            # particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="left"
-            particles[["particle_id", "vx", "vy", "vz", "q", "pdgcode"]], on="particle_id", how="left"
+            particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="left"
         )
     else:
         # runs if noise=False
         truth = truth.merge(
-            # particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="inner"
-            particles[["particle_id", "vx", "vy", "vz", "q", "pdgcode"]], on="particle_id", how="inner"
+            particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="inner"
         )
     
-    # Calculate derived variables from 'truth'
-    pt = np.sqrt(truth.tpx**2 + truth.tpy**2)       # why not px, py for pt
-    truth = truth.assign(pt=pt)
+    # assign pt (from tpx & tpy, why not px & py ???) and add to truth
+    truth = truth.assign(pt=np.sqrt(truth.tpx**2 + truth.tpy**2))
     
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
@@ -154,17 +151,14 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
         # rename 'layer_id' to 'layer'.
         hits = hits.rename(columns={"layer_id": "layer"})
 
-    # Calculate derived variables from 'hits'
+    # Calculate derived hits variables
     r = np.sqrt(hits.x**2 + hits.y**2)
     phi = np.arctan2(hits.y, hits.x)
-    r3 = np.sqrt(hits.x**2 + hits.y**2 + hits.z**2)
-    theta = np.arccos(hits.z / r3)
-    eta = -np.log(np.tan(theta / 2.))
     
-    # Merge 'hits' with 'truth', but first add r, phi, theta, eta
-    hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta).merge(truth, on="hit_id")
+    # Merge `hits` with `truth`, but first add `r` & `phi`
+    hits = hits.assign(r=r, phi=phi).merge(truth, on="hit_id")
     
-    # Add 'event_id' column to this event.
+    # Add `event_id` column to this event.
     hits = hits.assign(event_id=int(event_file[-10:]))
 
     return hits
@@ -187,7 +181,7 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
     
     # Get list of all layers
     layers = hits.layer.to_numpy()
-    
+
     # Handle which truth graph(s) are being produced
     modulewise_true_edges, layerwise_true_edges = None, None
     
@@ -237,16 +231,13 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
     return (
         hits[["r", "phi", "isochrone"]].to_numpy() / feature_scale,
         hits.particle_id.to_numpy(),
-        hits.layer.to_numpy(),
+        layers,
         layerwise_true_edges,
         modulewise_true_edges,
         layerwise_input_edges,
         hits["hit_id"].to_numpy(),
         hits.pt.to_numpy(),
         # edge_weight_norm,
-        hits[["vx", "vy", "vz"]].to_numpy(),
-        hits.q.to_numpy(),
-        hits.pdgcode.to_numpy(),
     )
  
     
@@ -285,9 +276,6 @@ def prepare_event(
                 hid,
                 pt,
                 # weights,
-                vertex,
-                q,
-                pdgcode,
             ) = build_event(
                 event_file,
                 feature_scale,
@@ -308,9 +296,6 @@ def prepare_event(
                 hid=torch.from_numpy(hid),
                 pt=torch.from_numpy(pt),
                 # weights=torch.from_numpy(weights),
-                vertex=torch.from_numpy(vertex),
-                charge=torch.from_numpy(q),
-                pdgcode=torch.from_numpy(pdgcode),
             )
             
             # add edges to pytorch_geometric Data module
