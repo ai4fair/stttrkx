@@ -31,6 +31,7 @@ Use special data nodes for data transfers to NERSC.
 ```bash
 # use data node: dtn01
 scp -i ~/.ssh/nersc train_40k.tar.gz aakram@dtn01.nersc.gov:/global/u2/a/aakram/
+scp -i ~/.ssh/nersc aakram@dtn01.nersc.gov:/global/u2/a/aakram/ .
 ```
 
 ## _Submit Jobs on Cori/Perlmutter_

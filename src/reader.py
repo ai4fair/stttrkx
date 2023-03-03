@@ -6,7 +6,7 @@ import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import torch
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
@@ -23,27 +23,75 @@ except KeyError as e:
 
 # detector file
 detector_path = os.path.join(output_base, 'stt.csv')
-
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'event_file'])
 
 
-def process_particles(particles, selection=False):
-    """Special manipulation on particles dataframe"""
-    
-    # drop duplicates (present due to "PndMLTracker")
-    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
-    particles.drop_duplicates(inplace=True, ignore_index=True)
-    
-    if selection:
-        # just keep protons, pions, don't forget resetting index and dropping old one.
-        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
-    
-    return particles
+# SttTorchDataReader Class
+class SttTorchDataReader(object):
+    """Torch Geometric Data Reader from an Input Directory."""
+
+    def __init__(self, input_dir: str):
+        """Initialize Instance Variables in Constructor"""
+
+        self.path = input_dir
+        all_files = sorted(glob.glob(os.path.join(input_dir, "*")))
+        self.nevts = len(all_files)
+        self.all_evtids = [os.path.basename(x) for x in all_files]
+
+    def read(self, evtid: int = None):
+        """Read an Event from the Input Directory."""
+        event_fname = os.path.join(self.path, "{}".format(evtid))
+        event = torch.load(event_fname, map_location=device)
+        return event
+
+    def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
+        return self.read(evtid)
 
 
-# SttCSVReader Class
-class SttCSVReader(object):
+# Draw Reader Event::  Using Object Oriented API
+def Draw_TorchReader_Event(feature_data, figsize=(10, 10), save_fig=False):
+    """Draw event from the processing stage, the `feature_data` is pytorch_geometric data."""
+    plt.close('all')
+    
+    # init subplots
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+
+    # detector layout    
+    det = pd.read_csv(detector_path)
+    nkw = det.query('skewed==0')  # non-skewed
+    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
+    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
+    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
+    
+    # event Id
+    e_id = int(feature_data.event_file[-10:])
+        
+    # feature data
+    x, y, z = cylindrical_to_cartesian(r=feature_data.x[:, 0], phi=feature_data.x[:, 1], z=feature_data.x[:, 2])
+    
+    # particle tracks
+    p_ids = np.unique(feature_data.pid)
+    for pid in p_ids:
+        idx = feature_data.pid == pid
+        ax.scatter(x[idx], y[idx], label='particle_id: {}'.format(pid))
+
+    # plotting params
+    ax.set_title('Event ID # %d' % e_id)
+    ax.set_xlabel('x [cm]', fontsize=10)
+    ax.set_ylabel('y [cm]', fontsize=10)
+    ax.set_xlim(-41, 41)
+    ax.set_ylim(-41, 41)
+    ax.grid(False)
+    ax.legend(fontsize=10, loc='best')
+    fig.tight_layout()
+    
+    if save_fig:
+        fig.savefig('event_%d.png' % e_id)
+    return fig
+    
+# SttCSVDataReader Class
+class SttCSVDataReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
     
     def __init__(self, path: str, selection: bool, noise: bool, skewed: bool):
@@ -66,7 +114,7 @@ class SttCSVReader(object):
         self.all_evtids = [os.path.basename(x) for x in all_files]
     
     def read(self, evtid: int = None):
-        """Read a Single Event Using an Event ID."""
+        """Prepare event similar to event_utils/select_hit() in Processing."""
         
         # create event_prefix from evtid
         prefix = "event{:010d}".format(evtid)
@@ -83,8 +131,13 @@ class SttCSVReader(object):
         hits, cells, particles, truth = all_data
         
         # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
-        particles = process_particles(particles, selection=self._selection)
-    
+        particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+        particles.drop_duplicates(inplace=True, ignore_index=True)
+        
+        if self._selection:
+            # just keep protons, pions, don't forget resetting index and dropping old one.
+            particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+        
         # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
         hits = hits.merge(cells[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
     
@@ -113,7 +166,16 @@ class SttCSVReader(object):
         # compose event
         self.merge_truth_info_to_hits()
         
-        return Data(self._hits, self._cells, self._particles, self._truth, self._event, os.path.abspath(event_prefix))
+        # prepare Data tuple
+        data = Data(self._hits, 
+                    self._cells, 
+                    self._particles, 
+                    self._truth, 
+                    self._event,  # merged event similar to select_hits()
+                    os.path.abspath(event_prefix)
+       )
+        
+        return data
 
     def merge_truth_info_to_hits(self):
         """Merge truth information ('truth', 'particles') to 'hits'. 
@@ -160,6 +222,7 @@ class SttCSVReader(object):
         
         # add derived quantities to 'hits'
         hits = hits.assign(r=r, phi=phi, eta=eta, r3=r3, absZ=absz, tpt=tpt)
+        
         self._event = hits
     
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
@@ -167,7 +230,7 @@ class SttCSVReader(object):
 
 
 # Draw Reader Event:: Using Object Oriented API
-def Draw_Reader_Event(data=None, figsize=(10, 10), save_fig=False):
+def Draw_CSVReader_Event(data=None, figsize=(10, 10), save_fig=False):
     """Draw a single event produced by SttCSVReader class."""
     
     # OOP Method #1
