@@ -90,9 +90,12 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
     # and with pT >= min_pt are considered.
     particles_df = particles_df.merge(n_true_hits, on=['particle_id'], how='left')
     
-    # FIXME (DONE) ADAK: Apply pT cuts
-    particles_df = particles_df[(particles_df.pt > min_pt) & (particles_df.pt < max_pt)]
-   
+    # TODO: Further Filtering on pt, vertex (d0, z0), q, pdgcode, theta, eta
+    # particles_df = particles_df[(particles_df.pt > min_pt) & (particles_df.pt < max_pt)]
+    # particles_df = particles_df[(particles_df.q > 0)]
+    # particles_df = particles_df[(particles_df.q < 0)]
+    # particles_df = particles_df[particles_df['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+    
     is_trackable = particles_df.n_true_hits >= min_hits_truth
 
     # event has 3 columnes [track_id, particle_id, hit_id]
@@ -189,8 +192,18 @@ def run_one_evt(evtid, raw_trkx_data_reader, reco_trkx_data_reader, **kwargs):
     _truth = pd.DataFrame({'hit_id': raw_trkx_data.hid.numpy(), 'particle_id': raw_trkx_data.pid.int().numpy()},
                           columns=['hit_id', 'particle_id'])
 
-    _particles = pd.DataFrame({'particle_id': raw_trkx_data.pid.int().numpy(), 'pt': raw_trkx_data.pt.numpy()},
-                              columns=['particle_id', 'pt']).drop_duplicates(subset=['particle_id'])
+    _particles = pd.DataFrame({'particle_id': raw_trkx_data.pid.int().numpy(), 
+                               'pt': raw_trkx_data.pt.numpy(),
+                               'vx': raw_trkx_data.vertex[:,0].numpy(),
+                               'vy': raw_trkx_data.vertex[:,1].numpy(),
+                               'vz': raw_trkx_data.vertex[:,2].numpy(),
+                               'q': raw_trkx_data.charge.numpy(),
+                               'pdgcode': raw_trkx_data.pdgcode.numpy(),
+                               'theta': raw_trkx_data.theta.numpy(),
+                               'eta': raw_trkx_data.eta.numpy()
+                               },
+                              columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'theta', 'eta']
+                              ).drop_duplicates(subset=['particle_id'])
 
     results = evaluate_reco_tracks(_truth, reco_trkx_data, _particles, **kwargs)
 
