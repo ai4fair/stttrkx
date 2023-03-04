@@ -11,6 +11,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH -c 64
 #SBATCH --gpus-per-task=1
+#SBATCH --requeue
 #SBATCH --signal=SIGUSR1@90        # wall signal
 
 # *** I/O ***
