@@ -77,35 +77,6 @@ if __name__ == "__main__":
         # make_cmp_plot_fn([gen_eta, true_eta, reco_eta], configs=eta_configs, xlabel=r"$\eta$",
         #    outname=os.path.join(outdir, "{}_eta_cut{}_{}".format(out_prefix, cut_pt*1000, cut_eta)),
         #    ymin=0.6)
-
-    # vertex cuts
-    all_cuts = [(0, 4), (0.2, 4)]
-    for (cut_d0) in all_cuts:
-        print("cut_pt: {}, cut_eta: {}".format(cut_pt, cut_eta))
-    
-        cuts = (pt > cut_pt) & (np.abs(eta) < cut_eta)
         
-        # make pt plots
-        gen_pt = pt[cuts]
-        true_pt = pt[cuts & rectable_idx]
-        reco_pt = pt[cuts & rectable_idx & matched_idx]
         
-        make_cmp_plot_fn([gen_pt, true_pt, reco_pt], 
-            configs=pt_configs, xlabel=r"$p_t$ [GeV]",
-            outname=os.path.join(outdir, "{}_pt_cut{}_{}".format(out_prefix, cut_pt*1000, cut_eta)),
-            ymin=0.6)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        
