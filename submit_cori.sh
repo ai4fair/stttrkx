@@ -5,14 +5,14 @@
 #SBATCH -A m3443
 #SBATCH -J ctd
 #SBATCH -C gpu
-#SBATCH -q regular                 # special, early_science
+#SBATCH -q regular
 #SBATCH -t 4:00:00
 #SBATCH -n 1
 #SBATCH --ntasks-per-node=1
 #SBATCH -c 64
 #SBATCH --gpus-per-task=1
-#SBATCH --requeue
-#SBATCH --signal=SIGUSR1@90        # wall signal
+#SBATCH --requeue                  # automatically requeue slurm jobs
+#SBATCH --signal=SIGUSR1@90        # signal to pytorch-lighting about job termination
 
 # *** I/O ***
 #SBATCH -D .
