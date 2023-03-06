@@ -10,6 +10,7 @@ import torch
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
+from utils_math import cylindrical_to_cartesian
 
 # TODO: skewed or non-skewed selection: make layer_id column for both cases.
 
@@ -49,7 +50,7 @@ class SttTorchDataReader(object):
         return self.read(evtid)
 
 
-# Draw Reader Event::  Using Object Oriented API
+# Draw Reader Event::  Using Object-Oriented API
 def Draw_TorchReader_Event(feature_data, figsize=(10, 10), save_fig=False):
     """Draw event from the processing stage, the `feature_data` is pytorch_geometric data."""
     plt.close('all')
@@ -89,7 +90,8 @@ def Draw_TorchReader_Event(feature_data, figsize=(10, 10), save_fig=False):
     if save_fig:
         fig.savefig('event_%d.png' % e_id)
     return fig
-    
+
+
 # SttCSVDataReader Class
 class SttCSVDataReader(object):
     """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
@@ -173,7 +175,7 @@ class SttCSVDataReader(object):
                     self._truth, 
                     self._event,  # merged event similar to select_hits()
                     os.path.abspath(event_prefix)
-       )
+                    )
         
         return data
 
@@ -229,7 +231,7 @@ class SttCSVDataReader(object):
         return self.read(evtid)
 
 
-# Draw Reader Event:: Using Object Oriented API
+# Draw Reader Event:: Using Object-Oriented API
 def Draw_CSVReader_Event(data=None, figsize=(10, 10), save_fig=False):
     """Draw a single event produced by SttCSVReader class."""
     

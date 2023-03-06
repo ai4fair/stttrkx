@@ -209,7 +209,8 @@ def process_particles(particles, selection=False):
         particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
     
     return particles
-    
+
+
 def Compose_Event(event_prefix="", selection=False, noise=False, skewed=True):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
@@ -262,7 +263,7 @@ def Compose_Event(event_prefix="", selection=False, noise=False, skewed=True):
 
 
 # Draw Event:: (Using Object Oriented API)
-def Draw_Compose_Event(event=None, figsize=(10,10), save_fig=False):
+def Draw_Compose_Event(event=None, figsize=(10, 10), save_fig=False):
     """Draw a single event using 'event' DataFrame."""
     
     # OOP Method #1
@@ -281,7 +282,7 @@ def Draw_Compose_Event(event=None, figsize=(10,10), save_fig=False):
     for i in p_ids:
         df_ = event.loc[event.particle_id == i]
         ax.scatter(df_.x.values, df_.y.values,
-                   #s=(df_.isochrone*3000/45).values,
+                   # s=(df_.isochrone*3000/45).values,
                    label='particle_id: {}'.format(i))
     
     ax.set_title('Event ID # {}'.format(e_ids))
