@@ -256,8 +256,8 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
         hits[["vx", "vy", "vz"]].to_numpy(),
         hits.q.to_numpy(),
         hits.pdgcode.to_numpy(),
-        hits.theta.to_numpy(),
-        hits.eta.to_numpy(),
+        hits.ptheta.to_numpy(),
+        hits.peta.to_numpy(),
     )
  
     
@@ -299,8 +299,8 @@ def prepare_event(
                 vertex,
                 q,
                 pdgcode,
-                theta,
-                eta
+                ptheta,
+                peta
             ) = build_event(
                 event_file,
                 feature_scale,
@@ -324,8 +324,8 @@ def prepare_event(
                 vertex=torch.from_numpy(vertex),
                 charge=torch.from_numpy(q),
                 pdgcode=torch.from_numpy(pdgcode),
-                theta=torch.from_numpy(theta),
-                eta=torch.from_numpy(eta),
+                ptheta=torch.from_numpy(ptheta),
+                peta=torch.from_numpy(peta),
             )
             
             # add edges to pytorch_geometric Data module
