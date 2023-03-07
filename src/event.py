@@ -197,21 +197,7 @@ class Event(object):
 
 
 # Compose DataFrames into Single Event DataFrame.
-def process_particles(particles, selection=False):
-    """Special manipulation on particles dataframe"""
-    
-    # drop duplicates (present due to "PndMLTracker")
-    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
-    particles.drop_duplicates(inplace=True, ignore_index=True)
-    
-    if selection:
-        # just keep protons, pions, don't forget resetting index and dropping old one.
-        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
-    
-    return particles
-
-
-def Compose_Event(event_prefix="", selection=False, noise=False, skewed=True):
+def Compose_Event(event_prefix="", noise=False, skewed=True, selection=False):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
     the necessary columns in the final dataframe."""
@@ -219,47 +205,65 @@ def Compose_Event(event_prefix="", selection=False, noise=False, skewed=True):
     # load data using event_prefix (e.g. path/to/event0000000001)
     hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
     
-    # preprocess particles dataframe e.g. nhits, drop_duplicates, etc.
-    particles = process_particles(particles, selection)
+    # drop duplicates (present due to "PndMLTracker")
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
     
-    # first merge truth & particles on particle_id, assuming
+    # particle selection
+    if selection:
+        particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
+        
+    # handle noise
     if noise:
-        # runs if noise=True
         truth = truth.merge(
-            particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="left"
+            particles[["particle_id", "vx", "vy", "vz", "q", "nhits"]], on="particle_id", how="left"
         )
     else:
-        # runs if noise=False
         truth = truth.merge(
-            particles[["particle_id", "vx", "vy", "vz"]], on="particle_id", how="inner"
+            particles[["particle_id", "vx", "vy", "vz", "q", "nhits"]], on="particle_id", how="inner"
         )
-
-    # assign pt (from tpx & tpy ???) and add to truth
-    truth = truth.assign(pt=np.sqrt(truth.tpx ** 2 + truth.tpy ** 2))
+    
+    # calculate derived variables from 'truth'
+    px = truth.tpx
+    py = truth.tpy
+    pz = truth.tpz
+    
+    pt = np.sqrt(px**2 + py**2)
+    ptheta = np.arctan2(pt, pz)
+    peta = -np.log(np.tan(0.5 * ptheta))
+    
+    truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta)
 
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
 
-    # skip skewed tubes
+    # handle skewed layers
     if skewed is False:
         hits = hits.query('skewed==0')
 
-        # rename layer_ids from 0,1,2...,17 & assign a new colmn named "layer"
+        # rename layer_ids from 0,1,2...,n
         vlids = hits.layer_id.unique()
         n_det_layers = len(vlids)
         vlid_groups = hits.groupby(['layer_id'])
-        hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
-    else:
-        # rename 'layer_id' to 'layer'.
-        hits = hits.rename(columns={"layer_id": "layer"})
-        
-    # merge hits with truth, but first find r & phi
-    hits = hits.assign(r=np.sqrt(hits.x ** 2 + hits.y ** 2), phi=np.arctan2(hits.y, hits.x)).merge(truth, on="hit_id")
+        hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer_id=i) for i in range(n_det_layers)])
+    
+    # reset index, maybe its jumbled up
+    hits = hits.reset_index(drop=True)
+    
+    # calculate derived variables from 'hits'
+    r = np.sqrt(hits.x**2 + hits.y**2)
+    phi = np.arctan2(hits.y, hits.x)
+    r3 = np.sqrt(hits.x**2 + hits.y**2 + hits.z**2)
+    theta = np.arccos(hits.z / r3)
+    eta = -np.log(np.tan(theta / 2.))
+    
+    # merge 'hits' with 'truth', but first add r, phi, theta, eta
+    hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta).merge(truth, on="hit_id")
 
-    # assign event_id to this event
-    event = hits.assign(event_id=int(event_prefix[-10:]))
-
-    return event
+    # add 'event_id' column to this event.
+    hits = hits.assign(event_id=int(event_prefix[-10:]))
+    
+    return hits
 
 
 # Draw Event:: (Using Object Oriented API)
