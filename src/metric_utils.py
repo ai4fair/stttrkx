@@ -1,6 +1,7 @@
-"""
-This file contains some common helper code for the analysis notebooks.
-"""
+#!/usr/bin/env python
+# coding: utf-8
+
+"""Helper functions from exatrkx-ctd2020/.../data_utils.py repo"""
 
 import logging
 from collections import namedtuple
@@ -189,7 +190,7 @@ def plot_epc_cut(metrics, name="gnn"):
     axs.plot(score_cuts, eff, color="darkorange", label="Edge Efficiency")  # Efficiency
 
     # Axes Params
-    axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
+    # axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
     axs.set_xlabel("Edge Score Cut", fontsize=20)
     axs.tick_params(axis='both', which='major', labelsize=12)
     axs.tick_params(axis='both', which='minor', labelsize=12)
@@ -206,7 +207,7 @@ def plot_output(preds, targets, threshold=0.5, name="gnn"):
     labels = targets > threshold
 
     # Figure & Axes
-    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
+    fig, axs = plt.subplots(nrows=1, ncols=1, prfigsize=(10, 8))
 
     # Ploting
     binning = dict(bins=25, range=(0, 1), histtype='step', log=True)
@@ -214,7 +215,7 @@ def plot_output(preds, targets, threshold=0.5, name="gnn"):
     axs.hist(preds[labels == False], label='False Edges', **binning)  # False Edges
 
     # Axes Params
-    axs.set_title("Classifier Output", fontsize=15)
+    # axs.set_title("Classifier Output", fontsize=15)
     axs.set_xlabel('Model Output', size=20)
     axs.set_ylabel('Counts', size=20)
     axs.tick_params(axis='both', which='major', labelsize=12)
@@ -225,3 +226,41 @@ def plot_output(preds, targets, threshold=0.5, name="gnn"):
     # Fig Params
     fig.tight_layout()
     fig.savefig(name + "_outputs.pdf")
+
+
+# Draw Prediction Sample
+def draw_sample_xy(hits, edges, preds, labels, cut=0.5, figsize=(16, 16)):
+    """"Draw Sample with True and False Edges"""
+    
+    # coordinate transformation
+    r, phi, ir = hits.T
+    x, y = polar_to_cartesian(r, phi)
+    
+    # detector layout
+    fig, ax = detector_layout(figsize=figsize)
+    
+    # Draw the segments
+    for j in range(labels.shape[0]):
+        
+        ptx1 = x[edges[0,j]]
+        ptx2 = x[edges[1,j]]
+        pty1 = y[edges[0,j]]
+        pty2 = y[edges[1,j]]
+        
+        # False Negatives
+        if preds[j] < cut and labels[j] > cut:
+            # ax.plot([x[edges[0,j]], x[edges[1,j]]], [y[edges[0,j]], y[edges[1,j]]], '--', c='b')
+            ax.plot([ptx1, ptx2], [pty1, pty2], '--', color='b', lw=1.5, alpha=0.9)
+        
+        # False Positives
+        if preds[j] > cut and labels[j] < cut:
+            # ax.plot([x[edges[0,j]], x[edges[1,j]]], [y[edges[0,j]], y[edges[1,j]]], '-', c='r', alpha=preds[j])
+            ax.plot([ptx1, ptx2], [pty1, pty2], '-', color='r', lw=1.5, alpha=0.15)
+        
+        # True Positives
+        if preds[j] > cut and labels[j] > cut:
+            # ax.plot([x[edges[0,j]], x[edges[1,j]]], [y[edges[0,j]], y[edges[1,j]]], '-', c='k', alpha=preds[j])
+            ax.plot([ptx1, ptx2], [pty1, pty2], '-', color='k', lw=1.5, alpha=0.9)
+        
+    return fig, ax
+

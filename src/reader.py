@@ -10,7 +10,7 @@ import torch
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
-from utils_math import cylindrical_to_cartesian
+from .utils_math import cylindrical_to_cartesian
 
 # TODO: skewed or non-skewed selection: make layer_id column for both cases.
 

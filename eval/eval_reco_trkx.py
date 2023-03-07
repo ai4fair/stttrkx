@@ -199,10 +199,10 @@ def run_one_evt(evtid, raw_trkx_data_reader, reco_trkx_data_reader, **kwargs):
                                'vz': raw_trkx_data.vertex[:,2].numpy(),
                                'q': raw_trkx_data.charge.numpy(),
                                'pdgcode': raw_trkx_data.pdgcode.numpy(),
-                               'theta': raw_trkx_data.theta.numpy(),
-                               'eta': raw_trkx_data.eta.numpy()
+                               'ptheta': raw_trkx_data.ptheta.numpy(),
+                               'peta': raw_trkx_data.peta.numpy()
                                },
-                              columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'theta', 'eta']
+                              columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'ptheta', 'peta']
                               ).drop_duplicates(subset=['particle_id'])
 
     results = evaluate_reco_tracks(_truth, reco_trkx_data, _particles, **kwargs)
