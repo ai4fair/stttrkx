@@ -153,16 +153,16 @@ def plot_epc(metrics, name="gnn"):
 
     # Plotting
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
-    axs.plot(eff, pur, color="darkorange", label="GNN Classifier")
+    axs.plot(eff, pur, color="darkorange", label="GNN Classifier, AUC = %.5f" % epc_auc)
     axs.plot([0, 1], [1, 0], color="navy", linestyle="--", label="Naive Classifier")
 
     # Axes Params
-    axs.set_title("EP Curve, AUC = %.5f" % epc_auc, fontsize=15)
-    axs.set_xlabel("Efficiency", fontsize=20)
-    axs.set_ylabel("Purity", fontsize=20)
-    axs.tick_params(axis='both', which='major', labelsize=12)
-    axs.tick_params(axis='both', which='minor', labelsize=12)
-    axs.legend(fontsize=14, loc='lower left')
+    # axs.set_title("EP Curve, AUC = %.5f" % epc_auc, fontsize=15)
+    axs.set_xlabel("Edge Efficiency", fontsize=20)
+    axs.set_ylabel("Edge Purity", fontsize=20)
+    axs.tick_params(axis='both', which='major', labelsize=14)
+    axs.tick_params(axis='both', which='minor', labelsize=14)
+    axs.legend(loc='lower left', fontsize=16)
 
     # Fig Params
     fig.tight_layout()
@@ -192,10 +192,10 @@ def plot_epc_cut(metrics, name="gnn"):
     # Axes Params
     # axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
     axs.set_xlabel("Edge Score Cut", fontsize=20)
-    axs.tick_params(axis='both', which='major', labelsize=12)
-    axs.tick_params(axis='both', which='minor', labelsize=12)
+    axs.tick_params(axis='both', which='major', labelsize=14)
+    axs.tick_params(axis='both', which='minor', labelsize=14)
     # axs.set_ylim(0.5,1.02)
-    axs.legend(fontsize=14, loc='lower center')
+    axs.legend(loc='lower center', fontsize=16)
 
     # Fig Params
     fig.tight_layout()
@@ -207,7 +207,7 @@ def plot_output(preds, targets, threshold=0.5, name="gnn"):
     labels = targets > threshold
 
     # Figure & Axes
-    fig, axs = plt.subplots(nrows=1, ncols=1, prfigsize=(10, 8))
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
 
     # Ploting
     binning = dict(bins=25, range=(0, 1), histtype='step', log=True)
@@ -218,10 +218,10 @@ def plot_output(preds, targets, threshold=0.5, name="gnn"):
     # axs.set_title("Classifier Output", fontsize=15)
     axs.set_xlabel('Model Output', size=20)
     axs.set_ylabel('Counts', size=20)
-    axs.tick_params(axis='both', which='major', labelsize=12)
-    axs.tick_params(axis='both', which='minor', labelsize=12)
+    axs.tick_params(axis='both', which='major', labelsize=14)
+    axs.tick_params(axis='both', which='minor', labelsize=14)
     # axs.set_ylim(ymin=.005)
-    axs.legend(fontsize=14, loc='upper left')
+    axs.legend(loc='upper center', fontsize=16)
 
     # Fig Params
     fig.tight_layout()
