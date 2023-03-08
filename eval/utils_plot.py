@@ -9,7 +9,7 @@ from matplotlib.ticker import AutoMinorLocator
 import itertools
 
 fontsize = 20
-minor_size = 14
+minor_size = 15
 
 # pt params
 # pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
@@ -60,6 +60,7 @@ def add_up_xaxis(ax):
     ax2.set_xticks(ax.get_xticks())
     ax2.set_xbound(ax.get_xbound())
     ax2.set_xticklabels(["" for x in ax.get_xticks()])
+
     ax2.xaxis.set_minor_locator(AutoMinorLocator())
 
 
@@ -83,8 +84,7 @@ def add_mean_std(array, x, y, ax, color='k', dy=0.3, digits=2, fontsize=12, with
     this_mean, this_std = np.mean(array), np.std(array)
     ax.text(x, y, "Mean: {0:.{1}f}".format(this_mean, digits), color=color, fontsize=fontsize)
     if with_std:
-        ax.text(x, y-dy, "Standard Deviation: {0:.{1}f}".format(this_std, digits),
-                color=color, fontsize=12)
+        ax.text(x, y-dy, "Standard Deviation: {0:.{1}f}".format(this_std, digits), color=color, fontsize=12)
 
 
 # Make Plot
@@ -103,6 +103,9 @@ def make_cmp_plot(arrays, legends, configs,
 
     ax.set_xlabel(xlabel, fontsize=fontsize)
     ax.set_ylabel(ylabel, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+    
     add_up_xaxis(ax)
     ax.legend(loc='upper right', fontsize=16)
     ax.grid(False)
@@ -121,11 +124,14 @@ def make_cmp_plot(arrays, legends, configs,
 
     ax.set_xlabel(xlabel, fontsize=fontsize)
     ax.set_ylabel(ratio_label, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+    
     ax.set_ylim([0., 1.])
     add_up_xaxis(ax)
 
     if ratio_legends is not None:
-        ax.legend(loc='lower right', fontsize=12)
+        ax.legend(loc='lower left', fontsize=16)
 
     ax.grid(False)
     fig.savefig("{}_ratio.pdf".format(outname))

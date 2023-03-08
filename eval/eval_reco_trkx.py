@@ -89,6 +89,7 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
     # only particles leaves at least min_hits_truth spacepoints 
     # and with pT >= min_pt are considered.
     particles_df = particles_df.merge(n_true_hits, on=['particle_id'], how='left')
+    is_trackable = particles_df.n_true_hits >= min_hits_truth
     
     # TODO: Further Filtering on pt, vertex (d0, z0), q, pdgcode, theta, eta
     # particles_df = particles_df[(particles_df.pt > min_pt) & (particles_df.pt < max_pt)]
@@ -96,8 +97,6 @@ def evaluate_reco_tracks(truth_df: pd.DataFrame,
     # particles_df = particles_df[(particles_df.q < 0)]
     # particles_df = particles_df[particles_df['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
     
-    is_trackable = particles_df.n_true_hits >= min_hits_truth
-
     # event has 3 columnes [track_id, particle_id, hit_id]
     event = pd.merge(reco_df, truth_df, on=['hit_id'], how='left')
 
