@@ -108,7 +108,10 @@ def draw_proc_event(feature_data, figsize=(10, 10), save_fig=False):
     for pid in p_ids:
         idx = feature_data.pid == pid
         # TODO: here z=isochrone radius, one should add a  separate variable for isochrone in feature_data
-        ax.scatter(x[idx], y[idx], s=(z[idx]*100), label='particle_id: {}'.format(pid))
+        ax.scatter(x[idx],
+                   y[idx], 
+                   # s=(z[idx]*100),
+                   label='particle_id: {}'.format(pid))
 
     # plotting params
     ax.set_title('Event ID # %d' % e_id)

@@ -1,9 +1,0 @@
-# Split data into 90%,5%,5% ratio into specific directories.
-
-# Create Data Dir.
-mkdir -p train val test
-
-# Transfer Data to Dir (doesn't work with long dir paths).
-mv {0..89999} train/
-mv {90000..94999} val/
-mv {95000..99999} test/

@@ -11,7 +11,7 @@ import torch
 import matplotlib.pyplot as plt
 sys.path.append('src')
 
-inputdir='./run_quick/feature_store_fwp'
+inputdir='./run_all/fwp_feature_store'
 proc_files = sorted(glob.glob(os.path.join(inputdir, "*")))
 
 i = 0
@@ -84,7 +84,6 @@ ax.set_yscale('log')
 ax.grid(False)
 ax.legend(fontsize=20, loc='best')
 fig.tight_layout()
-fig.savefig("Edges.png")
-fig.savefig("Edges.pdf")
+fig.savefig("edges.pdf")
 fig.show()
 
