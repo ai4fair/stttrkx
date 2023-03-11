@@ -28,7 +28,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 def get_layerwise_edges(hits):
-    """Build Layerwise True Edges i.e. the True Graph. Here `hits` represent complete event."""
+    """Get layerwise true edge list. Here 'hits' represent complete event."""
     
     # ADAK: Sort by increasing distance from production (IP)
     hits = hits.assign(
@@ -55,7 +55,7 @@ def get_layerwise_edges(hits):
 
     
 def get_modulewise_edges(hits):
-    """Get modulewise (layerless) true edge list. Here hits represent complete event."""
+    """Get modulewise (layerless) true edge list. Here 'hits' represent complete event."""
     signal = hits[
         ((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())
     ]
@@ -88,7 +88,44 @@ def get_modulewise_edges(hits):
             true_edges.append([i, j])
 
     true_edges = np.array(true_edges).T
+    true_edges = signal.unsorted_index.values[true_edges]
+    return true_edges
 
+
+def get_modulewise_ordered_edges(hits):
+    """Get modulewise (layerless) true edge list using the order
+    of occurence hits. Here 'hits' represent complete event."""
+    
+    # Handle NaN and Null Values
+    signal = hits[
+        ((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())
+    ]
+    signal = signal.drop_duplicates(
+        subset=["particle_id", "volume_id", "layer_id", "module_id"]
+    )
+    
+    # Handle Indexing (Keep order of occurence)
+    signal = signal.reset_index()
+    
+    # Rename 'index' column to 'unsorted_index'
+    signal = signal.rename(columns={"index": "unsorted_index"}).reset_index(drop=False)
+
+    # Handle Particle_id 0
+    signal.loc[signal["particle_id"] == 0, "particle_id"] = np.nan
+
+    # Group by Particle ID
+    signal_list = signal.groupby(["particle_id"], sort=False)["index"].agg(
+        lambda x: list(x)
+    )
+
+    # Generate Edges
+    true_edges = []
+    for row in signal_list.values:
+        for i, j in zip(row[:-1], row[1:]):
+            true_edges.append([i, j])
+    
+    # Return Edges
+    true_edges = np.array(true_edges).T
     true_edges = signal.unsorted_index.values[true_edges]
 
     return true_edges
