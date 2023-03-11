@@ -92,7 +92,7 @@ def get_modulewise_edges(hits):
     return true_edges
 
 
-def get_modulewise_ordered_edges(hits):
+def get_modulewise_edges_ordered(hits):
     """Get modulewise (layerless) true edge list using the order
     of occurence hits. Here 'hits' represent complete event."""
     
