@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     # plot the efficiency as a function of pT, eta
     make_cmp_plot_fn = partial(make_cmp_plot,
-                               legends=["Generated", "Reconstructable", "Matched"],
+                               legends=["Selected", "Reconstructable", "Matched"],
                                ylabel="Events", ratio_label='Track Efficiency',
                                #ratio_legends=["Physics Eff.", "Technical Eff."])
                                ratio_legends=["Tracking Efficiency", "Tracking Efficiency (Tech.)"])

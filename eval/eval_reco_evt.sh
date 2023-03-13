@@ -2,11 +2,25 @@
 
 # This script runs 'trkx_reco_eval.py' for a single event.
 
-if [ $# -lt 1 ]; then
-  echo -e "Provide Event ID.\n"
-  echo -e "USAGE: ./eval.sh <event_id>"
-  exit 1
+# Max Events
+evt=1
+
+if test "$1" != ""; then
+  evt=$1
 fi
+
+
+# Stage [dnn, gnn, agnn,...]
+ann=gnn
+
+
+# Data Directories
+raw_inputdir="../run_all/fwp_"$ann"_processed/pred"  # output of GNN stage as in test/pred
+rec_inputdir="../run_all/fwp_"$ann"_segmenting/seg"  # output of trkx_from_gnn.sh
+outputdir="../run_all/fwp_"$ann"_segmenting/eval"    # output of eval_reco_trkx.sh
+outfile=$outputdir"/$1"                              # name prefix of output files
+mkdir -p $outputdir
+
 
 
 evtid=$1
@@ -20,13 +34,13 @@ outputdir="run/trkx_reco_eval/$1"
 #outputdir="run/trkx_reco_eval/bad"
 
 python eval_reco_trkx.py \
-    --reco-tracks-path $reco_tracks \
-    --raw-tracks-path $gnn_pred \
-    --outname $outputdir \
-    --event-id $evtid \
+    --raw-tracks-path $raw_inputdir \
+    --reco-tracks-path $rec_inputdir \
+    --outname $outfile \
+    --event-id $evt \
     --force \
+    --min-pt 0.0 \
     --min-hits-truth 7 \
-    --min-hits-reco 4 \
-    --min-pt 0. \
+    --min-hits-reco 6 \
     --frac-reco-matched 0.5 \
     --frac-truth-matched 0.5

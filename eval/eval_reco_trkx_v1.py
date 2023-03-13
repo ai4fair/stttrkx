@@ -35,33 +35,40 @@ class SttTorchDataReader(object):
         return self.read(evtid)
 
 
-def evaluate_reco_tracks(
-        truth: pd.DataFrame, reconstructed: pd.DataFrame,
-        particles: pd.DataFrame,
-        min_hits_truth=9, min_hits_reco=5,
-        min_pt=1., frac_reco_matched=0.5, frac_truth_matched=0.5, **kwargs):
-    """Return 
-    
-    
+def evaluate_reco_tracks(truth_df: pd.DataFrame,
+                         reco_df: pd.DataFrame,
+                         particles_df: pd.DataFrame,
+                         min_hits_truth: int = 9,
+                         min_hits_reco: int = 5,
+                         min_pt: float = 1.,
+                         max_pt: float = 1.5,
+                         frac_reco_matched: float = 0.5,
+                         frac_truth_matched=0.5,
+                         **kwargs):
+    """
     Args:
-        truth: a dataframe with columns of ['hit_id', 'particle_id']
-        reconstructed: a dataframe with columns of ['hit_id', 'track_id']
-        particles: a dataframe with columns of 
+        truth_df: a dataframe with columns of ['hit_id', 'particle_id']
+        reco_df: a dataframe with columns of ['hit_id', 'track_id']
+        particles_df: a dataframe with columns of
             ['particle_id', 'pt', 'eta', 'radius', 'vz'].
             where radius = sqrt(vx**2 + vy**2) and 
             ['vx', 'vy', 'vz'] are the production vertex of the particle
         min_hits_truth: minimum number of hits for truth tracks
         min_hits_reco:  minimum number of hits for reconstructed tracks
+        min_pt: minimum pT to filter out
+        max_pt: maximum pT to filter out
+        frac_reco_matched: frac of reco tracks matched ??? (ADAK)
+        frac_truth_matched: frac of true tracks matched ??? (ADAK)
 
     Returns:
         A tuple of (
-            n_true_tracks: int, number of true tracks
-            n_reco_tracks: int, number of reconstructed tracks
+            num_true_tracks: int, number of true tracks
+            num_reco_tracks: int, number of reconstructed tracks
             n_matched_reco_tracks: int, number of reconstructed tracks matched to true tracks
             matched_pids: np.narray, a list of particle IDs matched by reconstructed tracks
         )
     """
-    # just in case particle_id == 0 included in truth.
+# just in case particle_id == 0 included in truth.
     if 'particle_id' in truth.columns:
         truth = truth[truth.particle_id > 0]
 
@@ -72,10 +79,6 @@ def evaluate_reco_tracks(
 
     # only tracks with a minimum number of spacepoints are considered
     n_reco_hits = n_reco_hits[n_reco_hits.n_reco_hits >= min_hits_reco]
-    
-    # FIXME: Check
-    # print("shape:", n_reco_hits.shape)
-    
     reconstructed = reconstructed[reconstructed.track_id.isin(n_reco_hits.track_id.values)]
 
     # get number of spacepoints in each particle
@@ -128,11 +131,7 @@ def evaluate_reco_tracks(
     matched_reco_tracks = reco_matching[
         (reco_matching.purity_reco_max >= frac_reco_matched) \
       & (reco_matching.purity_reco == reco_matching.purity_reco_max)]
-    
-    # FIXME: Check
-    if matched_reco_tracks.shape[0] > n_reco_hits.shape[0]:
-        print("shape:", matched_reco_tracks.shape[0], n_reco_hits.shape[0])
-    
+
     matched_true_particles = truth_matching[
         (truth_matching.purity_true_max >= frac_truth_matched) \
       & (truth_matching.purity_true == truth_matching.purity_true_max)]
@@ -177,43 +176,48 @@ def evaluate_reco_tracks(
             particles)
 
 
-def run_one_evt(evtid, csv_reader, recotrkx_reader, **kwargs):
+def run_one_evt(evtid, raw_trkx_data_reader, reco_trkx_data_reader, **kwargs):
     print("Running {}".format(evtid))
 
-    raw_data = csv_reader(evtid)
-    truth = pd.DataFrame({'hit_id': raw_data.hid.numpy(), 'particle_id': raw_data.pid.int().numpy()},
+    # access torch data using reader's
+    raw_trkx_data = raw_trkx_data_reader(evtid)
+    reco_trkx_data = reco_trkx_data_reader(evtid)
+
+    # create truth, particles dataframes from torch data
+    _truth = pd.DataFrame({'hit_id': raw_trkx_data.hid.numpy(), 'particle_id': raw_trkx_data.pid.int().numpy()},
                           columns=['hit_id', 'particle_id'])
-                          
-    particles = pd.DataFrame({'particle_id': raw_data.pid.int().numpy(),
-                               'pt': raw_data.pt.numpy(),
-                               'vx': raw_data.vertex[:,0].numpy(),
-                               'vy': raw_data.vertex[:,1].numpy(),
-                               'vz': raw_data.vertex[:,2].numpy(),
-                               'q': raw_data.charge.numpy(),
-                               'pdgcode': raw_data.pdgcode.numpy(),
-                               'ptheta': raw_data.ptheta.numpy(),
-                               'peta': raw_data.peta.numpy(),
-                               'pphi': raw_data.pphi.numpy()
+
+    _particles = pd.DataFrame({'particle_id': raw_trkx_data.pid.int().numpy(),
+                               'pt': raw_trkx_data.pt.numpy(),
+                               'vx': raw_trkx_data.vertex[:,0].numpy(),
+                               'vy': raw_trkx_data.vertex[:,1].numpy(),
+                               'vz': raw_trkx_data.vertex[:,2].numpy(),
+                               'q': raw_trkx_data.charge.numpy(),
+                               'pdgcode': raw_trkx_data.pdgcode.numpy(),
+                               'ptheta': raw_trkx_data.ptheta.numpy(),
+                               'peta': raw_trkx_data.peta.numpy(),
+                               'pphi': raw_trkx_data.pphi.numpy()
                                },
                               columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'ptheta', 'peta', 'pphi']
                               ).drop_duplicates(subset=['particle_id'])
 
-    submission = recotrkx_reader(evtid)
-    results = evaluate_reco_tracks(truth, submission, particles, **kwargs)
-    return results[:-1] + (results[-1].assign(evtid=evtid), )
+    results = evaluate_reco_tracks(_truth, reco_trkx_data, _particles, **kwargs)
+
+    return results[:-1] + (results[-1].assign(evtid=evtid),)
+
 
 # %%
 if __name__ == '__main__':
+    import time
     import argparse
     from multiprocessing import Pool
-    import time
     from functools import partial
 
     parser = argparse.ArgumentParser(description='Evaluating tracking reconstruction')
     add_arg = parser.add_argument
-    add_arg('-r', '--reco-track-path', help='path to reconstructed tracks', required=True)
-    add_arg('-c', '--csv-path', help='path to csv path', required=True)
-    add_arg('-o', '--outname', help='output name without postfix', required=True)
+    add_arg('--reco-tracks-path', help='path to reconstructed tracks', required=True)
+    add_arg('--raw-tracks-path', help='path to raw tracking data (for truth info)', required=True)
+    add_arg('--outname', help='output name without postfix', required=True)
     add_arg('--max-evts', help='maximum number of events', type=int, default=1)
     add_arg('-e', '--event-id', help='evaluate a particular event', type=int, default=None)
     add_arg('-f', '--force', help='force to over write existing file', action='store_true')
@@ -224,13 +228,14 @@ if __name__ == '__main__':
     add_arg("--min-hits-reco", help='minimum number of hits in a reconstructed track',
             default=4, type=int)
     add_arg('--min-pt', help='minimum pT of true track', type=float, default=1.0)
+    add_arg('--max-pt', help='maximum pT of true track', type=float, default=10.)
     add_arg("--frac-reco-matched", help='fraction of matched hits over total hits in a reco track',
-                default=0.5, type=float)
+            default=0.5, type=float)
     add_arg("--frac-truth-matched", help='fraction of matched hits over total hits in a truth track',
-                default=0.5, type=float)
-    
+            default=0.5, type=float)
+
     args = parser.parse_args()
-    reco_track_path = args.reco_track_path
+    reco_track_path = args.reco_tracks_path
     num_workers = args.num_workers
     outname = args.outname
     outdir = os.path.dirname(os.path.abspath(outname))
@@ -241,16 +246,14 @@ if __name__ == '__main__':
 
     n_tot_files = reco_trkx_reader.nevts
     all_evtids = reco_trkx_reader.all_evtids
-    max_evts = args.max_evts if args.max_evts > 0 \
-        and args.max_evts <= n_tot_files else n_tot_files
+    max_evts = args.max_evts if 0 < args.max_evts <= n_tot_files else n_tot_files
 
     print("Out of {} events processing {} events with {} workers".format(
         n_tot_files, max_evts, args.num_workers))
     print("Output directory:", outdir)
 
-    # read raw CSV files to get truth information
-    csv_reader = SttTorchDataReader(args.csv_path)
-        
+    # read raw Torch/CSV files to get truth information
+    raw_trkx_reader = SttTorchDataReader(args.raw_tracks_path)
 
     out_array = '{}_particles.h5'.format(outname)
     if os.path.exists(out_array) and not args.force:
@@ -261,13 +264,14 @@ if __name__ == '__main__':
         if num_workers > 1:
             with Pool(num_workers) as p:
                 fnc = partial(run_one_evt,
-                    csv_reader=csv_reader,
-                    recotrkx_reader=reco_trkx_reader,
-                    **vars(args))
+                              raw_trkx_reader=raw_trkx_reader,
+                              reco_trkx_reader=reco_trkx_reader,
+                              **vars(args))
+
                 res = p.map(fnc, all_evtids[:max_evts])
         else:
-            res = [run_one_evt(evtid, csv_reader, reco_trkx_reader, **vars(args)) \
-                for evtid in all_evtids[:max_evts]]
+            res = [run_one_evt(evtid, raw_trkx_reader, reco_trkx_reader, **vars(args))
+                   for evtid in all_evtids[:max_evts]]
 
         # merge results from each process
         n_true_tracks = sum([x[0] for x in res])
@@ -278,33 +282,31 @@ if __name__ == '__main__':
         n_matched_reco_tracks_poi = sum([x[5] for x in res])
         particles = pd.concat([x[-1] for x in res], axis=0)
     else:
-        (n_true_tracks, n_reco_tracks, 
-        n_matched_true_tracks, n_matched_reco_tracks,
-        n_duplicated_reco_tracks, n_matched_reco_tracks_poi, particles) = \
-                run_one_evt(args.event_id, csv_reader, reco_trkx_reader, **vars(args))
-
+        (n_true_tracks, n_reco_tracks, n_matched_true_tracks, n_matched_reco_tracks,
+         n_duplicated_reco_tracks, n_matched_reco_tracks_poi, particles) = \
+            run_one_evt(args.event_id, raw_trkx_reader, reco_trkx_reader, **vars(args))
 
     with pd.HDFStore(out_array, 'w') as f:
         f['data'] = particles
 
-    # calculate the track efficiency and purity
     out_sum = "{}_summary.txt".format(outname)
     ctime = time.strftime('%Y%m%d-%H%M%S', time.localtime())
-    summary = ["".join(['-']*50), 
-        "                      Run Time: {:>10}".format(ctime),
-        "          Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
-        "                   # of events: {:>10}".format(max_evts if not args.event_id else 1),
-        "                  Truth tracks: {:>10}".format(n_true_tracks),
-        "          Truth tracks matched: {:>10}".format(n_matched_true_tracks),
-        "                  Reco. tracks: {:>10}".format(n_reco_tracks),
-        "          Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),
-        "   Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
-        "       Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
-        "   Tracking Efficiency (Phys.): {:>10.4f}%".format(100*n_matched_true_tracks/n_true_tracks),
-        "               Tracking Purity: {:>10.4f}%".format(100*n_matched_reco_tracks/n_reco_tracks),
-        "                     Fake Rate: {:>10.4f}%".format(100-100*n_matched_reco_tracks/n_reco_tracks),
-        "              Duplication Rate: {:>10.4f}%".format(100*n_duplicated_reco_tracks/n_reco_tracks)
-        ]
+    summary = ["".join(['-'] * 50),
+               "                   Run Time: {:>10}".format(ctime),
+               "       Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
+               "                # of events: {:>10}".format(max_evts if not args.event_id else 1),
+               "               Truth tracks: {:>10}".format(n_true_tracks),
+               "       Truth tracks matched: {:>10}".format(n_matched_true_tracks),
+               "       Reconstructed tracks: {:>10}".format(n_reco_tracks),
+               "       Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),
+               "Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
+               "    Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
+               "        Tracking Efficiency: {:>10.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
+               "Tracking Efficiency (tech.): {:>10.4f}%".format(100 * n_matched_reco_tracks / n_true_tracks)        # FIXME: Please confirm if its correct (I added myself here)
+               "               Track Purity: {:>10.4f}%".format(100 * n_matched_reco_tracks / n_reco_tracks),       # FIXME: n_matched_reco_tracks < n_reco_tracks, if not then
+               "                  Fake Rate: {:>10.4f}%".format(100 - 100 * n_matched_reco_tracks / n_reco_tracks), # one get prutiry > 100% as a result Fake Rate goes -ve
+               "           Duplication Rate: {:>10.4f}%".format(100 * n_duplicated_reco_tracks / n_reco_tracks),
+               ]
 
     with open(out_sum, 'a') as f:
         f.write("\n".join(summary))
