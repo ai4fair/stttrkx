@@ -200,9 +200,9 @@ def run_one_evt(evtid, raw_trkx_data_reader, reco_trkx_data_reader, **kwargs):
                                'pdgcode': raw_trkx_data.pdgcode.numpy(),
                                'ptheta': raw_trkx_data.ptheta.numpy(),
                                'peta': raw_trkx_data.peta.numpy(),
-                               'phi': raw_trkx_data.x[:, 1].numpy()
+                               'pphi': raw_trkx_data.pphi.numpy()
                                },
-                              columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'ptheta', 'peta', 'phi']
+                              columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'ptheta', 'peta', 'pphi']
                               ).drop_duplicates(subset=['particle_id'])
 
     results = evaluate_reco_tracks(_truth, reco_trkx_data, _particles, **kwargs)
@@ -293,7 +293,6 @@ if __name__ == '__main__':
     with pd.HDFStore(out_array, 'w') as f:
         f['data'] = particles
 
-    # calculate the track efficiency and purity
     out_sum = "{}_summary.txt".format(outname)
     ctime = time.strftime('%Y%m%d-%H%M%S', time.localtime())
     summary = ["".join(['-'] * 50),
@@ -306,11 +305,11 @@ if __name__ == '__main__':
                "       Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),
                "Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
                "    Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
-               #"        Tracking Efficiency: {:>10.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
-               "Tracking Efficiency (phys.): {:>10.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
-               "Tracking Efficiency (tech.): {:>10.4f}%".format(100 * n_matched_true_tracks / n_reco_tracks),
-               "                  Fake rate: {:>10.4f}%".format(100 - 100 * n_matched_reco_tracks / n_reco_tracks),
-               "           Duplication Rate: {:>10.4f}%".format(100 * n_duplicated_reco_tracks / n_reco_tracks)
+               "        Tracking Efficiency: {:>10.4f}%".format(100 * n_matched_true_tracks / n_true_tracks),
+               "Tracking Efficiency (tech.): {:>10.4f}%".format(100 * n_matched_reco_tracks / n_true_tracks)        # FIXME: Please confirm if its correct (I added myself here)
+               "               Track Purity: {:>10.4f}%".format(100 * n_matched_reco_tracks / n_reco_tracks),       # FIXME: n_matched_reco_tracks < n_reco_tracks, if not then
+               "                  Fake Rate: {:>10.4f}%".format(100 - 100 * n_matched_reco_tracks / n_reco_tracks), # one get prutiry > 100% as a result Fake Rate goes -ve
+               "           Duplication Rate: {:>10.4f}%".format(100 * n_duplicated_reco_tracks / n_reco_tracks),
                ]
 
     with open(out_sum, 'a') as f:

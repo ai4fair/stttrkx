@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 import itertools
 
-fontsize = 20
-minor_size = 15
+fontsize = 22
+minor_size = 16
 
 # pt params
 # pt_bins = (np.arange(0, 5., step=0.5).tolist() + np.arange(5, 11, step=1.0).tolist())
@@ -127,7 +127,7 @@ def make_cmp_plot(arrays, legends, configs,
     ax.tick_params(axis='both', which='major', labelsize=15)
     ax.tick_params(axis='both', which='minor', labelsize=12)
     
-    ax.set_ylim([0., 1.])
+    ax.set_ylim([0., 1.2])
     add_up_xaxis(ax)
 
     if ratio_legends is not None:
