@@ -124,19 +124,25 @@ def evaluate_reco_tracks(
         "track_id")['purity_reco'].transform(max)
     truth_matching['purity_true_max'] = truth_matching.groupby(
         "track_id")['purity_true'].transform(max)
-
+    
+    # FIXME: For 0.5, we should reguire that purity_reco_max > frac_reco_matched
     matched_reco_tracks = reco_matching[
-        (reco_matching.purity_reco_max >= frac_reco_matched) \
+        (reco_matching.purity_reco_max > frac_reco_matched) \
       & (reco_matching.purity_reco == reco_matching.purity_reco_max)]
     
     # FIXME: Check
     if matched_reco_tracks.shape[0] > n_reco_hits.shape[0]:
-        print("shape:", matched_reco_tracks.shape[0], n_reco_hits.shape[0])
+        print("More True Matched:", matched_reco_tracks.shape[0], n_reco_hits.shape[0])
     
+    # FIXME: For 0.5, we should reguire that purity_true_max > frac_truth_matched
     matched_true_particles = truth_matching[
-        (truth_matching.purity_true_max >= frac_truth_matched) \
+        (truth_matching.purity_true_max > frac_truth_matched) \
       & (truth_matching.purity_true == truth_matching.purity_true_max)]
-
+    
+    # FIXME: Check
+    if matched_true_particles.shape[0] > n_true_hits.shape[0]:
+        print("More True Matched:", matched_true_particles.shape[0], n_true_hits.shape[0])
+    
     # now, let's combine the two majority criteria
     # reconstructed tracks must be in both matched dataframe
     # and the so matched particle should be the same
@@ -171,15 +177,21 @@ def evaluate_reco_tracks(
     particles = particles.assign(
         is_matched=is_matched,
         is_trackable=is_trackable)
-
+    
+    # NEW: By Murnane for Tech. Efficiency
+    n_reco_particles = particles[particles.is_trackable].shape[0]
+    n_matched_reco_particles = particles[particles.is_matched & particles.is_trackable].shape[0]
+    
     return (n_true_tracks, n_reco_tracks, n_matched_particles,
-            n_matched_tracks, n_duplicated_tracks, n_matched_tracks_poi,
+            n_matched_tracks, n_duplicated_tracks, 
+            n_matched_tracks_poi, n_reco_particles, n_matched_reco_particles,  # NEW
             particles)
 
 
 def run_one_evt(evtid, csv_reader, recotrkx_reader, **kwargs):
-    print("Running {}".format(evtid))
-
+    # print("Running {}".format(evtid))
+    
+    # Load Raw CSV/Torch Events to Get Truth Information
     raw_data = csv_reader(evtid)
     truth = pd.DataFrame({'hit_id': raw_data.hid.numpy(), 'particle_id': raw_data.pid.int().numpy()},
                           columns=['hit_id', 'particle_id'])
@@ -197,8 +209,13 @@ def run_one_evt(evtid, csv_reader, recotrkx_reader, **kwargs):
                                },
                               columns=['particle_id', 'pt', 'vx', 'vy', 'vz', 'q', 'pdgcode', 'ptheta', 'peta', 'pphi']
                               ).drop_duplicates(subset=['particle_id'])
-
+    
+    # Load Track Candidates
     submission = recotrkx_reader(evtid)
+    
+    # Handle -ve track_id from track_from_gnn.py, We have them to hold unused hits
+    # submission = submission[submission['track_id'] > -1]
+    
     results = evaluate_reco_tracks(truth, submission, particles, **kwargs)
     return results[:-1] + (results[-1].assign(evtid=evtid), )
 
@@ -246,6 +263,7 @@ if __name__ == '__main__':
 
     print("Out of {} events processing {} events with {} workers".format(
         n_tot_files, max_evts, args.num_workers))
+        
     print("Output directory:", outdir)
 
     # read raw CSV files to get truth information
@@ -270,17 +288,21 @@ if __name__ == '__main__':
                 for evtid in all_evtids[:max_evts]]
 
         # merge results from each process
-        n_true_tracks = sum([x[0] for x in res])
+        n_sel_particles = sum([x[0] for x in res])
         n_reco_tracks = sum([x[1] for x in res])
-        n_matched_true_tracks = sum([x[2] for x in res])
+        n_matched_sel_particles = sum([x[2] for x in res])
         n_matched_reco_tracks = sum([x[3] for x in res])
         n_duplicated_reco_tracks = sum([x[4] for x in res])
         n_matched_reco_tracks_poi = sum([x[5] for x in res])
+        n_reco_particles = sum([x[6] for x in res])              # NEW
+        n_matched_reco_particles = sum([x[7] for x in res])      # NEW
         particles = pd.concat([x[-1] for x in res], axis=0)
     else:
-        (n_true_tracks, n_reco_tracks, 
-        n_matched_true_tracks, n_matched_reco_tracks,
-        n_duplicated_reco_tracks, n_matched_reco_tracks_poi, particles) = \
+        (n_sel_particles, n_reco_tracks, 
+        n_matched_sel_particles, n_matched_reco_tracks,
+        n_duplicated_reco_tracks, n_matched_reco_tracks_poi, 
+        n_reco_particles, n_matched_reco_particles,              # NEW
+        particles) = \
                 run_one_evt(args.event_id, csv_reader, reco_trkx_reader, **vars(args))
 
 
@@ -291,19 +313,22 @@ if __name__ == '__main__':
     out_sum = "{}_summary.txt".format(outname)
     ctime = time.strftime('%Y%m%d-%H%M%S', time.localtime())
     summary = ["".join(['-']*50), 
-        "                      Run Time: {:>10}".format(ctime),
-        "          Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
-        "                   # of events: {:>10}".format(max_evts if not args.event_id else 1),
-        "                  Truth tracks: {:>10}".format(n_true_tracks),
-        "          Truth tracks matched: {:>10}".format(n_matched_true_tracks),
-        "                  Reco. tracks: {:>10}".format(n_reco_tracks),
-        "          Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),
-        "   Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
-        "       Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
-        "   Tracking Efficiency (Phys.): {:>10.4f}%".format(100*n_matched_true_tracks/n_true_tracks),
-        "               Tracking Purity: {:>10.4f}%".format(100*n_matched_reco_tracks/n_reco_tracks),
-        "                     Fake Rate: {:>10.4f}%".format(100-100*n_matched_reco_tracks/n_reco_tracks),
-        "              Duplication Rate: {:>10.4f}%".format(100*n_duplicated_reco_tracks/n_reco_tracks)
+        "                    Run Time: {:>10}".format(ctime),
+        "        Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
+        "                 # of events: {:>10}".format(max_evts if not args.event_id else 1),
+        "                Truth tracks: {:>10}".format(n_sel_particles),                                 # N_particle (Selected)
+        "        Truth tracks matched: {:>10}".format(n_matched_sel_particles),                         # N_particle (Selected, Matched)
+        "           Truth tracks reco: {:>10}".format(n_reco_particles),                                # N_particle (Selected, Reconstructable)
+        "   Truth tracks reco matched: {:>10}".format(n_matched_reco_particles),                        # N_particle (Selected, Reconstructable, Matched)
+        "                Reco. tracks: {:>10}".format(n_reco_tracks),                                   # N_tracks(Selected)
+        "        Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),                           # N_tracks(Selected, Matched)
+        " Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
+        "     Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
+        " Tracking Efficiency (Phys.): {:>10.4f}%".format(100*n_matched_sel_particles/n_sel_particles),    # Tracking Efficiency (Phys.)
+        " Tracking Efficiency (Tech.): {:>10.4f}%".format(100*n_matched_reco_particles/n_reco_particles),  # Tracking Efficiency (Tech.)
+        "             Tracking Purity: {:>10.4f}%".format(100*n_matched_reco_tracks/n_reco_tracks),        # Tracking Purity
+        "                   Fake Rate: {:>10.4f}%".format(100-100*n_matched_reco_tracks/n_reco_tracks),    # Fake/Ghost Rate
+        "            Duplication Rate: {:>10.4f}%".format(100*n_duplicated_reco_tracks/n_reco_tracks)      # Duplication/Clone Rate
         ]
 
     with open(out_sum, 'a') as f:

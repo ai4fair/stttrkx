@@ -3,8 +3,8 @@
 # This script runs 'trkx_from_gnn.py'
 
 # params
-epsilon=0.25
-maxevts=5000
+epsilon=0.2
+maxevts=20000
 edge_score_cut=0.5
 
 
@@ -25,8 +25,8 @@ fi
 ann=gnn
 
 # Data Directories
-inputdir="../run_all/"$ann"_processed/pred"  # input from GNN stage as in test/pred
-outputdir="../run_all/"$ann"_segmenting/seg" # output of trkx_from_gnn.sh i.e. TrackCands
+inputdir="../run_all/fwp_"$ann"_processed/pred"  # input from GNN stage as in test/pred
+outputdir="../run_all/fwp_"$ann"_segmenting/seg" # output of trkx_from_gnn.sh i.e. TrackCands
 mkdir -p $outputdir
 
 # original: trkx_from_gnn_v1
@@ -38,7 +38,7 @@ python trkx_from_gnn.py \
     --input-dir $inputdir \
     --output-dir $outputdir \
     --max-evts $maxevts \
-    --num-workers 8 \
+    --num-workers 1 \
     --score-name "scores" \
     --edge-score-cut $edge_score_cut \
     --epsilon $epsilon \

@@ -17,6 +17,13 @@ outputdir_eval="../run_all/fwp_gnn_segmenting/epsilon"
 outfile=$outputdir_eval"/all"
 mkdir -p $outputdir_eval
 
+# fractions
+fraction=0.5
+
+if (( $(echo "$fraction == 0.5" | bc -l) )); then
+  fraction=$(echo "$fraction + 0.00001" | bc -l)
+fi
+
 # Search DBSCAN Epsilon (0.25 found best)
 epsilons=(0.1 0.15 0.2 0.25 0.35 0.45 0.55 0.75 0.85 0.95 1.0)
  
@@ -40,12 +47,13 @@ for t in ${epsilons[@]}; do
         --raw-tracks-path $raw_tracks_path \
         --outname $outfile \
         --max-evts $maxevts \
+        --num-workers 8 \
         --force \
+        --min-pt 0.0 \
         --min-hits-truth 7 \
-        --min-hits-reco 4 \
-        --min-pt 0. \
-        --frac-reco-matched 0.5 \
-        --frac-truth-matched 0.5
+        --min-hits-reco 6 \
+        --frac-reco-matched $fraction \
+        --frac-truth-matched $fraction
 done
 
 

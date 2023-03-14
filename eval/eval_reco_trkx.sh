@@ -4,7 +4,7 @@
 # run before this script. Better way is to use 'reco_to_eval.sh'.
 
 # Max Events
-maxevts=5000
+maxevts=20000
 
 if test "$1" != ""; then
   maxevts=$1
@@ -16,26 +16,33 @@ ann=gnn
 
 
 # Data Directories
-raw_inputdir="../run_all/"$ann"_processed/pred"  # output of GNN stage as in test/pred
-rec_inputdir="../run_all/"$ann"_segmenting/seg"  # output of trkx_from_gnn.sh
-outputdir="../run_all/"$ann"_segmenting/eval"    # output of eval_reco_trkx.sh
-outfile=$outputdir"/all"                         # name prefix of output files
+raw_inputdir="../run_all/fwp_"$ann"_processed/pred"  # output of GNN stage as in test/pred
+rec_inputdir="../run_all/fwp_"$ann"_segmenting/seg"  # output of trkx_from_gnn.sh
+outputdir="../run_all/fwp_"$ann"_segmenting/eval"    # output of eval_reco_trkx.sh
+outfile=$outputdir"/all"                             # name prefix of output files
 mkdir -p $outputdir
+
+# fractions
+fraction=0.5
+
+if (( $(echo "$fraction == 0.5" | bc -l) )); then
+  fraction=$(echo "$fraction + 0.00001" | bc -l)
+fi
 
 
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --reco-tracks-path $rec_inputdir \
-    --raw-tracks-path $raw_inputdir \
+    --csv-path $raw_inputdir \
+    --reco-track-path $rec_inputdir \
     --outname $outfile \
     --max-evts $maxevts \
+    --num-workers 8 \
     --force \
-    --min-pt 0.5 \
-    --max-pt 1.0 \
+    --min-pt 0.0 \
     --min-hits-truth 7 \
-    --min-hits-reco 5 \
-    --frac-reco-matched 0.5 \
-    --frac-truth-matched 0.5
+    --min-hits-reco 6 \
+    --frac-reco-matched $fraction \
+    --frac-truth-matched $fraction
 
 # Last 4 Params:
 

@@ -22,25 +22,22 @@ outfile=$outputdir"/$1"                              # name prefix of output fil
 mkdir -p $outputdir
 
 
+# fractions
+fraction=0.5
 
-evtid=$1
-gnn_pred="run/gnn_evaluation/test"
-reco_tracks="run/trkx_from_gnn"
-outputdir="run/trkx_reco_eval/$1"
-
-# good and bad events
-#gnn_pred="run/gnn_evaluation/test_bad"
-#reco_tracks="run/trkx_from_gnn_bad"
-#outputdir="run/trkx_reco_eval/bad"
+if (( $(echo "$fraction == 0.5" | bc -l) )); then
+  fraction=$(echo "$fraction + 0.00001" | bc -l)
+fi
 
 python eval_reco_trkx.py \
-    --raw-tracks-path $raw_inputdir \
-    --reco-tracks-path $rec_inputdir \
+    --csv-path $raw_inputdir \
+    --reco-track-path $rec_inputdir \
     --outname $outfile \
     --event-id $evt \
+    --num-workers 8 \
     --force \
     --min-pt 0.0 \
     --min-hits-truth 7 \
     --min-hits-reco 6 \
-    --frac-reco-matched 0.5 \
-    --frac-truth-matched 0.5
+    --frac-reco-matched $fraction \
+    --frac-truth-matched $fraction

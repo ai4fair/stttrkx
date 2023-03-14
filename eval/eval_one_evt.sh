@@ -28,6 +28,13 @@ if test "$3" != ""; then
 fi
 
 
+# fractions
+fraction=0.5
+
+if (( $(echo "$fraction == 0.5" | bc -l) )); then
+  fraction=$(echo "$fraction + 0.00001" | bc -l)
+fi
+
 echo "Running Track Building with Max Events: {$maxevts} and Epsilon: {$epsilon}"
 
 # Data Directories
@@ -60,10 +67,11 @@ python eval_reco_trkx.py \
     --raw-tracks-path $inputdir \
     --outname $eval_trkx_dir \
     --event-id $evtid \
+    --num-workers 8 \
     --force \
+    --min-pt 0.0 \
     --min-hits-truth 7 \
-    --min-hits-reco 4 \
-    --min-pt 0. \
-    --frac-reco-matched 0.5 \
-    --frac-truth-matched 0.5
+    --min-hits-reco 6 \
+    --frac-reco-matched $fraction \
+    --frac-truth-matched $fraction
 
