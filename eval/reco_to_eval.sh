@@ -48,8 +48,8 @@ mkdir -p $outputdir
 
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --raw-tracks-path $raw_inputdir \
-    --reco-tracks-path $rec_inputdir \
+    --csv-path $raw_inputdir \
+    --reco-track-path $rec_inputdir \
     --outname $outputdir \
     --max-evts $maxevts \
     --force \

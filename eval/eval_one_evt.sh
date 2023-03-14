@@ -63,8 +63,8 @@ eval_trkx_dir="run/trkx_reco_eval/$1"
 
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --reco-tracks-path $reco_trkx_dir \
-    --raw-tracks-path $inputdir \
+    --csv-path $inputdir \
+    --reco-track-path $reco_trkx_dir \
     --outname $eval_trkx_dir \
     --event-id $evtid \
     --num-workers 8 \

@@ -4,7 +4,7 @@
 # To run these scripts individually, see 'trkx_from_gnn.sh' and 'trkx_reco_eval.sh'.
 
 # max events
-maxevts=10000
+maxevts=20000
 
 # trkx_from_gnn
 inputdir="../run_all/fwp_gnn_processed/pred"
@@ -43,8 +43,8 @@ for t in ${epsilons[@]}; do
     
     # evaluate reco tracks from GNN
     python eval_reco_trkx.py \
-        --reco-tracks-path $reco_tracks_path \
-        --raw-tracks-path $raw_tracks_path \
+        --csv-path $raw_tracks_path \
+        --reco-track-path $reco_tracks_path \
         --outname $outfile \
         --max-evts $maxevts \
         --num-workers 8 \
