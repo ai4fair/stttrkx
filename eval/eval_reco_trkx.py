@@ -305,7 +305,8 @@ if __name__ == '__main__':
         particles) = \
                 run_one_evt(args.event_id, csv_reader, reco_trkx_reader, **vars(args))
 
-
+    print("Finihed evaluation and saving output to {}_<filename>".format(os.path.split(outname)[1]))
+    
     with pd.HDFStore(out_array, 'w') as f:
         f['data'] = particles
 

@@ -35,7 +35,7 @@ eta_configs = {
 
 
 # get a plot
-def get_plot(nrows=1, ncols=1, figsize=(8,7), nominor=False):
+def get_plot(nrows=1, ncols=1, figsize=(8,6), nominor=False):
 
     fig, axs = plt.subplots(nrows, ncols, figsize=figsize, constrained_layout=True)
 
@@ -88,14 +88,14 @@ def add_mean_std(array, x, y, ax, color='k', dy=0.3, digits=2, fontsize=12, with
 
 
 # Make Plot
-def make_cmp_plot(arrays, legends, configs,
+def make_cmp_plot_old(arrays, legends, configs,
                   xlabel, ylabel, ratio_label,
                   ratio_legends, outname, ymin):
 
     bins = 0.
     vals_list = []
 
-    # make a plot
+    # make a particle plot
     fig, ax = get_plot()
     for array, legend in zip(arrays, legends):
         vals, bins, _ = ax.hist(array, **configs, label=legend)
@@ -132,6 +132,64 @@ def make_cmp_plot(arrays, legends, configs,
 
     if ratio_legends is not None:
         ax.legend(loc='lower left', fontsize=16)
+
+    ax.grid(False)
+    fig.savefig("{}_ratio.pdf".format(outname))
+    
+    
+# Make Plot
+def make_cmp_plot(arrays, legends, configs,
+                  xlabel, ylabel, ratio_label,
+                  ratio_legends, outname, ymin, loc):
+
+    bins = 0.
+    vals_list = []
+    cmap = ["blue", "blue", "red", "red"]
+    lmap = ['solid','dashed','solid','dashed']
+    # make a particle plot
+    fig, ax = get_plot()
+    i = 0
+    for array, legend in zip(arrays, legends):
+        vals, bins, _ = ax.hist(array, **configs, color=cmap[i], linestyle=lmap[i], label=legend)
+        vals_list.append(vals)
+        i = i+1
+
+    ax.set_xlabel(xlabel, fontsize=fontsize)
+    ax.set_ylabel(ylabel, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+    
+    add_up_xaxis(ax)
+    ax.legend(loc=loc, fontsize=16)
+    ax.grid(False)
+    fig.savefig("{}.pdf".format(outname))
+
+    # make a ratio plot
+    fig, ax = get_plot()
+    xvals = [0.5*(x[1]+x[0]) for x in pairwise(bins)]
+    xerrs = [0.5*(x[1]-x[0]) for x in pairwise(bins)]
+    
+    # munual calculation
+    ratio, ratio_err = get_ratio(vals_list[1], vals_list[0])
+    label = None if ratio_legends is None else ratio_legends[0]
+    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, label=label)
+    # print("Physics Efficiency: ", ratio)
+    
+    ratio, ratio_err = get_ratio(vals_list[3], vals_list[2])
+    label = None if ratio_legends is None else ratio_legends[1]
+    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, label=label)
+    # print("\nTechnical Efficiency: ", ratio)
+
+    ax.set_xlabel(xlabel, fontsize=fontsize)
+    ax.set_ylabel(ratio_label, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    ax.tick_params(axis='both', which='minor', labelsize=12)
+    
+    ax.set_ylim([ymin, 1.2])
+    add_up_xaxis(ax)
+
+    if ratio_legends is not None:
+        ax.legend(loc='lower right', fontsize=16)
 
     ax.grid(False)
     fig.savefig("{}_ratio.pdf".format(outname))

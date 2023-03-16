@@ -10,21 +10,22 @@ if test "$1" != ""; then
   maxevts=$1
 fi
 
+# Matching Fractions
+fraction=0.5
+
 
 # Stage [dnn, gnn, agnn,...]
 ann=gnn
-
 
 # Data Directories
 raw_inputdir="../run_all/fwp_"$ann"_processed/pred"  # output of GNN stage as in test/pred
 rec_inputdir="../run_all/fwp_"$ann"_segmenting/seg"  # output of trkx_from_gnn.sh
 outputdir="../run_all/fwp_"$ann"_segmenting/eval"    # output of eval_reco_trkx.sh
-outfile=$outputdir"/all"                             # name prefix of output files
+outfile=$outputdir"/$fraction"                       # name prefix of output files
 mkdir -p $outputdir
 
-# fractions
-fraction=0.5
 
+# Don't move above outfile, name will be messed up.
 if (( $(echo "$fraction == 0.5" | bc -l) )); then
   fraction=$(echo "$fraction + 0.00001" | bc -l)
 fi
@@ -40,7 +41,7 @@ python eval_reco_trkx.py \
     --force \
     --min-pt 0.0 \
     --min-hits-truth 7 \
-    --min-hits-reco 6 \
+    --min-hits-reco 5 \
     --frac-reco-matched $fraction \
     --frac-truth-matched $fraction
 
