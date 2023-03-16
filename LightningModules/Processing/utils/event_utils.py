@@ -174,12 +174,11 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
     pz = truth.tpz
     
     pt = np.sqrt(px**2 + py**2)
-    # momentum = np.sqrt(px**2 + py**2 + pz**2)
-    # ptheta = np.arccos(pz/momentum)
-    ptheta = np.arctan2(pt, pz)
+    ptheta = np.arctan2(pt, pz)             # OR, np.arccos(pz/p)
     peta = -np.log(np.tan(0.5 * ptheta))
-    
-    truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta)
+    pphi = np.arctan2(py, px)
+        
+    truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta, pphi=pphi)
     
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
@@ -295,6 +294,7 @@ def build_event(event_file, feature_scale, layerwise=True, modulewise=True,
         hits.pdgcode.to_numpy(),
         hits.ptheta.to_numpy(),
         hits.peta.to_numpy(),
+        hits.pphi.to_numpy(),
     )
  
     
@@ -337,7 +337,8 @@ def prepare_event(
                 q,
                 pdgcode,
                 ptheta,
-                peta
+                peta,
+                pphi
             ) = build_event(
                 event_file,
                 feature_scale,
@@ -363,6 +364,7 @@ def prepare_event(
                 pdgcode=torch.from_numpy(pdgcode),
                 ptheta=torch.from_numpy(ptheta),
                 peta=torch.from_numpy(peta),
+                pphi=torch.from_numpy(pphi)
             )
             
             # add edges to pytorch_geometric Data module
