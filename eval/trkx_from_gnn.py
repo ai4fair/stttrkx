@@ -155,6 +155,8 @@ if __name__ == "__main__":
     max_evts = args.max_evts if 0 < args.max_evts <= n_tot_files else n_tot_files
     print("Out of {} events processing {} events with {} workers.".format(n_tot_files, max_evts, args.num_workers))
     
+    print("Output directory:", outputdir)
+    
     # Multiprocess to Build Tracks (Torch Files)
     print("Write Track Candidates as TORCH")
     with Pool(args.num_workers) as p:

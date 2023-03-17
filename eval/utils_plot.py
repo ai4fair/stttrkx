@@ -160,7 +160,7 @@ def make_cmp_plot(arrays, legends, configs,
     ax.tick_params(axis='both', which='minor', labelsize=12)
     
     add_up_xaxis(ax)
-    ax.legend(loc=loc, fontsize=16)
+    ax.legend(loc=loc, fontsize=15)
     ax.grid(False)
     fig.savefig("{}.pdf".format(outname))
 
@@ -189,7 +189,7 @@ def make_cmp_plot(arrays, legends, configs,
     add_up_xaxis(ax)
 
     if ratio_legends is not None:
-        ax.legend(loc='lower right', fontsize=16)
+        ax.legend(loc='lower right', fontsize=15)
 
     ax.grid(False)
     fig.savefig("{}_ratio.pdf".format(outname))

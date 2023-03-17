@@ -261,8 +261,7 @@ if __name__ == '__main__':
     max_evts = args.max_evts if args.max_evts > 0 \
         and args.max_evts <= n_tot_files else n_tot_files
 
-    print("Out of {} events processing {} events with {} workers".format(
-        n_tot_files, max_evts, args.num_workers))
+    print("Out of {} events processing {} events with {} workers".format(n_tot_files, max_evts, args.num_workers))
         
     print("Output directory:", outdir)
 
@@ -317,12 +316,12 @@ if __name__ == '__main__':
         "                    Run Time: {:>10}".format(ctime),
         "        Reconstructed tracks: {:>10}".format(os.path.abspath(reco_track_path)),
         "                 # of events: {:>10}".format(max_evts if not args.event_id else 1),
-        "                Truth tracks: {:>10}".format(n_sel_particles),                                 # N_particle (Selected)
-        "        Truth tracks matched: {:>10}".format(n_matched_sel_particles),                         # N_particle (Selected, Matched)
-        "           Truth tracks reco: {:>10}".format(n_reco_particles),                                # N_particle (Selected, Reconstructable)
-        "   Truth tracks reco matched: {:>10}".format(n_matched_reco_particles),                        # N_particle (Selected, Reconstructable, Matched)
-        "                Reco. tracks: {:>10}".format(n_reco_tracks),                                   # N_tracks(Selected)
-        "        Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),                           # N_tracks(Selected, Matched)
+        "                Truth tracks: {:>10}".format(n_sel_particles),                                    # N_particle (Selected)
+        "        Truth tracks matched: {:>10}".format(n_matched_sel_particles),                            # N_particle (Selected, Matched)
+        "           Truth tracks reco: {:>10}".format(n_reco_particles),                                   # N_particle (Selected, Reconstructable)
+        "   Truth tracks reco matched: {:>10}".format(n_matched_reco_particles),                           # N_particle (Selected, Reconstructable, Matched)
+        "                Reco. tracks: {:>10}".format(n_reco_tracks),                                      # N_tracks(Selected)
+        "        Reco. tracks matched: {:>10}".format(n_matched_reco_tracks),                              # N_tracks(Selected, Matched)
         " Reco. tracks matched to POI: {:>10}".format(n_matched_reco_tracks_poi),
         "     Reco. tracks duplicated: {:>10}".format(n_duplicated_reco_tracks),
         " Tracking Efficiency (Phys.): {:>10.4f}%".format(100*n_matched_sel_particles/n_sel_particles),    # Tracking Efficiency (Phys.)
