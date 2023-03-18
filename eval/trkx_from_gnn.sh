@@ -3,8 +3,8 @@
 # This script runs 'trkx_from_gnn.py'
 
 # params
-epsilon=0.2
-maxevts=20000
+epsilon=0.15
+maxevts=30000
 edge_score_cut=0.5
 
 

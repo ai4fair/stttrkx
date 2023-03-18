@@ -4,7 +4,7 @@
 # To run these scripts individually, see 'trkx_from_gnn.sh' and 'trkx_reco_eval.sh'.
 
 # max events
-maxevts=20000
+maxevts=30000
 
 # trkx_from_gnn
 inputdir="../run_all/fwp_gnn_processed/pred"
@@ -14,7 +14,7 @@ outputdir="../run_all/fwp_gnn_segmenting/seg"
 raw_tracks_path="../run_all/fwp_gnn_processed/pred"
 reco_tracks_path="../run_all/fwp_gnn_segmenting/seg"
 outputdir_eval="../run_all/fwp_gnn_segmenting/epsilon"
-outfile=$outputdir_eval"/all"
+outfile=$outputdir_eval"/eps"
 mkdir -p $outputdir_eval
 
 # fractions
@@ -25,8 +25,9 @@ if (( $(echo "$fraction == 0.5" | bc -l) )); then
 fi
 
 # Search DBSCAN Epsilon (0.25 found best)
-epsilons=(0.1 0.15 0.2 0.25 0.35 0.45 0.55 0.75 0.85 0.95 1.0)
- 
+epsilons=(0.015 0.025 0.050 0.075 0.1 0.15 0.2 0.25 0.35 0.45 0.55 0.75 0.85 0.95 1.0)
+
+
 for t in ${epsilons[@]}; do
     echo "epsilon: $t"
     
