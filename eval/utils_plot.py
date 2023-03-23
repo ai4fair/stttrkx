@@ -172,12 +172,12 @@ def make_cmp_plot(arrays, legends, configs,
     # munual calculation
     ratio, ratio_err = get_ratio(vals_list[1], vals_list[0])
     label = None if ratio_legends is None else ratio_legends[0]
-    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, label=label)
+    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, color='blue', label=label)
     # print("Physics Efficiency: ", ratio)
     
     ratio, ratio_err = get_ratio(vals_list[3], vals_list[2])
     label = None if ratio_legends is None else ratio_legends[1]
-    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, label=label)
+    ax.errorbar(xvals, ratio, yerr=ratio_err, fmt='o', xerr=xerrs, lw=1, color='red', label=label)
     # print("\nTechnical Efficiency: ", ratio)
 
     ax.set_xlabel(xlabel, fontsize=fontsize)

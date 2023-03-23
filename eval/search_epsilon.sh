@@ -4,16 +4,16 @@
 # To run these scripts individually, see 'trkx_from_gnn.sh' and 'trkx_reco_eval.sh'.
 
 # max events
-maxevts=30000
+maxevts=20000
 
 # trkx_from_gnn
-inputdir="../run_all/fwp_gnn_processed/pred"
-outputdir="../run_all/fwp_gnn_segmenting/seg"
+inputdir="../run_all/dnn_processed_ln/pred"
+outputdir="../run_all/dnn_segmenting_ln/seg"
 
 # trkx_reco_eval
-raw_tracks_path="../run_all/fwp_gnn_processed/pred"
-reco_tracks_path="../run_all/fwp_gnn_segmenting/seg"
-outputdir_eval="../run_all/fwp_gnn_segmenting/epsilon"
+raw_tracks_path="../run_all/dnn_processed_ln/pred"
+reco_tracks_path="../run_all/dnn_segmenting_ln/seg"
+outputdir_eval="../run_all/dnn_segmenting_ln/epsilon"
 outfile=$outputdir_eval"/eps"
 mkdir -p $outputdir_eval
 
