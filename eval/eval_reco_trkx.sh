@@ -4,7 +4,7 @@
 # run before this script. Better way is to use 'reco_to_eval.sh'.
 
 # Max Events
-maxevts=20000
+maxevts=30000
 
 if test "$1" != ""; then
   maxevts=$1
@@ -18,10 +18,10 @@ fraction=0.5
 ann=gnn
 
 # Data Directories
-raw_inputdir="../run_all/"$ann"_processed_ln/pred"  # output of GNN stage as in test/pred
-rec_inputdir="../run_all/"$ann"_segmenting_ln/seg"  # output of trkx_from_gnn.sh
-outputdir="../run_all/"$ann"_segmenting_ln/eval"    # output of eval_reco_trkx.sh
-outfile=$outputdir"/$fraction"                       # name prefix of output files
+raw_inputdir="../run_all/fwp_"$ann"_processed/pred"  # output of GNN stage as in test/pred
+rec_inputdir="../run_all/fwp_"$ann"_segmenting/seg"  # output of trkx_from_gnn.sh
+outputdir="../run_all/fwp_"$ann"_segmenting/eval"    # output of eval_reco_trkx.sh
+outfile=$outputdir"/$fraction"                   # name prefix of output files
 mkdir -p $outputdir
 
 
@@ -40,7 +40,7 @@ python eval_reco_trkx.py \
     --num-workers 8 \
     --force \
     --min-pt 0.0 \
-    --min-hits-truth 6 \
+    --min-hits-truth 7 \
     --min-hits-reco 5 \
     --frac-reco-matched $fraction \
     --frac-truth-matched $fraction
@@ -49,11 +49,14 @@ python eval_reco_trkx.py \
 # Last 4 Params:
 
 # Reconstructable: i.e. min_true_hits
-# ATLAS: 7    PANDA: 6 (Only STT Functor >= 6 STT hits)
+
+# ATLAS: 7       PANDA: 6 (Only STT Functor >= 6 STT hits)
 
 # Reconstructed: i.e. min_reco_hits
-# ATLAS: 4    PANDA: 5, 6
+
+# ATLAS: 4, 5    PANDA: 5, 6
 
 # Matching Fractions
-# ATLAS: 0.5  PANDA: 0.5, 0.75, 0.95, etc.
+
+# ATLAS: 0.5     PANDA: 0.5, 0.75, 0.95, etc.
 

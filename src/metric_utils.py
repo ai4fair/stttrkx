@@ -153,16 +153,16 @@ def plot_epc(metrics, name="gnn"):
 
     # Plotting
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
-    axs.plot(eff, pur, color="darkorange", label="GNN Classifier, AUC = %.5f" % epc_auc)
+    axs.plot(eff, pur, color="darkorange", label="DNN Classifier, AUC = %.5f" % epc_auc)
     axs.plot([0, 1], [1, 0], color="navy", linestyle="--", label="Naive Classifier")
 
     # Axes Params
     # axs.set_title("EP Curve, AUC = %.5f" % epc_auc, fontsize=15)
-    axs.set_xlabel("Edge Efficiency", fontsize=20)
-    axs.set_ylabel("Edge Purity", fontsize=20)
+    axs.set_xlabel("Edge Efficiency", fontsize=24)
+    axs.set_ylabel("Edge Purity", fontsize=24)
     axs.tick_params(axis='both', which='major', labelsize=14)
     axs.tick_params(axis='both', which='minor', labelsize=14)
-    axs.legend(loc='lower left', fontsize=16)
+    axs.legend(loc='lower left', fontsize=20)
 
     # Fig Params
     fig.tight_layout()
@@ -191,11 +191,11 @@ def plot_epc_cut(metrics, name="gnn"):
 
     # Axes Params
     # axs.set_title("Edge Scores vs Efficiency and Purity", fontsize=15)
-    axs.set_xlabel("Edge Score Cut", fontsize=20)
+    axs.set_xlabel("Edge Score Cut", fontsize=24)
     axs.tick_params(axis='both', which='major', labelsize=14)
     axs.tick_params(axis='both', which='minor', labelsize=14)
     # axs.set_ylim(0.5,1.02)
-    axs.legend(loc='lower center', fontsize=16)
+    axs.legend(loc='lower center', fontsize=20)
 
     # Fig Params
     fig.tight_layout()

@@ -173,11 +173,12 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
     py = truth.tpy
     pz = truth.tpz
     
+    # ROOT Definition: https://root.cern/doc/v626/TVector3_8cxx_source.html#l00236
     pt = np.sqrt(px**2 + py**2)
     ptheta = np.arctan2(pt, pz)             # OR, np.arccos(pz/p)
     peta = -np.log(np.tan(0.5 * ptheta))
     pphi = np.arctan2(py, px)
-        
+    
     truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta, pphi=pphi)
     
     # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
