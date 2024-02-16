@@ -1,62 +1,65 @@
 
-## Build Conda Environment
+Almost every package used in this library is available on conda and has known compatibility for both CPU and GPU (with CUDA v11.3). Therefore installation should be as simple as:
 
-Thank god that almost every package used in this library is available on conda and has known compatibility for both CPU and GPU (with CUDA v11.3). Therefore installation should be as simple as:
+### _1. Build Conda Environment_
 
-**CPU-only Installation**
+**CPU-only Installation:**
 
 ```bash
-conda env create -f cpu_environment.yml python=3.8
+# CPU-only installation
+cd envs/
+conda env create -f cpu_environment.yml python=3.9
 conda activate exatrkx-cpu
 pip install -e .
 ```
 
-Or, after ensuring your GPU drivers are updated to run CUDA v11.3:
-
-**GPU Installation**
+**GPU-only Installation:**
 
 ```bash
-conda env create -f gpu_environment.yml python=3.8
+# GPU-only installation
+cd envs/
+conda env create -f gpu_environment.yml python=3.9
 conda activate exatrkx-gpu
 pip install -e .
 ```
-&nbsp;
-## Build Singularity Container
+
+**Activate Environment:**
+
+```bash
+# e.g. activate exatrkx-cpu
+conda activate exatrkx-cpu
+```
+
+### _2. Build Container Environment_
 
 See the `*.def` files to build a _Singularity_ container with a anaconda environment.
 
-&nbsp;
-## Build Shifter Container
 
-Coming soon...
+### _3. Running the Pipeline_
 
-&nbsp;
-## How to run STT Pipeline?
+Once a conda environemnt is successfully created, one can run the pipeline from the root directory as follows:
 
 ```bash
-# activate conda env
+# running pipeline
 conda activate exatrkx-cpu
-
-# cd to a Pipeline directory
-cd exatrkx-hsf/Pipelines/STT_Example
-
-# export the EXATRKX_DATA variable
-export EXATRKX_DATA=$HOME/current/data_sets/exatrkx-hsf
-
-# run TrainTrack by providing a config file
+export EXATRKX_DATA=path/to/dataset
 traintrack configs/pipeline_quickstart.yaml
-
 ```
 
-### _Stages_
+#### _3.1 Pipeline Stages_
 
-1. **Processing**: _`Pipeline/STT_Example/LightningModules/Processing`_
-2. **Embedding**: _`Pipeline/STT_Example/LightningModules/Embedding`_
-3. **Filter**: _`Pipeline/STT_Example/LightningModules/Filter`_
-4. **GNN**: _`Pipeline/STT_Example/LightningModules/GNN`_
+Top-level pipeline config (_e.g. `configs/pipeline_quickstart.yaml`_) contains the several stages that will run sequentially. One can comment those not needed.
 
-### _Cofiguration of a Stage_
+1. **Processing**: _`LightningModules/Processing`_
+2. **DNN**: _`LightningModules/DNN`_
+3. **GNN**: _`LightningModules/GNN`_
+4. **Segmenting**: _`LightningModules/Segmenting`_
 
-- _`Pipeline/STT_Example/configs`_ contains top-level configuration for **TrainTrack**
-- **TrainTrack** get information about different stages of the Pipeline to run the stages in order. For example, the **Processing**, **Embedding**,...,**GNN** stages.
-- The **runtime** configuration of each stages lies in a _**config**_ file in respective directory of a stage. For example, for **Processing** stage utilizes config file in _`Pipeline/STT_Example/LightningModules/Processing/configs/prepare_quickstart.yaml`_ to fulfill its requirements.
+
+#### _3.2 Pipeline Cofiguration_
+
+There are two level of configuration: top-level and stage-level.
+
+- _`configs/`_ contains top-level configuration for the **TrainTrack** 
+- _`LightningModules/<Stage Name>/configs/`_ contains stage-level configurations for the **TrainTrack**
+
