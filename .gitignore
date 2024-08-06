@@ -52,23 +52,22 @@
 # Saved Models and Checkpoints
 # ----------------------------------
 *.h5
-*.sif
 *.ckpt
+*.sif
 
+# ----------------------------------
+# Directories
+# ----------------------------------
+.vscode
 .ipynb_checkpoints
 .virtual_documents
-lightning_logs
 __pycache__
 
-*.sif
 logs
-data
-data_sets
-train_quick*
-train_all*
-run_quick*
-run_all*
-run
+data_*
+train_*
+run_*
+
 lightning_logs
 lightning_models
 tutorials
