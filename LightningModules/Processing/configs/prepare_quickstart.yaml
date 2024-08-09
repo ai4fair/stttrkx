@@ -1,5 +1,5 @@
 # I/O Configuration
-input_dir: ${EXATRKX_DATA}/data_quick/fwp_train_30k
+input_dir: ${EXATRKX_DATA}/data_quick
 output_dir: ${EXATRKX_DATA}/run_quick/feature_store
 
 n_files: 10000
