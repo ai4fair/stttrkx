@@ -1,6 +1,6 @@
 # Input/output configuration
 input_dir: ${EXATRKX_DATA}/run_quick/feature_store
-output_dir: ${EXATRKX_DATA}/run_quick/gnn_processed
+output_dir: ${EXATRKX_DATA}/run_quick/graph_labelling
 project: GNNStudy
 edge_cut: 0.5
 
@@ -10,7 +10,7 @@ pt_background_min: 0.
 datatype_names: [[train, val, test]]
 datatype_split: [[20000, 2500, 2500]]
 
-train_split: [[8000, 1000, 1000]]      # ADAK:: for data_utils.py
+train_split: [[6938, 1487, 1487]]      # ADAK:: for data_utils.py
 sorted_events: True
 
 noise: False

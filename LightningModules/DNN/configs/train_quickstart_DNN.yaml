@@ -1,6 +1,6 @@
 # Input/output configuration
 input_dir: ${EXATRKX_DATA}/run_quick/feature_store
-output_dir: ${EXATRKX_DATA}/run_quick/dnn_processed
+output_dir: ${EXATRKX_DATA}/run_quick/dnn_graph_labelling
 project: DNNStudy
 edge_cut: 0.5
 

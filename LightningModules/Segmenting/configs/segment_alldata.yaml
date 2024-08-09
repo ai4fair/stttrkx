@@ -1,5 +1,5 @@
-input_dir: ${EXATRKX_DATA}/run_all/gnn_processed/test
-output_dir: ${EXATRKX_DATA}/run_all/seg_processed
+input_dir: ${EXATRKX_DATA}/run_quick/graph_labelling/test
+output_dir: ${EXATRKX_DATA}/run_quick/graph_segmenting
 datatype_names: [[train, val, test]]
 
 edge_cut: 0.5
