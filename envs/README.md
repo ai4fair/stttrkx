@@ -23,11 +23,14 @@ conda activate exatrkx-gpu
 pip install -e .
 ```
 
-**Activate Environment:**
+**Issue with Installation:**
+
+Some issues might still presist after installation. Tow known issues are from `torch_sparse` and `torch_scatter` packages. Somehow different version of these packages are installed. This is a known issue. To resolve it, one can uninstall and then install `torch_sparse` and `torch_scatter` manually. Mind the package versions.
 
 ```bash
-# e.g. activate exatrkx-cpu
-conda activate exatrkx-cpu
+# install and uninstall torch_sparse and torch_scatter
+pip uninstall torch_sparse torch_scatter
+pip install torch_sparse==0.6.12 torch_scatter==2.0.9
 ```
 
 ### _2. Build Container Environment_
