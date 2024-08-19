@@ -1,20 +1,17 @@
 
 ### _`src` structure_
 
-This directory contains functions as suppliment to the STTTrkX Pipeline. Intended for working on raw CSV files.
+This directory contains functions as suppliment to the _STT.TrkX Pipeline_. It includes the following modules:
 
-It includes functionality such as
+- `event.py` - _`Event`_ class with an alternative _`Compose_Event()`_ function.
+- `reader.py` - data readers
+    - read CSV/Torch events
+    - helper functions from _`event.py`_
+- `detector.py` - detector drawing and manipulation functions
+- `stt.csv` - detector geometry file
+- `drawing.py` - drawing utilities for events
+- `math_utils.py` - math utilities
+- `metric_utils.py` - metric utilities
 
-- `drawing.py` - Drawing utilities for events.
-- `event.py` - Composing a full 'event' from 'hits', 'tubes', 'particles', 'truth' CSV files.
-
-- `reader.py` - CSV Reader Class
-    - read all events
-    - compose them together
-    - return with necessary data columns
-
-- `utils_dir.py` - Some dir. utilities (similar to stttrkx-iml).
-- `utils_math.py` - Some math utilities.
-- `stt.csv` - Detector file for STT
 
 - A.O.B

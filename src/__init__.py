@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# SttCSVReader Class (Alt. to Event Class)
-from .reader import SttCSVDataReader, Draw_CSVReader_Event
-from .reader import SttTorchDataReader, Draw_TorchReader_Event
-
 # Event Class 
-from .event import Compose_Event, Draw_Compose_Event
+from .event import Event
 
+# Reader Class
+from .reader import SttCSVDataReader
+from .reader import SttTorchDataReader
 
-
-
-
+# Detector Layout
+from .detector import detector_layout
+from .detector import detector_layout_new
 

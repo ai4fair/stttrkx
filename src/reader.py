@@ -10,9 +10,10 @@ import torch
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
-from .utils_math import cylindrical_to_cartesian
+from .math_utils import cylindrical_to_cartesian
 
-# TODO: skewed or non-skewed selection: make layer_id column for both cases.
+# TODO: Use event.py to read and compose event for SttCSVDataReader. Make event
+# same as build_event from event_utils, for details see compose_event() in event.py
 
 try:
     output_base = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +31,7 @@ Data = namedtuple('Data', ['hits', 'tubes', 'particles', 'truth', 'event', 'even
 
 # SttTorchDataReader Class
 class SttTorchDataReader(object):
-    """Torch Geometric Data Reader from an Input Directory."""
+    """PyTorch Geometric Data Reader from an Input Directory."""
 
     def __init__(self, input_dir: str):
         """Initialize Instance Variables in Constructor"""
@@ -50,51 +51,9 @@ class SttTorchDataReader(object):
         return self.read(evtid)
 
 
-# Draw Reader Event::  Using Object-Oriented API
-def Draw_TorchReader_Event(feature_data, figsize=(10, 10), save_fig=False):
-    """Draw event from the processing stage, the `feature_data` is pytorch_geometric data."""
-    plt.close('all')
-    
-    # init subplots
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-
-    # detector layout    
-    det = pd.read_csv(detector_path)
-    nkw = det.query('skewed==0')  # non-skewed
-    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
-    ax.scatter(nkw.x.values, nkw.y.values, s=20, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(skw.x.values, skw.y.values, s=20, facecolors='none', edgecolors='coral')
-    
-    # event Id
-    e_id = int(feature_data.event_file[-10:])
-        
-    # feature data
-    x, y, z = cylindrical_to_cartesian(r=feature_data.x[:, 0], phi=feature_data.x[:, 1], z=feature_data.x[:, 2])
-    
-    # particle tracks
-    p_ids = np.unique(feature_data.pid)
-    for pid in p_ids:
-        idx = feature_data.pid == pid
-        ax.scatter(x[idx], y[idx], label='particle_id: {}'.format(pid))
-
-    # plotting params
-    ax.set_title('Event ID # %d' % e_id)
-    ax.set_xlabel('x [cm]', fontsize=10)
-    ax.set_ylabel('y [cm]', fontsize=10)
-    ax.set_xlim(-41, 41)
-    ax.set_ylim(-41, 41)
-    ax.grid(False)
-    ax.legend(fontsize=10, loc='best')
-    fig.tight_layout()
-    
-    if save_fig:
-        fig.savefig('event_%d.png' % e_id)
-    return fig
-
-
 # SttCSVDataReader Class
 class SttCSVDataReader(object):
-    """Reader for Tracks from GNN Stage (Test Step by GNNBuilder Callback)"""
+    """CSV Data Reader from an Input Directory. It compose and return full event."""
     
     def __init__(self, path: str, selection: bool, noise: bool, skewed: bool):
         """Initialize Instance Variables in Constructor"""
@@ -230,42 +189,3 @@ class SttCSVDataReader(object):
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
         return self.read(evtid)
 
-
-# Draw Reader Event:: Using Object-Oriented API
-def Draw_CSVReader_Event(data=None, figsize=(10, 10), save_fig=False):
-    """Draw a single event produced by SttCSVReader class."""
-    
-    # OOP Method #1
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    
-    event = data.event
-    e_ids = int(data.event_file[-10:])
-    p_ids = np.unique(event.particle_id.values)
-    det = pd.read_csv(detector_path)
-    
-    nkw = det.query('skewed==0')  # non-skewed
-    skw = det.query('skewed==1')  # skewed: both +ve/-ve polarity
-    
-    ax.scatter(nkw.x.values, nkw.y.values, s=45, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(skw.x.values, skw.y.values, s=45, facecolors='none', edgecolors='coral')
-
-    for i in p_ids:
-        df_ = event.loc[event.particle_id == i]
-        ax.scatter(df_.x.values, df_.y.values, 
-                   # s=(df_.isochrone*3000/45).values,
-                   label='particle_id: {}'.format(i))
-    
-    ax.set_title('Event ID # {}'.format(e_ids))
-    ax.set_xlabel('x [cm]', fontsize=10)
-    ax.set_ylabel('y [cm]', fontsize=10)
-    # ax.set_xticks(xticks, fontsize=10)
-    # ax.set_yticks(yticks, fontsize=10)
-    ax.set_xlim(-41, 41)
-    ax.set_ylim(-41, 41)
-    ax.grid(False)
-    ax.legend(fontsize=10, loc='best')
-    fig.tight_layout()
-    
-    if save_fig:
-        fig.savefig('event_{}.png'.format(e_ids))
-    return fig
