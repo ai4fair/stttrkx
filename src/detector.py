@@ -37,9 +37,9 @@ def detector_layout(figsize=(10, 10)):
     
     # draw tubes
     # ax.scatter(data.x.values, data.y.values, s=0.5, facecolors='none', edgecolors='lightgrey')
-    ax.scatter(parallel_tubes.x.values, parallel_tubes.y.values, s=50, facecolors='none', edgecolors='lightgreen')
-    ax.scatter(pos_skewed_tubes.x.values, pos_skewed_tubes.y.values, s=50, facecolors='none', edgecolors='royalblue')
-    ax.scatter(neg_skewed_tubes.x.values, neg_skewed_tubes.y.values, s=50, facecolors='none', edgecolors='lightcoral')
+    ax.scatter(parallel_tubes.x.values, parallel_tubes.y.values, s=50, facecolors='none', edgecolors='lightgreen')  # parallel
+    ax.scatter(pos_skewed_tubes.x.values, pos_skewed_tubes.y.values, s=50, facecolors='none', edgecolors='royalblue')  # positive skewed
+    ax.scatter(neg_skewed_tubes.x.values, neg_skewed_tubes.y.values, s=50, facecolors='none', edgecolors='lightcoral')  # negative skewed
     
     # plotting params
     ax.set_xlabel('x [cm]', fontsize=15)

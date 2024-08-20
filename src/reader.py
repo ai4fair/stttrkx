@@ -10,7 +10,7 @@ import torch
 import trackml.dataset
 from typing import Any
 from collections import namedtuple
-from .math_utils import cylindrical_to_cartesian
+
 
 # TODO: Use event.py to read and compose event for SttCSVDataReader. Make event
 # same as build_event from event_utils, for details see compose_event() in event.py
@@ -55,9 +55,9 @@ class SttTorchDataReader(object):
 class SttCSVDataReader(object):
     """CSV Data Reader from an Input Directory. It compose and return full event."""
     
-    def __init__(self, path: str, selection: bool, noise: bool, skewed: bool):
+    def __init__(self, input_dir: str, noise: bool, skewed: bool, selection: bool):
         """Initialize Instance Variables in Constructor"""
-        self._path = path
+        self._path = input_dir
         self._noise = noise
         self._skewed = skewed
         self._selection = selection

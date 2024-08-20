@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import trackml.dataset
-
+from .detector import detector_layout
 
 try:
     output_base = os.path.dirname(os.path.abspath(__file__))
@@ -197,11 +197,15 @@ class Event(object):
 
 
 # Compose DataFrames into Single Event DataFrame.
-def Compose_Event(event_prefix="", noise=False, skewed=True, selection=False):
+def Build_Event(inputdir="", evtid=0, noise=False, skewed=True, selection=False):
     """Merge truth information ('truth', 'particles') to 'hits'.
     Then calculate and add derived variables to the event. Keep
     the necessary columns in the final dataframe."""
-
+    
+    # get event prefix
+    prefix = "event{:010d}".format(evtid)
+    event_prefix = os.path.join(os.path.expandvars(inputdir), prefix)
+        
     # load data using event_prefix (e.g. path/to/event0000000001)
     hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
     
@@ -264,4 +268,33 @@ def Compose_Event(event_prefix="", noise=False, skewed=True, selection=False):
     hits = hits.assign(event_id=int(event_prefix[-10:]))
     
     return hits
+
+
+# Visualize Event (Using Object Oriented API)
+def Build_Event_Viz(event=None, figsize=(10,10), save_fig=False):
+    """Visualize a single event from Build_Event()."""
+    
+    # draw detector layout
+    fig, ax = detector_layout(figsize=(10,10))
+    
+    # get colormap for consistent track colors
+    cmap = ['blue', 'red', 'green', 'orange', 'purple', 'magenta', 'black',
+            'gray', 'lime', 'teal', 'navy', 'maroon', 'olive', 'indigo', 'cyan']
+    
+    # get event_id and particle_id
+    evtid = np.unique(event.event_id.values)
+    unique_pids =  np.unique(event.particle_id.values)
+    
+    # draw particles
+    for pid in unique_pids:
+        df = event.loc[event.particle_id == pid]
+        ax.scatter(df.x.values, df.y.values, color=cmap[pid], label=f'particle_id: {pid}')  
+    
+    # axis params
+    ax.legend(fontsize=12, loc='best')
+    fig.tight_layout()
+    
+    if save_fig:
+        fig.savefig('event_{}.pdf'.format(evtid))
+    return fig
 
