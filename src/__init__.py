@@ -9,7 +9,7 @@ from .event import Event, Build_Event, Build_Event_Viz
 from .reader import SttCSVDataReader, SttTorchDataReader
 
 # Event Drawing
-from .drawing import Vizualize_CSVEvent, Vizualize_TorchEvent
+from .drawing import Visualize_CSVEvent, Visualize_TorchEvent
 
 # Detector Layout
 from .detector import detector_layout

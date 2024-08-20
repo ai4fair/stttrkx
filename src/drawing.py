@@ -20,7 +20,7 @@ detector_path = os.path.join(output_base, 'stt.csv')
 
 
 # Draw SttCSVDataReader Event:: Using Object-Oriented API
-def Vizualize_CSVEvent(event=None, figsize=(10, 10), save_fig=False):
+def Visualize_CSVEvent(event=None, figsize=(10, 10), save_fig=False):
     """Draw an event produced by SttCSVDataReader class."""
     
     # draw detector layout
@@ -51,7 +51,7 @@ def Vizualize_CSVEvent(event=None, figsize=(10, 10), save_fig=False):
  
 
 # Draw SttTorchDataReader Event::  Using Object-Oriented API
-def Vizualize_TorchEvent(feature_data, figsize=(10, 10), save_fig=False):
+def Visualize_TorchEvent(feature_data, figsize=(10, 10), save_fig=False):
     """Draw an event produced by SttTorchDataReader class."""
     
     # draw detector layout
@@ -69,7 +69,6 @@ def Vizualize_TorchEvent(feature_data, figsize=(10, 10), save_fig=False):
     x, y = polar_to_cartesian(r=feature_data.x[:, 0], phi=feature_data.x[:, 1])
     
     # draw particles
-    unique_pids =  np.unique(pids)
     for pid in unique_pids:
         mask = (feature_data.pid == pid)
         ax.scatter(x[mask], y[mask], color=cmap[pid], label=f'particle_id: {pid}')
