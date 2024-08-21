@@ -271,11 +271,11 @@ def Build_Event(inputdir="", evtid=0, noise=False, skewed=True, selection=False)
 
 
 # Visualize Event (Using Object Oriented API)
-def Build_Event_Viz(event=None, figsize=(10,10), save_fig=False):
+def Build_Event_Viz(event=None, figsize=(10,10), fig_type="pdf", save_fig=False):
     """Visualize a single event from Build_Event()."""
     
     # draw detector layout
-    fig, ax = detector_layout(figsize=(10,10))
+    fig, ax = detector_layout(figsize=figsize)
     
     # get colormap for consistent track colors
     cmap = ['blue', 'red', 'green', 'orange', 'purple', 'magenta', 'black',
@@ -283,7 +283,7 @@ def Build_Event_Viz(event=None, figsize=(10,10), save_fig=False):
     
     # get event_id and particle_id
     evtid = np.unique(event.event_id.values)
-    unique_pids =  np.unique(event.particle_id.values)
+    unique_pids =  np.unique(event.particle_id.values).astype(int)
     
     # draw particles
     for pid in unique_pids:
@@ -291,10 +291,12 @@ def Build_Event_Viz(event=None, figsize=(10,10), save_fig=False):
         ax.scatter(df.x.values, df.y.values, color=cmap[pid], label=f'particle_id: {pid}')  
     
     # axis params
+    evtid = np.unique(event.event_id.values)
+    ax.set_title('Event # {}'.format(evtid))
     ax.legend(fontsize=12, loc='best')
     fig.tight_layout()
     
+    # save figure
     if save_fig:
-        fig.savefig('event_{}.pdf'.format(evtid))
-    return fig
+        fig.savefig('event_{}.{}'.format(evtid, fig_type))
 
