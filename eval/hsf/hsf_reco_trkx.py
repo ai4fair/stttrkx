@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Mininally modified version of 'Step_5_Build_Track_Candidates.py' script
-from exatrkx-hsf/Examples repo. It used Connected-Components to build tracks"""
+"""Mininally modified version of 'Step_5_Build_Track_Candidates.py' script from
+exatrkx-hsf/Examples/TrackML_Quickstart/Scripts repository to build tracks."""
 
 import sys
 import os

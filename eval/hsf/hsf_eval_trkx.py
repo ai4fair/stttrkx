@@ -1,6 +1,8 @@
-"""
-This script runs step 6 of the TrackML Quickstart example: Evaluating the track reconstruction performance.
-"""
+#!/usr/bin/env python
+# coding: utf-8
+
+"""Mininally modified version of 'Step_6_Evaluate_Reconstruction.py' script from
+exatrkx-hsf/Examples/TrackML_Quickstart/Scripts repository to evaluate tracks."""
 
 import sys
 import os
