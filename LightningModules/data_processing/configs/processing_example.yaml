@@ -1,0 +1,29 @@
+# This example file contains all available options for the processing stage with short descriptions.
+# Optional fields are marked with a # Optional comment.
+
+# Input directory with the .csv files
+input_dir  : <path/to/input/csv>
+
+# Output directory for the pyTorch geometry files
+output_dir : <path/to/output/pyTorchGeo>
+
+# - Parallelization parameters - 
+overwrite : <True/False> # ?
+n_files   : <number>     # ?
+n_workers : <number>     # ?
+n_tasks   : <number>     # ?
+chunksize : <number>     # ?
+
+# - Graph construction method -
+layerwise  : <True/False> # If True, construct true edges by connecting hits in adjacent layers. The radial distance to the interaction point must increase in every step.
+modulewise : <True/False> # If True, construct true edges by connecting hits in adjacent modules. The radial distance to the interaction point must increase or be the same in every step.
+
+# If True, then the 'edge_index' parameter will be built in the Processing stage, meaning that the GNN stage can be used right after that.
+# If False, the `edge_index` parameter needs to be build explicitly afterwards in embedding and/or filtering stages.
+inputedges : <True/False> # get input edges (using layerwise as truth)
+
+# - Filter -
+noise     : <True/False> # ?
+skewed    : <True/False> # If True, include skewed layers for the graph construction.
+filtering : <True/False> # If True, get input edges without adjacent sectors
+selection : <True/False> # ?
