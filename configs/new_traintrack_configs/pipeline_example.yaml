@@ -1,0 +1,40 @@
+# This example file contains all available options for the pipeline and stages with short descriptions.
+# Optional fields are marked with a # Optional comment.
+
+# Name of the project
+project          : <name>
+
+# Path to directory containing the model files
+model_library    : <path/to/models>
+
+# Path to the checkpoint directory
+artifact_library : <path/to/checkpoints>
+
+# List containing dictionaries with the configuration for each stage
+stage_list:
+    # 1st stage
+    - {
+      # Name of the directory in the model library containing the python model
+      set       : <dir name>,
+      # Name of the the class that needs to be used to run the stage 
+      name      : <class name>, 
+      # Path to the configuration file for the stage
+      config    : <path/to/config>, 
+      # ID of the checkpoint / Name of the checkpoint directory
+      resume_id : <checkpoint ID> # Optional for training
+      }
+    # 2nd stage
+    - {
+      # Name of the directory in the model library containing the python model
+      set       : <dir name>,
+      # Name of the the class that needs to be used to run the stage 
+      name      : <class name>, 
+      # Path to the configuration file for the stage
+      config    : <path/to/config>, 
+      # ID of the checkpoint / Name of the checkpoint directory
+      resume_id : <checkpoint ID> # Optional for training
+      }
+    # 3rd stage
+    - {
+      #...
+      }

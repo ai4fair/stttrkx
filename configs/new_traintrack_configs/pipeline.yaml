@@ -1,0 +1,31 @@
+# Name of the project
+project          : XiAntiXi_IGNN-Training
+
+# Path to directory containing the model files
+model_library    : /home/nikin105/mlProject/stttrkx/LightningModules
+
+# Path to the checkpoint directory
+artifact_library : /home/nikin105/mlProject/mlFiles/lightning_checkpoints
+
+# List containing dictionaries with the configuration for each stage
+stage_list:
+    # 1st stage
+    # - {
+    #   # Name of the directory in the model library containing the python model
+    #   set       : newProcessing,
+    #   # Name of the the class that needs to be used to run the stage 
+    #   name      : TrackMLFeatureStore,
+    #   # Path to the configuration file for the stage
+    #   config    : /home/nikin105/mlProject/stttrkx/LightningModules/newProcessing/configs/processing.yaml,
+    # }
+    # 2nd stage
+    - {
+      # Name of the directory in the model library containing the python model
+      set       : edge:labelling,
+      # Name of the the class that needs to be used to run the stage 
+      name      : InteractionGNN,
+      # Path to the configuration file for the stage
+      config    : IGNN.yaml,
+      # ID of the checkpoint / Name of the checkpoint directory
+      # resume_id : bbcqnutj # Optional
+      }
