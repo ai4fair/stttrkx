@@ -1,0 +1,70 @@
+# Input directory with the processed pyTorch geometry files
+input_dir  : /home/nikin105/mlProject/mlFiles/afterProcessing/XiAntiXi
+
+# Working directory for the training with the split up pyTorch geometry files
+output_dir : /home/nikin105/mlProject/mlFiles/training/XiAntiXi
+
+# Logger for monitoring the training. Options: wandb (Weights and Biases), tb (Tensor Board), or None
+logger     : wandb
+
+# - Further Filtering -
+edge_cut          : 0.5   # ? edge score?
+pt_signal_min     : 0     # ? minimal transversal momentum of signal hits
+pt_background_min : 0     # ? minimal transversal momentum of background hits
+sorted_events     : True  # ?
+noise             : False # ?
+
+# Names of the data types used for this stage
+datatype_names:
+  - train
+  - val
+  - test
+
+# Number of events used for each data type
+datatype_split: 
+  - 15 # Number of events used to train the model
+  - 5  # Number of events used to validate the performance of the model after an epoch
+  - 5  # Number of events used to test the performance of the model after the training
+
+# ? same as datatype_split but for data_utils.py
+train_split: 
+  - 15
+  - 5
+  - 5
+
+# - General configuration -
+overwrite    : True # ?
+max_epochs   : 1    # Number of training epochs
+n_workers    : 1    # ?
+save_top_k   : 2    # Optional (default = 2) : Number of best models that should be saved as checkpoints
+sanity_steps : 2    # Optional (default = 2) : Number of sanity steps after resuming training from a checkpoint
+
+# - IGNN hyperparameter - 
+fom               : val_loss # Optional (default = val_loss) : Figure of merit (FOM) used to determine the best model.
+fom_mode          : min      # Optional (default = min) : Mode of the FOM. Options: min, max
+spatial_channels  : 3        # ?
+cell_channels     : 0        # ?
+hidden            : 128      # ?
+n_graph_iters     : 8        # ?
+nb_node_layer     : 3        # ?
+nb_edge_layer     : 3        # ?
+emb_channels      : 0        # ?
+layernorm         : True     # ?
+batchnorm         : False    # ?
+directed          : False    # ?
+batchsize         : 1        # ?
+aggregation       : sum_max  # ? Options: sum, max, sum_max, mean, mea_sum, mean_max
+hidden_activation : ReLU     # ? Options: ReLu
+weight            : 2        # ?
+warmup            : 200      # ?
+lr                : 0.001    # ?
+factor            : 0.3      # ?
+patience          : 10       # ?
+
+# ?
+regime: 
+  - pid # ? [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
+
+# Post-processing?
+callbacks: 
+  - GNNBuilder # ? Options: GNNBuilder

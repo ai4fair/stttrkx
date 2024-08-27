@@ -1,0 +1,73 @@
+# This example file contains all available options for the IGNN (Interactive Graph Neural Network) training / inference stage with short descriptions.
+# Optional fields are marked with a # Optional comment.
+
+# Input directory with the processed pyTorch geometry files
+input_dir  : <path/to/input/pyTorchGeo>
+
+# Working directory for the training with the split up pyTorch geometry files
+output_dir : <path/to/output/training>
+
+# Logger for monitoring the training. Options: wandb (Weights and Biases), tb (Tensor Board), or None
+logger     : <option>
+
+# - Further Filtering -
+edge_cut          : <number>     # ? edge score?
+pt_signal_min     : <number>     # ? minimal transversal momentum of signal hits
+pt_background_min : <number>     # ? minimal transversal momentum of background hits
+sorted_events     : <True/False> # ?
+noise             : <True/False> # ?
+
+# Names of the data types used for this stage
+datatype_names:
+  - <name>
+  - <name>
+  - <name>
+
+# Number of events used for each data type
+datatype_split: 
+  - <number> # Number of events used to train the model
+  - <number> # Number of events used to validate the performance of the model after an epoch
+  - <number> # Number of events used to test the performance of the model after the training
+
+# ? same as datatype_split but for data_utils.py
+train_split: 
+  - <number>
+  - <number>
+  - <number>
+
+# - General configuration -
+overwrite    : <True/False> # ?
+max_epochs   : <number>     # Number of training epochs
+n_workers    : <number>     # ?
+save_top_k   : <number>     # Optional (default = 2) : Number of best models that should be saved as checkpoints
+sanity_steps : <number>     # Optional (default = 2) : Number of sanity steps after resuming training from a checkpoint
+
+# - IGNN hyperparameter - 
+fom               : <option>     # Optional (default = val_loss) : Figure of merit (FOM) used to determine the best model.
+fom_mode          : <option>     # Optional (default = min) : Mode of the FOM. Options: min, max
+spatial_channels  : <number>     # ?
+cell_channels     : <number>     # ?
+hidden            : <number>     # ?
+n_graph_iters     : <number>     # ?
+nb_node_layer     : <number>     # ?
+nb_edge_layer     : <number>     # ?
+emb_channels      : <number>     # ?
+layernorm         : <True/False> # ?
+batchnorm         : <True/False> # ?
+directed          : <True/False> # ?
+batchsize         : <number>     # ?
+aggregation       : <options>    # ? Options: sum, max, sum_max, mean, mea_sum, mean_max
+hidden_activation : <options>    # ? Options: ReLu
+weight            : <number>     # ?
+warmup            : <number>     # ?
+lr                : <number>     # ?
+factor            : <number>     # ?
+patience          : <number>     # ?
+
+# ?
+regime: 
+  - <option> # ? [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
+
+# Post-processing?
+callbacks: 
+  - <option> # ? Options: GNNBuilder
