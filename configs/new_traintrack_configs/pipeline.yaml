@@ -2,7 +2,7 @@
 project          : XiAntiXi_IGNN-Training
 
 # Path to directory containing the model files
-model_library    : /home/nikin105/mlProject/stttrkx/LightningModules
+model_library    : /home/nikin105/mlProject/stttrkx-upgrading/LightningModules
 
 # Path to the checkpoint directory
 artifact_library : /home/nikin105/mlProject/mlFiles/lightning_checkpoints
@@ -21,7 +21,7 @@ stage_list:
     # 2nd stage
     - {
       # Name of the directory in the model library containing the python model
-      set       : edge:labelling,
+      set       : edge_labelling,
       # Name of the the class that needs to be used to run the stage 
       name      : InteractionGNN,
       # Path to the configuration file for the stage
