@@ -19,7 +19,7 @@ except KeyError as e:
 detector_path = os.path.join(output_base, 'stt.csv')
 
 
-def Visualize_Edges (event, edges, figsize=(10,10), fig_type="pdf", save_fig=False, annotate=False):
+def Visualize_Edges (event, edges, figsize=(10,10), fig_type="pdf", fig_name="event", save_fig=False, annotate=False):
     """Function to plot nodes and edges of an event."""
 
     # detector layout
@@ -60,7 +60,7 @@ def Visualize_Edges (event, edges, figsize=(10,10), fig_type="pdf", save_fig=Fal
 
     # save figure
     if save_fig:
-        fig.savefig(f"event_{evtid}.{fig_type}", format=fig_type)
+        fig.savefig(f"{fig_name}_{evtid}.{fig_type}", format=fig_type)
 
 
 # Draw SttCSVDataReader Event:: Using Object-Oriented API
