@@ -5,7 +5,7 @@ project          : XiAntiXi_IGNN-Training
 model_library    : /home/nikin105/mlProject/stttrkx-upgrading/LightningModules
 
 # Path to the checkpoint directory
-artifact_library : /home/nikin105/mlProject/mlFiles/lightning_checkpoints
+artifact_library : /home/nikin105/mlProject/mlFiles/checkpoints
 
 # List containing dictionaries with the configuration for each stage
 stage_list:
