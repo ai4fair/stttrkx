@@ -1,27 +1,25 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """The base classes for the embedding process.
 
-The embedding process here is both the embedding models (contained in Models/) and the training procedure, which is a Siamese network strategy. Here, the network is run on all points, and then pairs (or triplets) are formed by one of several strategies (e.g. random pairs (rp), hard negative mining (hnm)) upon which some sort of contrastive loss is applied. The default here is a hinge margin loss, but other loss functions can work, including cross entropy-style losses. Also available are triplet loss approaches.
+The embedding process here is both the embedding models (contained in Models/) and the training procedure, which is a 
+Siamese network strategy. Here, the network is run on all points, and then pairs (or triplets) are formed by one of several 
+strategies (e.g. random pairs (rp), hard negative mining (hnm)) upon which some sort of contrastive loss is applied. 
+The default here is a hinge margin loss, but other loss functions can work, including cross entropy-style losses. Also 
+available are triplet loss approaches.
 
 Example:
     See Quickstart for a concrete example of this process.
     
-Todo:
-    * Refactor the training & validation pipeline, since the use of the different regimes (rp, hnm, etc.) looks very messy
+Todo: Refactor the training & validation pipeline, since the use of the different regimes (rp, hnm, etc.) looks very messy
 """
 
-# System imports
-import sys
-import os
 import logging
-
-# 3rd party imports
-import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
 import torch
-from torch.nn import Linear
-from torch_geometric.data import DataLoader
-from torch_cluster import radius_graph
-import numpy as np
+import pytorch_lightning as pl
+from torch_geometric.loader import DataLoader
+
 
 # Local Imports
 from .utils.embedding_utils import graph_intersection, split_datasets, build_edges
@@ -29,7 +27,7 @@ from .utils.embedding_utils import graph_intersection, split_datasets, build_edg
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-class EmbeddingBase(LightningModule):
+class EmbeddingBase(pl.LightningModule):
     
     # LightningModule Init:
     def __init__(self, hparams):
@@ -39,11 +37,12 @@ class EmbeddingBase(LightningModule):
         """
         self.save_hyperparameters(hparams)
     
-    # LightningModule Hooks: To skip a separate LightningDataModule
+    # Prepare Dataset
     def setup(self, stage):
         """Process and Split in setup() Hook, Download in prepare_data() hook."""
         self.trainset, self.valset, self.testset = split_datasets(**self.hparams)
     
+    # Data Loaders
     def train_dataloader(self):
         if len(self.trainset) > 0:
             return DataLoader(self.trainset, batch_size=1, num_workers=self.hparams['n_workers'])
@@ -62,7 +61,7 @@ class EmbeddingBase(LightningModule):
         else:
             return None
     
-    # LightningModule Methods
+    # Configure Optimizer & Scheduler
     def configure_optimizers(self):
         optimizer = [
             torch.optim.AdamW(
@@ -85,7 +84,8 @@ class EmbeddingBase(LightningModule):
             }
         ]
         return optimizer, scheduler
-        
+    
+    # Train Step
     def training_step(self, batch, batch_idx):
 
         """
@@ -148,7 +148,7 @@ class EmbeddingBase(LightningModule):
         positive_loss = torch.nn.functional.hinge_embedding_loss(
             d[hinge == 1],
             hinge[hinge == 1],
-            margin=self.hparams["margin"]**2],
+            margin=self.hparams["margin"]**2,
             reduction="mean",
         )
 
@@ -158,6 +158,7 @@ class EmbeddingBase(LightningModule):
 
         return loss
 
+    # Shared Evaluation for Validation and Test Steps
     def shared_evaluation(self, batch, batch_idx, knn_radius, knn_num, log=False):
         """User Method for Shared Evaluation"""
 
@@ -211,6 +212,7 @@ class EmbeddingBase(LightningModule):
             "truth_graph": e_bidir,
         }
 
+    # Validation Step
     def validation_step(self, batch, batch_idx):
         """
         Step to evaluate the model's performance
@@ -222,6 +224,7 @@ class EmbeddingBase(LightningModule):
 
         return outputs["loss"]
 
+    # Test Step
     def test_step(self, batch, batch_idx):
         """
         Step to evaluate the model's performance
@@ -233,6 +236,7 @@ class EmbeddingBase(LightningModule):
         
         return outputs
 
+    # Optimizer Step
     def optimizer_step(
         self,
         epoch,
@@ -263,7 +267,7 @@ class EmbeddingBase(LightningModule):
         optimizer.zero_grad()
 
 
-    # User Methods
+    # 1 - Helper Function
     def get_input_data(self, batch):
         """Get input data, by using the regime hparams. Works on a single batch."""
         
@@ -278,6 +282,7 @@ class EmbeddingBase(LightningModule):
 
         return input_data
 
+    # 2 - Helper Function
     def get_query_points(self, batch, spatial):
         """Find indices (query_indices) of unique signal_true_edges in a batch, randomize and select 
         portion of it using points_per_batch. Then return, indices and spatial by apply above conditions."""
@@ -303,6 +308,7 @@ class EmbeddingBase(LightningModule):
 
         return query_indices, query
 
+    # 3 - Helper Function
     def append_hnm_pairs(self, e_spatial, query, query_indices, spatial):
 
         if "low_purity" in self.hparams["regime"]:
@@ -335,6 +341,7 @@ class EmbeddingBase(LightningModule):
 
         return e_spatial
 
+    # 4 - Helper Function
     def append_random_pairs(self, e_spatial, query_indices, spatial):
     
         n_random = int(self.hparams["randomisation"] * len(query_indices))
@@ -350,6 +357,7 @@ class EmbeddingBase(LightningModule):
         )
         return e_spatial
 
+    # 5 - Helper Function
     def get_true_pairs(self, e_spatial, y_cluster, new_weights, e_bidir):
     
         e_spatial = torch.cat(
@@ -369,6 +377,7 @@ class EmbeddingBase(LightningModule):
         )
         return e_spatial, y_cluster, new_weights
 
+    # 6 - Helper Function
     def get_hinge_distance(self, spatial, e_spatial, y_cluster):
 
         hinge = y_cluster.float().to(self.device)
@@ -380,6 +389,7 @@ class EmbeddingBase(LightningModule):
 
         return hinge, d
 
+    # 7 - Helper Function
     def get_truth(self, batch, e_spatial, e_bidir):
 
         e_spatial, y_cluster = graph_intersection(e_spatial, e_bidir)
