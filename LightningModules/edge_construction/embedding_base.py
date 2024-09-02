@@ -24,7 +24,7 @@ from torch_cluster import radius_graph
 import numpy as np
 
 # Local Imports
-from .utils import graph_intersection, split_datasets, build_edges
+from .utils.embedding_utils import graph_intersection, split_datasets, build_edges
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
