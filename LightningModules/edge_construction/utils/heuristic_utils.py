@@ -44,7 +44,7 @@ def construct_layerwise_input_edges(hits, layer_pairs, filtering=True):
         # Find and join all hit pairs
         try:
             lg1 = layer_groups.get_group(l1)
-            lg1 = layer_groups.get_group(l2)
+            lg2 = layer_groups.get_group(l2)
         # If an event has no hits on a layer, we get a KeyError.
         # In that case we just skip to the next layer pair
         except KeyError as e:

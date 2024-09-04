@@ -2,10 +2,10 @@
 project          : XiAntiXi_IGNN_skewedStraws
 
 # Path to directory containing the model files
-model_library    : /home/nikin105/mlProject/stttrkx-upgrading/LightningModules
+model_library    : /home/nikin105/mlProject/machineLearning/LightningModules
 
 # Path to the checkpoint directory
-artifact_library : /home/nikin105/mlProject/mlFiles/lightning_checkpoints
+artifact_library : /home/nikin105/mlProject/data/machineLearning/artifacts
 
 # List containing dictionaries with the configuration for each stage
 stage_list:

@@ -22,6 +22,7 @@ import pandas as pd
 
 from torch_geometric.data import Data
 from .graph_utils import get_input_edges, graph_intersection, get_all_edges
+from edge_construction.utils.heuristic_utils import get_layerwise_input_edges
 
 # Device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -342,8 +343,10 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
     input_edges = None
     
     # Get input edge list using order of layers.
-    if inputedges == "layerwise":
+    if inputedges == "oldLayerwise":
         input_edges = get_input_edges(hits, filtering=kwargs['filtering'])
+    elif inputedges == "newLayerwise":
+        input_edges = get_layerwise_input_edges(hits, filtering=kwargs['filtering'])
         logging.info("Layerwise input graph built for {} with size {}".format(event_file, input_edges.shape))
     elif inputedges == "all":
         input_edges = get_all_edges(hits)
