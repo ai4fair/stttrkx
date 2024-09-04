@@ -4,6 +4,8 @@
 """Heuristic Methods for Graph Construction."""
 
 import logging
+import itertools
+import scipy as sp
 import numpy as np
 import pandas as pd
 import torch
@@ -12,45 +14,53 @@ import torch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-# Layerwise Heuristic without Samelayer Edges
-def construct_layerwise_graph(hits, filtering=True):
+# Create an edge between every hit pair
+def get_all_edges(hits):
+    """Create an edge between every hit pair.
+
+    Args:
+        hits (_type_): Pandas DataFrame containing hit information.
+
+    Returns:
+        _type_: A 2D numpy array of shape (2, n_edges) where each column is an edge between two hits.
     """
-    Construct input graph (edges) in adjacent layers and sectors
+    
+    nHits = hits.shape[0]
+    
+    edgeStart = []
+    edgeEnd = []
+
+    for i in range(nHits-1):
+        for j in range(i+1,nHits):
+            edgeStart.append(i)
+            edgeEnd.append(j)
+    
+    edge_index = np.array([edgeStart, edgeEnd])
+
+    return edge_index
+
+
+# Layerwise Heuristic with/without Samelayer Edges
+def construct_layerwise_edges (hits, filtering=True):
+    """
+    Construct input edges (graph) in adjacent layers & sectors of the detector.
     
     Parameters
     ----------
     hits : pd.DataFrame
         hits information
     filtering : bool, optional
-        if True, require adjacent layers to have a sector difference of 1 or 5
+        if True, edge construction constrained in adjacent sectors
         if False, do not require any sector constraint
     """
-    
-    # Handle NaN and Null Values
-    hits = hits[
-        ((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())
-    ]
-    hits = hits.drop_duplicates(
-        subset=["particle_id", "volume_id", "layer_id", "module_id"]
-    )
-
-    # Handle Indexing (Keep order of occurrence)
-    hits = hits.reset_index()
-
-    # Rename 'index' column to 'unsorted_index'
-    hits = hits.rename(columns={"index": "unsorted_index"}).reset_index(drop=False)
-
-    # Handle Particle_id 0
-    hits.loc[hits["particle_id"] == 0, "particle_id"] = np.nan
 
     # construct layer pairs
-    n_layers = hits.layer.unique().shape[0]
-    layers = np.arange(n_layers)
+    layers = hits.layer_id.unique()
     layer_pairs = np.stack([layers[:-1], layers[1:]], axis=1)
     
     # layerwise construction
-    input_edges = []
-    layer_groups = hits.groupby('layer')
+    layerwise_edges = []
+    layer_groups = hits.groupby('layer_id')
     for (l1, l2) in layer_pairs:
         
         # get l1, l2 layer groups
@@ -76,45 +86,44 @@ def construct_layerwise_graph(hits, filtering=True):
             segments = hit_pairs[['index_1', 'index_2']]
         
         # append edge list
-        input_edges.append(segments)
+        layerwise_edges.append(segments)
 
-    return input_edges
+    return layerwise_edges
 
 
-# Layerwise Heuristic with Samelayer Edges
-def extend_layerwise_graph_with_inner_edges (hits, filtering=True):
+def construct_samelayer_edges (hits, directional=True):
     """
-    This function first constructs the layerwise graph (edges between adjacent layers)
-    and then adds the samelayer edges (edges within a layer).
+    Construct input edges (graph) between adjacent hits in the same layer of the detector.
 
     Parameters
     ----------
     hits : pd.DataFrame
-        hits information
-    filtering : bool, optional
-        if True, require adjacent layers to have a sector difference of 1 or 5
-        if False, do not require any sector constraint
+        hits information of an event
+    directional : bool, optional
+        if True, directional edge with no self-loop
+        if False, bidirectional edge with no self-loop
     """
-    # construct layerwise graph
-    input_edges = construct_layerwise_graph(hits, filtering)
 
     # construct samelayer edges
-    layer_groups = hits.groupby('layer')
+    samelayer_edges = []
+    layer_groups = hits.groupby('layer_id')
     for _, lg in layer_groups:
         if len(lg) > 1:
 
             # same keys as above
             keys = ['event_id', 'r', 'phi', 'isochrone', 'sector_id']
             pairs = lg[keys].reset_index().merge(lg[keys].reset_index(), on='event_id', suffixes=('_1', '_2'))
-                    
+            
             # Remove self-loops
-            # pairs = pairs[pairs['index_1'] != pairs['index_2']] # bidirectional edge
-            pairs = pairs[pairs['index_1'] < pairs['index_2']] # directional edge
+            if directional:
+                pairs = pairs[pairs['index_1'] < pairs['index_2']] # directional edge
+            else:
+                pairs = pairs[pairs['index_1'] != pairs['index_2']] # bidirectional edge
             
             # Collect pairs for edges
-            input_edges.append(pairs[['index_1', 'index_2']])
+            samelayer_edges.append(pairs[['index_1', 'index_2']])
 
-    return input_edges
+    return samelayer_edges
 
 
 def get_layerwise_graph (hits, filtering=True, inneredges=True):
@@ -126,28 +135,59 @@ def get_layerwise_graph (hits, filtering=True, inneredges=True):
     hits : pd.DataFrame
         hits information
     filtering : bool, optional
-        if True, graph construction in adjacent sectors
+        if True, edge construction in adjacent sectors
         if False, do not require any sector constraint
     inneredges : bool, optional
         if True, include edges within a layer (samelayer edges)
         if False, do not include samelayer edges
     """
-    # construct layerwise graph
+    # construct graph
     if inneredges:
-        input_graph = extend_layerwise_graph_with_inner_edges(hits, filtering)
+        layerwise_edges = construct_layerwise_edges (hits, filtering)
+        samelayer_edges = construct_samelayer_edges (hits, directional=True)  # at the moment, 'directional' is hardcoded, no need for self-loops/bidirectional edges
+        input_edges = itertools.chain(layerwise_edges, samelayer_edges)
     else:
-        input_graph = construct_layerwise_graph(hits, filtering)
-
+        input_edges = construct_layerwise_edges (hits, filtering)
+    
     # concatenate and transform
-    input_graph = pd.concat(input_graph).to_numpy().T
-
+    input_graph = pd.concat(input_edges, axis=0).to_numpy().T
     return input_graph
 
 
-
-
-
-
-
-
-
+# Graph Intersection to build Labelled Dataset ([edge_index, y])
+def graph_intersection(pred_graph, truth_graph):
+    """
+    Get truth information about edge_index (function is from both Embedding/Filtering)
+    """
+    
+    array_size = max(pred_graph.max().item(), truth_graph.max().item()) + 1
+    
+    if torch.is_tensor(pred_graph):
+        l1 = pred_graph.cpu().numpy()
+    else:
+        l1 = pred_graph
+    
+    if torch.is_tensor(truth_graph):
+        l2 = truth_graph.cpu().numpy()
+    else:
+        l2 = truth_graph
+    
+    e_1 = sp.sparse.coo_matrix((np.ones(l1.shape[1]), l1), shape=(array_size, array_size)).tocsr()
+    
+    e_2 = sp.sparse.coo_matrix((np.ones(l2.shape[1]), l2), shape=(array_size, array_size)).tocsr()
+    
+    del l1
+    del l2
+    
+    e_intersection = (e_1.multiply(e_2) - ((e_1 - e_2) > 0)).tocoo()
+    
+    del e_1
+    del e_2
+    
+    new_pred_graph = (torch.from_numpy(np.vstack([e_intersection.row, e_intersection.col])).long().to(device))
+    
+    y = torch.from_numpy(e_intersection.data > 0).to(device)
+    
+    del e_intersection
+    
+    return new_pred_graph, y  # edge_index, y
