@@ -27,3 +27,6 @@ class FeatureStoreBase(LightningDataModule):
         self.n_workers     = self.hparams["n_workers"]     if "n_workers"     in self.hparams else len(os.sched_getaffinity(0))
         self.build_weights = self.hparams["build_weights"] if "build_weights" in self.hparams else True
         self.show_progress = self.hparams["show_progress"] if "show_progress" in self.hparams else True
+        
+        # Set default values for global variables
+        self.useRootFile   = False

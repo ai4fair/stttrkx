@@ -2,15 +2,16 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the .csv files
-input_dir  : /home/nikin105/mlProject/data/machineLearning/XiAntiXi/csv
+# input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/root/mlData.root
+input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/csv
 
 # Output directory for the pyTorch geometry files
-output_dir : /home/nikin105/mlProject/data/machineLearning/XiAntiXi/newLayerwise
+output_dir : /home/nikin105/mlProject/data/machineLearning/mum5mup5/newLayerwise
 
 # - Parallelization parameters - 
 overwrite : True  # ?
-n_files   : 5     # ?
-n_workers : 10    # ?
+n_files   : 20   # ?
+n_workers : 5     # ?
 n_tasks   : 1     # ?
 chunksize : 1     # ?
 
@@ -19,8 +20,6 @@ layerwise   : False # If True, construct true edges by connecting hits in adjace
 modulewise  : False # If True, construct true edges by connecting hits in adjacent modules. The radial distance to the interaction point must increase or be the same in every step.
 timeOrdered : True # If True, construct true edges by connecting hits sequentially in time. 
 
-# If True, then the 'edge_index' parameter will be built in the Processing stage, meaning that the GNN stage can be used right after that.
-# If False, the `edge_index` parameter needs to be build explicitly afterwards in embedding and/or filtering stages.
 inputedges : newLayerwise # Method how the input edges are constructed. Options: 'layerwise' and 'all'
 
 # - Filter -

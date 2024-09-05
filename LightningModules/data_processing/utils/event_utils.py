@@ -10,6 +10,7 @@ More fine-grained utilities are reserved for `detector_utils` and `cell_utils`.
 
 # TODO: Pull module IDs out into a csv file for readability
 
+from math import e
 import os
 import logging
 import itertools
@@ -22,7 +23,8 @@ import pandas as pd
 
 from torch_geometric.data import Data
 from .graph_utils import get_input_edges, graph_intersection, get_all_edges
-from edge_construction.utils.heuristic_utils import get_layerwise_input_edges
+from edge_construction.utils.heuristic_utils import get_layerwise_graph
+from .read_root_file import load_event
 
 # Device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -202,13 +204,19 @@ def process_particles(particles, selection=False):
     return particles
 
 
-def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
+def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, readTruth=True, **kwargs):
     """
     Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria.
     """
     
-    # load data using event_prefix (e.g. path/to/event0000000001)
-    hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
+    if inputRootFile is not None:
+        # load data using event_prefix (e.g. path/to/event0000000001)
+        logging.info(f"Loading event {event_file} from ROOT file")
+        hits, tubes, particles, truth = load_event(inputRootFile, int(event_file), readTruth=readTruth)
+    else:
+        # load data using ROOT file
+        logging.info(f"Loading event {event_file} from CSV file")
+        hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # FIXME: Add an index column to preserve the original order of hits
     hits['original_order'] = hits.index
@@ -217,9 +225,9 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
 
     # skip noise hits.
     if noise:
-        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "q", "pdgcode"]], on="particle_id", how="left")
+        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="left")
     else:
-        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "q", "pdgcode"]], on="particle_id", how="inner")
+        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="inner")
     
     # Calculate derived variables from 'truth'
     px = truth.tpx
@@ -282,7 +290,7 @@ def select_hits(event_file=None, noise=False, skewed=False, **kwargs):
     return hits
     
     
-def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise=False, modulewise=False, timeOrdered=True, noise=False, skewed=False, **kwargs):
+def build_event(feature_scale, inputedges,event_file=None, inputRootFile=None, layerwise=True, orderwise=False, modulewise=False, timeOrdered=True, noise=False, skewed=False, **kwargs):
     """
     Builds the event data by loading the event file and preprocessing the hits data.
 
@@ -311,7 +319,10 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
     # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # Select hits, add new/select columns, add event_id
-    hits = select_hits(event_file=event_file, noise=noise, skewed=skewed, **kwargs).assign(event_id=int(event_file[-10:]))
+    if inputRootFile is not None:
+        hits = select_hits(event_file=event_file, inputRootFile=inputRootFile, noise=noise, skewed=skewed, readTruth=True, **kwargs).assign(event_id=int(event_file))
+    else:
+        hits = select_hits(event_file=event_file, noise=noise, skewed=skewed, **kwargs).assign(event_id=int(event_file[-10:]))
     
     # Get list of all layers
     layers = hits.layer.to_numpy()
@@ -336,8 +347,7 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
     # Get true edge list without layer ordering
     if orderwise:
         orderwise_true_edges = get_orderwise_edges(hits)
-        logging.info(
-            "Orderwise truth graph built for {} with size {}".format(event_file, orderwise_true_edges.shape))
+        logging.info("Orderwise truth graph built for {} with size {}".format(event_file, orderwise_true_edges.shape))
 
     # Handle whether input graph(s) are being produced
     input_edges = None
@@ -346,7 +356,7 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
     if inputedges == "oldLayerwise":
         input_edges = get_input_edges(hits, filtering=kwargs['filtering'])
     elif inputedges == "newLayerwise":
-        input_edges = get_layerwise_input_edges(hits, filtering=kwargs['filtering'])
+        input_edges = get_layerwise_graph(hits, filtering=kwargs['filtering'])
         logging.info("Layerwise input graph built for {} with size {}".format(event_file, input_edges.shape))
     elif inputedges == "all":
         input_edges = get_all_edges(hits)
@@ -379,9 +389,7 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
         input_edges,
         hits["hit_id"].to_numpy(),
         hits.pt.to_numpy(),
-        # edge_weight_norm,
         hits[["vx", "vy", "vz"]].to_numpy(),
-        hits.q.to_numpy(),
         hits.pdgcode.to_numpy(),
         hits.ptheta.to_numpy(),
         hits.peta.to_numpy(),
@@ -389,7 +397,7 @@ def build_event(event_file, feature_scale, inputedges, layerwise=True, orderwise
     )
  
     
-def prepare_event(event_file : str, inputedges : str, output_dir : str, modulewise=True, orderwise=True, timeOrdered=True, layerwise=True, noise=False, skewed=False, overwrite=False, **kwargs):
+def prepare_event(event_file : str, inputedges : str, output_dir : str, inputRootFile = None ,modulewise=True, orderwise=True, timeOrdered=True, layerwise=True, noise=False, skewed=False, overwrite=False, **kwargs):
     """
     Main function for processing an event.
 
@@ -409,15 +417,11 @@ def prepare_event(event_file : str, inputedges : str, output_dir : str, modulewi
     """
 
     try:
-        evtid    = int(event_file[-10:])
-        filename = os.path.join(output_dir, str(evtid))
-
-        if not os.path.exists(filename) or overwrite:
-            logging.info("Preparing event {}".format(evtid))
+        if inputRootFile is not None:
             
             # feature scale for X=[r,phi,z]
             feature_scale = [100, np.pi, 100]
-            
+
             # build event
             (
                 X,
@@ -430,108 +434,147 @@ def prepare_event(event_file : str, inputedges : str, output_dir : str, modulewi
                 input_edges,
                 hid,
                 pt,
-                # weights,
                 vertex,
-                q,
                 pdgcode,
                 ptheta,
                 peta,
                 pphi
             ) = build_event(
-                event_file,
-                feature_scale,
-                layerwise=layerwise,
-                modulewise=modulewise,
-                timeOrdered=timeOrdered,
-                orderwise=orderwise,
-                inputedges=inputedges,
-                noise=noise,
-                skewed=skewed,
+                feature_scale = feature_scale,
+                inputRootFile = inputRootFile,
+                event_file    = event_file,
+                layerwise     = layerwise,
+                modulewise    = modulewise,
+                timeOrdered   = timeOrdered,
+                orderwise     = orderwise,
+                inputedges    = inputedges,
+                noise         = noise,
+                skewed        = skewed,
                 **kwargs
             )
-            
-            # build pytorch_geometric Data module
-            data = Data(
-                x=torch.from_numpy(X).float(),
-                pid=torch.from_numpy(pid),
-                layers=torch.from_numpy(layers),
-                event_file=event_file,
-                hid=torch.from_numpy(hid),
-                pt=torch.from_numpy(pt),
-                # weights=torch.from_numpy(weights),
-                vertex=torch.from_numpy(vertex),
-                charge=torch.from_numpy(q),
-                pdgcode=torch.from_numpy(pdgcode),
-                ptheta=torch.from_numpy(ptheta),
-                peta=torch.from_numpy(peta),
-                pphi=torch.from_numpy(pphi)
-            )
-            
-            # add edges to PyTorch Geometric Data module
-            if layerwise_true_edges is not None:
-                data.layerwise_true_edges = torch.from_numpy(layerwise_true_edges)
 
-            if modulewise_true_edges is not None:
-                data.modulewise_true_edges = torch.from_numpy(modulewise_true_edges)
-
-            if time_ordered_true_edges is not None:
-                data.time_ordered_true_edges = torch.from_numpy(time_ordered_true_edges)
-
-            if orderwise_true_edges is not None:
-                data.orderwise_true_edges = torch.from_numpy(orderwise_true_edges)
-            
-            # NOTE: I am jumping from Processing to GNN stage, so I need ground truth (GT) of input
-            # edges (edge_index). After embedding, one gets GT as y, and after filtering one gets 
-            # the GT in the form of 'y_pid'. As I intend to skip both the Embedding & the Filtering
-            # stages, the input graph and its GT is build in Processing stage. The GNN can run after
-            # either embedding or filtering stages so it look for either 'y' or 'y_pid', existance of
-            # one of these means the execution of these stages i.e. if y_pid exists in data that means
-            # both embedding and filtering stages has been executed. If only 'y' exists then only 
-            # embedding stage has been executed. In principle, I should've only one of these in 'Data'.
-            
-            # Now, for my case, I will build input graph duing Processing and also add its GT to the
-            # data. If the 'edge_index' is build in Processing then ground truth (y or y_pid) should 
-            # also be built here. The dimension of y (n) and y_pid (m) are given below, here m < n.
-            
-            # y (n): after embedding along with e_radius (2,n), y.shape==e_radius.shape[1]
-            # y_pid (m): after filtering along with e_radius (2,m), y_pid.shape==e_radius.shape[1]
-            
-            # TODO: input_edges + true_edges [layerwise OR modulewise OR orderwise]
-            if input_edges is not None:
-                
-                # select true edges
-                if layerwise:
-                    true_edges = data.layerwise_true_edges
-                elif modulewise:
-                    true_edges = data.modulewise_true_edges
-                elif orderwise:
-                    true_edges = data.orderwise_true_edges
-                elif timeOrdered:
-                    true_edges = data.time_ordered_true_edges
-                else:
-                    true_edges = None
-                
-                assert true_edges is not None
-
-                # get input graph with true edges
-                input_edges = torch.from_numpy(input_edges)
-                new_input_graph, y = graph_intersection(input_edges, true_edges)
-                data.edge_index = new_input_graph
-                # data.y = y     # if regime: [] will point to embedding
-                data.y_pid = y  # if regime: [[pid]] points to filtering
-
-            # add cell/tube information to Data, Check for STT
-            # logging.info("Getting cell info")
-            
-            # if cell_information:
-            #    data = get_cell_information(
-            #        data, cell_features, detector_orig, detector_proc, endcaps, noise
-            #    )
-
-            with open(filename, "wb") as pickle_file:
-                torch.save(data, pickle_file)
-
+            filename = os.path.join(output_dir, event_file)
+        
         else:
-            logging.info("{} already exists".format(evtid))
+            evtid    = int(event_file[-10:])
+            filename = os.path.join(output_dir, str(evtid))
+
+            if not os.path.exists(filename) or overwrite:
+                logging.info("Preparing event {}".format(evtid))
+                
+                # feature scale for X=[r,phi,z]
+                feature_scale = [100, np.pi, 100]
+                
+                # build event
+                (
+                    X,
+                    pid,
+                    layers,
+                    layerwise_true_edges,
+                    modulewise_true_edges,
+                    time_ordered_true_edges,
+                    orderwise_true_edges,
+                    input_edges,
+                    hid,
+                    pt,
+                    vertex,
+                    pdgcode,
+                    ptheta,
+                    peta,
+                    pphi
+                ) = build_event(
+                    event_file    = event_file,
+                    feature_scale = feature_scale,
+                    layerwise     = layerwise,
+                    modulewise    = modulewise,
+                    timeOrdered   = timeOrdered,
+                    orderwise     = orderwise,
+                    inputedges    = inputedges,
+                    noise         = noise,
+                    skewed        = skewed,
+                    **kwargs
+                )
+            else:
+                logging.info("{} already exists".format(evtid))
+            
+        # build pytorch_geometric Data module
+        data = Data(
+            event_file = event_file,
+            x          = torch.from_numpy(X).float(),
+            pid        = torch.from_numpy(pid),
+            layers     = torch.from_numpy(layers),
+            hid        = torch.from_numpy(hid),
+            pt         = torch.from_numpy(pt),
+            vertex     = torch.from_numpy(vertex),
+            pdgcode    = torch.from_numpy(pdgcode),
+            ptheta     = torch.from_numpy(ptheta),
+            peta       = torch.from_numpy(peta),
+            pphi       = torch.from_numpy(pphi)
+        )
+                
+        # add edges to PyTorch Geometric Data module
+        if layerwise_true_edges is not None:
+            data.layerwise_true_edges = torch.from_numpy(layerwise_true_edges)
+
+        if modulewise_true_edges is not None:
+            data.modulewise_true_edges = torch.from_numpy(modulewise_true_edges)
+
+        if time_ordered_true_edges is not None:
+            data.time_ordered_true_edges = torch.from_numpy(time_ordered_true_edges)
+
+        if orderwise_true_edges is not None:
+            data.orderwise_true_edges = torch.from_numpy(orderwise_true_edges)
+        
+        # NOTE: I am jumping from Processing to GNN stage, so I need ground truth (GT) of input
+        # edges (edge_index). After embedding, one gets GT as y, and after filtering one gets 
+        # the GT in the form of 'y_pid'. As I intend to skip both the Embedding & the Filtering
+        # stages, the input graph and its GT is build in Processing stage. The GNN can run after
+        # either embedding or filtering stages so it look for either 'y' or 'y_pid', existance of
+        # one of these means the execution of these stages i.e. if y_pid exists in data that means
+        # both embedding and filtering stages has been executed. If only 'y' exists then only 
+        # embedding stage has been executed. In principle, I should've only one of these in 'Data'.
+        
+        # Now, for my case, I will build input graph duing Processing and also add its GT to the
+        # data. If the 'edge_index' is build in Processing then ground truth (y or y_pid) should 
+        # also be built here. The dimension of y (n) and y_pid (m) are given below, here m < n.
+        
+        # y (n): after embedding along with e_radius (2,n), y.shape==e_radius.shape[1]
+        # y_pid (m): after filtering along with e_radius (2,m), y_pid.shape==e_radius.shape[1]
+        
+        # TODO: input_edges + true_edges [layerwise OR modulewise OR orderwise]
+        if input_edges is not None:
+            
+            # select true edges
+            if layerwise:
+                true_edges = data.layerwise_true_edges
+            elif modulewise:
+                true_edges = data.modulewise_true_edges
+            elif orderwise:
+                true_edges = data.orderwise_true_edges
+            elif timeOrdered:
+                true_edges = data.time_ordered_true_edges
+            else:
+                true_edges = None
+            
+            assert true_edges is not None
+
+            # get input graph with true edges
+            input_edges = torch.from_numpy(input_edges)
+            new_input_graph, y = graph_intersection(input_edges, true_edges)
+            data.edge_index = new_input_graph
+            # data.y = y     # if regime: [] will point to embedding
+            data.y_pid = y  # if regime: [[pid]] points to filtering
+
+        # add cell/tube information to Data, Check for STT
+        # logging.info("Getting cell info")
+        
+        # if cell_information:
+        #    data = get_cell_information(
+        #        data, cell_features, detector_orig, detector_proc, endcaps, noise
+        #    )
+
+        with open(filename, "wb") as pickle_file:
+            torch.save(data, pickle_file)
+
     except Exception as inst:
-        print("File:", event_file, "had exception", inst)
+        logging.error("File:", event_file, "had exception", inst)

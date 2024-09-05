@@ -1,5 +1,5 @@
 # Name of the project
-project          : XiAntiXi_IGNN_skewedStraws
+project          : Test
 
 # Path to directory containing the model files
 model_library    : /home/nikin105/mlProject/machineLearning/LightningModules
