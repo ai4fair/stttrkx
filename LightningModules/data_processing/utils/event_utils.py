@@ -23,8 +23,6 @@ import pandas as pd
 
 from torch_geometric.data import Data
 from .heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
-from .graph_utils import get_input_edges
-from .read_root_file import load_event
 
 # Device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -189,10 +187,8 @@ def select_hits(event_file=None, file_reader=None, noise=False, skewed=False, re
     Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria.
     """
     
-    if file_reader is not None:
     # load event (root or csv)
-    if inputRootFile is not None:
-        # load data using event_prefix (e.g. path/to/event0000000001)
+    if file_reader is not None:
         logging.info(f"Loading event {event_file} from ROOT file")
         hits, tubes, particles, truth = file_reader.load_event(int(event_file), read_truth=readTruth)
     else:
@@ -266,7 +262,7 @@ def select_hits(event_file=None, file_reader=None, noise=False, skewed=False, re
     
     
 # def build_event(feature_scale, inputedges, event_file=None, inputRootFile=None, layerwise=True, orderwise=False, modulewise=False, timeOrdered=True, noise=False, skewed=False, **kwargs):
-def build_event(event_file, inputRootFile, feature_scale, 
+def build_event(event_file, file_reader, feature_scale, 
                 layerwise=True, modulewise=False, orderwise=False, timeOrdered=True, inputedges=True, 
                 noise=False, skewed=False, **kwargs):
     """
@@ -335,7 +331,7 @@ def build_event(event_file, inputRootFile, feature_scale,
     if orderwise:
         orderwise_true_edges = get_orderwise_edges(hits)
         logging.info(
-            "Orederwise truth graph built for {} with size {}".format(
+            "Orderwise truth graph built for {} with size {}".format(
                 event_file, orderwise_true_edges.shape
 
             )

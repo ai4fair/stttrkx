@@ -10,8 +10,8 @@ output_dir : /home/nikin105/mlProject/data/machineLearning/mum5mup5/newLayerwise
 
 # - Parallelization parameters - 
 overwrite : True  # ?
-n_files   : 20    # ?
-n_workers : 5     # ?
+n_files   : 1    # ?
+n_workers : 1     # ?
 n_tasks   : 1     # ?
 chunksize : 1     # ?
 

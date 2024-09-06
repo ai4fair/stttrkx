@@ -59,12 +59,12 @@ class TrackMLFeatureStore(FeatureStoreBase):
 
             # Open the input ROOT file and get the number of events saved in the file
             root_file_reader = ROOTFileReader(self.input_dir)
-            totEvents = root_file_reader.get_tree_entries()
-            logging.info(f"Total number of events in the file: {totEvents}")
+            total_events = root_file_reader.get_tree_entries()
+            logging.info(f"Total number of events in the file: {total_events}")
             
             # Get the number of events to process
             if "n_files" not in self.hparams.keys():
-                nEvents = totEvents
+                nEvents = total_events
             else:
                 nEvents = self.hparams["n_files"]
             
