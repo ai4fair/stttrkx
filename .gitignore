@@ -64,7 +64,6 @@
 __pycache__
 
 logs
-data*
 train*
 run*
 
