@@ -22,31 +22,12 @@ import numpy as np
 import pandas as pd
 
 from torch_geometric.data import Data
-from .graph_utils import get_input_edges, graph_intersection, get_all_edges
-from edge_construction.utils.heuristic_utils import get_layerwise_graph
+from .heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
+from .graph_utils import get_input_edges
 from .read_root_file import load_event
 
 # Device
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-def get_layerwise_edges(hits):
-    """
-    Get layerwise true edge list. Here 'hits' represent complete event.
-    """
-    
-    hits = hits.assign(R=np.sqrt((hits.x - hits.vx)**2 + (hits.y - hits.vy)**2 + (hits.z - hits.vz)**2))
-    hits = hits.sort_values("R").reset_index(drop=True).reset_index(drop=False)
-    hits.loc[hits["particle_id"] == 0, "particle_id"] = np.nan
-    hit_list = (hits.groupby(["particle_id", "layer_id"], sort=False)["index"].agg(lambda x: list(x)).groupby(level=0).agg(lambda x: list(x)))
-
-    true_edges = []
-    for row in hit_list.values:
-        for i, j in zip(row[0:-1], row[1:]):
-            true_edges.extend(list(itertools.product(i, j)))
-            
-    true_edges = np.array(true_edges).T
-
-    return true_edges, hits
 
 
 def get_time_ordered_true_edges(hits):
@@ -77,24 +58,67 @@ def get_time_ordered_true_edges(hits):
     return true_edges
 
     
-def get_modulewise_edges(hits):
-    """
-    Get modulewise (layerless) true edge list. Here 'hits' represent complete event.
-    """
+def get_layerwise_edges(hits):
+    """Get layerwise true edge list. Here 'hits' represent complete event."""
     
-    signal = hits[((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())]
-    signal = signal.drop_duplicates(subset=["particle_id", "volume_id", "layer_id", "module_id"])
+    # Sort by increasing distance from production (IP)
+    hits = hits.assign(
+        R=np.sqrt(
+            (hits.x - hits.vx) ** 2 + (hits.y - hits.vy) ** 2 + (hits.z - hits.vz) ** 2
+        )
+    )
+    hits = hits.sort_values("R").reset_index(drop=True).reset_index(drop=False)
+    hits.loc[hits["particle_id"] == 0, "particle_id"] = np.nan
+    hit_list = (
+        hits.groupby(["particle_id", "layer_id"], sort=False)["index"]
+        .agg(lambda x: list(x))
+        .groupby(level=0)
+        .agg(lambda x: list(x))
+    )
+
+    true_edges = []
+    for row in hit_list.values:
+        for i, j in zip(row[0:-1], row[1:]):
+            true_edges.extend(list(itertools.product(i, j)))
+            
+    true_edges = np.array(true_edges).T
+    return true_edges, hits
+
+    
+def get_modulewise_edges(hits):
+    """Get modulewise (layerless) true edge list using the order
+    of hits based on R. Here 'hits' represent complete event."""
+    
+    # Handle NaN and Null Values
+    signal = hits[
+        ((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())
+    ]
+    signal = signal.drop_duplicates(
+        subset=["particle_id", "volume_id", "layer_id", "module_id"]
+    )
 
     # Sort by increasing distance from production
-    signal = signal.assign(R=np.sqrt((signal.x - signal.vx)**2 + (signal.y - signal.vy)**2 + (signal.z - signal.vz)**2))
+    signal = signal.assign(
+        R=np.sqrt(
+            (signal.x - signal.vx) ** 2
+            + (signal.y - signal.vy) ** 2
+            + (signal.z - signal.vz) ** 2
+        )
+    )
     signal = signal.sort_values("R").reset_index(drop=False)
 
     # Handle re-indexing
     signal = signal.rename(columns={"index": "unsorted_index"}).reset_index(drop=False)
+    
+    # Handle noise (particle_id == 0)
     signal.loc[signal["particle_id"] == 0, "particle_id"] = np.nan
 
     # Group by particle ID
-    signal_list = signal.groupby(["particle_id"], sort=False)["index"].agg(lambda x: list(x))
+    signal_list = signal.groupby(["particle_id"], sort=False)["index"].agg(
+        lambda x: list(x)
+    )
+    
+    # Build true edges from particle groups
     true_edges = []
     for row in signal_list.values:
         for i, j in zip(row[:-1], row[1:]):
@@ -105,6 +129,7 @@ def get_modulewise_edges(hits):
     # Restore order
     true_edges = signal.unsorted_index.values[true_edges]
     return true_edges
+
 
 def get_orderwise_edges(hits):
     """Get modulewise (layerless) true edge list using the order
@@ -147,56 +172,11 @@ def get_orderwise_edges(hits):
     return true_edges
 
 
-def get_modulewise_edges_ordered(hits):
-    """
-    Get modulewise (layerless) true edge list using the order
-    of occurrence hits. Here 'hits' represent complete event.
-    """
-    
-    # Handle NaN and Null Values
-    signal = hits[
-        ((~hits.particle_id.isna()) & (hits.particle_id != 0)) & (~hits.vx.isna())
-    ]
-    signal = signal.drop_duplicates(
-        subset=["particle_id", "volume_id", "layer_id", "module_id"]
-    )
-    
-    # Handle Indexing (Keep order of occurrence)
-    signal = signal.reset_index()
-    
-    # Rename 'index' column to 'unsorted_index'
-    signal = signal.rename(columns={"index": "unsorted_index"}).reset_index(drop=False)
-
-    # Handle Particle_id 0
-    signal.loc[signal["particle_id"] == 0, "particle_id"] = np.nan
-
-    # Group by Particle ID
-    signal_list = signal.groupby(["particle_id"], sort=False)["index"].agg(
-        lambda x: list(x)
-    )
-
-    # Generate Edges
-    true_edges = []
-    for row in signal_list.values:
-        for i, j in zip(row[:-1], row[1:]):
-            true_edges.append([i, j])
-    
-    # Return Edges
-    true_edges = np.array(true_edges).T
-    true_edges = signal.unsorted_index.values[true_edges]
-
-    return true_edges
-
-
 def process_particles(particles, selection=False):
     """
     Special manipulation on particles data frame
     """
-    
-    # find nhits, and drop_duplicates
-    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
-    particles.drop_duplicates(inplace=True, ignore_index=True)
-    
+
     if selection:
         # just keep protons, pions, don't forget resetting index and dropping old one.
         particles = particles[particles['pdgcode'].isin([-2212, 2212, -211, 211])].reset_index(drop=True)
@@ -209,6 +189,7 @@ def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, 
     Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria.
     """
     
+    # load event (root or csv)
     if inputRootFile is not None:
         # load data using event_prefix (e.g. path/to/event0000000001)
         logging.info(f"Loading event {event_file} from ROOT file")
@@ -218,52 +199,45 @@ def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, 
         logging.info(f"Loading event {event_file} from CSV file")
         hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
-    # FIXME: Add an index column to preserve the original order of hits
+    # store original order of hits
     hits['original_order'] = hits.index
-    # preprocess particles data frame e.g. nhits, drop_duplicates, etc.
-    particles = process_particles(particles, selection=kwargs['selection'])
+
+    # preprocess 'particles' to get nhits, and drop duplicates
+    particles['nhits'] = particles.groupby(['particle_id'])['nhits'].transform('count')
+    particles.drop_duplicates(inplace=True, ignore_index=True)
 
     # skip noise hits.
     if noise:
-        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="left")
+        # runs if noise=True
+        truth = truth.merge(
+            particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="left"
+        )
     else:
-        truth = truth.merge(particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="inner")
+        # runs if noise=False
+        truth = truth.merge(
+            particles[["particle_id", "vx", "vy", "vz", "pdgcode"]], on="particle_id", how="inner"
+        )
     
-    # Calculate derived variables from 'truth'
+    # derive new quantities from truth
     px = truth.tpx
     py = truth.tpy
     pz = truth.tpz
-    
-    # ROOT Definition: https://root.cern/doc/v626/TVector3_8cxx_source.html#l00236
-    pt     = np.sqrt(px**2 + py**2)         # Transverse momentum
-    ptheta = np.arctan2(pt, pz)             # Polar angle
-    peta   = -np.log(np.tan(0.5 * ptheta))  # Pseudo-rapidity
-    pphi   = np.arctan2(py, px)             # Azimuthal angle
-    
+
+    # calculate pt, ptheta, peta, pphi
+    pt = np.sqrt(px**2 + py**2)
+    ptheta = np.arctan2(pt, pz)
+    peta = -np.log(np.tan(0.5 * ptheta))
+    pphi = np.arctan2(py, px)
+
+    # assign pt, ptheta, peta, pphi to truth
     truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta, pphi=pphi)
     
-    # merge some columns of tubes to the hits, I need isochrone, skewed & sector_id
+    # merge some columns of tubes to the hits
     hits = hits.merge(tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id")
     
     # skip skewed tubes
     if skewed is False:
-        # filter non-skewed layers (skewed==0 for non-skewed layers & skewed==1 for skewed layers)
         hits = hits.query('skewed==0')
-        
-        # rename layer_ids from 0,1,2...,17 & assign a new column named "layer"
-        # NOTE: What and why is this being done?
-        vlids = hits.layer_id.unique()
-        n_det_layers = len(vlids)
-        vlid_groups = hits.groupby(['layer_id'])
-        hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
-    
-    else:
-        # rename layer_ids from 0,1,2...,17 & assign a new column named "layer"
-        # NOTE: What and why is this being done?
-        vlids = hits.layer_id.unique()
-        n_det_layers = len(vlids)
-        vlid_groups = hits.groupby(['layer_id'])
-        hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)])
 
     # Calculate derived variables from 'hits'
     r     = np.sqrt(hits.x**2 + hits.y**2)              # Transverse distance from the interaction point
@@ -272,16 +246,16 @@ def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, 
     theta = np.arccos(hits.z / r3)                      # Polar angle
     eta   = -np.log(np.tan(theta / 2.))                 # Pseudo-rapidity
     
-    # Merge 'hits' with 'truth', but first add r, phi, theta, eta
+    # Add r, phi, theta, eta to 'hits' and merge with 'truth'
     hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta).merge(truth, on="hit_id")
     
     # FIXME: Check if Order is Changed
     # assert (hits['original_order'] == hits.index).all(), "Order disturbed after merging with truth"
     
-    # FIXME: Restore the original order of hits using the 'original_order' column
+    # Restore the original order
     hits = hits.sort_values(by='original_order').reset_index(drop=True)
     
-    # FIXME: Drop the original_order column as it is no longer needed
+    # Drop the original_order column as it is no longer needed
     hits = hits.drop(columns=['original_order'])
     
     # Add 'event_id' column to this event.
@@ -290,7 +264,10 @@ def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, 
     return hits
     
     
-def build_event(feature_scale, inputedges,event_file=None, inputRootFile=None, layerwise=True, orderwise=False, modulewise=False, timeOrdered=True, noise=False, skewed=False, **kwargs):
+# def build_event(feature_scale, inputedges, event_file=None, inputRootFile=None, layerwise=True, orderwise=False, modulewise=False, timeOrdered=True, noise=False, skewed=False, **kwargs):
+def build_event(event_file, inputRootFile, feature_scale, 
+                layerwise=True, modulewise=False, orderwise=False, timeOrdered=True, inputedges=True, 
+                noise=False, skewed=False, **kwargs):
     """
     Builds the event data by loading the event file and preprocessing the hits data.
 
@@ -319,6 +296,10 @@ def build_event(feature_scale, inputedges,event_file=None, inputRootFile=None, l
     # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # Select hits, add new/select columns, add event_id
+    
+    # TODO: Maybe can have dataformat flag here e.g. 
+    # if dataformat = 'root' elif dataformat = 'csv' else raise error
+
     if inputRootFile is not None:
         hits = select_hits(event_file=event_file, inputRootFile=inputRootFile, noise=noise, skewed=skewed, readTruth=True, **kwargs).assign(event_id=int(event_file))
     else:
@@ -328,39 +309,75 @@ def build_event(feature_scale, inputedges,event_file=None, inputRootFile=None, l
     layers = hits.layer.to_numpy()
     
     # Handle which truth graph(s) are being produced
-    modulewise_true_edges, layerwise_true_edges, orderwise_true_edges = None, None, None
+    modulewise_true_edges, layerwise_true_edges = None, None
+    orderwise_true_edges, time_ordered_true_edges = None, None
     
     # Get true edge list using the ordering of layers
     if layerwise:
         layerwise_true_edges, hits = get_layerwise_edges(hits)
-        logging.info("Layerwise truth graph built for {} with size {}".format(event_file, layerwise_true_edges.shape))
+        logging.info(
+            "Layerwise truth graph built for {} with size {}".format(
+                event_file, layerwise_true_edges.shape
+            )
+        )
     
     # Get true edge list without layer ordering
     if modulewise:
         modulewise_true_edges = get_modulewise_edges(hits)
-        logging.info("Modulewise truth graph built for {} with size {}".format(event_file, modulewise_true_edges.shape))
-
-    if timeOrdered:
-        time_ordered_true_edges = get_time_ordered_true_edges(hits)
-        logging.info("Time ordered truth graph built for {} with size {}".format(event_file, time_ordered_true_edges.shape))
+        logging.info(
+            "Modulewise truth graph built for {} with size {}".format(
+                event_file, modulewise_true_edges.shape
+            )
+        )
     
-    # Get true edge list without layer ordering
+    # Get true edge list without layer ordering (natural order)
     if orderwise:
         orderwise_true_edges = get_orderwise_edges(hits)
-        logging.info("Orderwise truth graph built for {} with size {}".format(event_file, orderwise_true_edges.shape))
+        logging.info(
+            "Orederwise truth graph built for {} with size {}".format(
+                event_file, orderwise_true_edges.shape
+
+            )
+        )
+
+    # Get true edge list without layer ordering (time ordered)
+    if timeOrdered:
+        time_ordered_true_edges = get_time_ordered_true_edges(hits)
+        logging.info(
+            "Time ordered truth graph built for {} with size {}".format(
+                event_file, time_ordered_true_edges.shape
+                )
+        )
+    
 
     # Handle whether input graph(s) are being produced
     input_edges = None
     
     # Get input edge list using order of layers.
     if inputedges == "oldLayerwise":
-        input_edges = get_input_edges(hits, filtering=kwargs['filtering'])
+        input_edges = get_layerwise_graph(hits, filtering=kwargs['filtering'], inneredges=False)  # without samelayer edges
+        logging.info(
+            "Layerwise input graph built for {} with size {}".format(
+                event_file, input_edges.shape
+                )
+        )
+
     elif inputedges == "newLayerwise":
-        input_edges = get_layerwise_graph(hits, filtering=kwargs['filtering'])
-        logging.info("Layerwise input graph built for {} with size {}".format(event_file, input_edges.shape))
+        input_edges = get_layerwise_graph(hits, filtering=kwargs['filtering'], inneredges=True)  # with samelayer edges
+        logging.info(
+            "Layerwise input graph built for {} with size {}".format(
+                event_file, input_edges.shape
+                )
+        )
+
     elif inputedges == "all":
         input_edges = get_all_edges(hits)
-        logging.info("All input graph built for {} with size {}".format(event_file, input_edges.shape))
+        logging.info(
+            "All input graph built for {} with size {}".format(
+                event_file, input_edges.shape
+                )
+        )
+
     else:
         logging.error(f"{inputedges} is not a valid method to build input graphs")
         exit(1)
@@ -384,8 +401,8 @@ def build_event(feature_scale, inputedges,event_file=None, inputRootFile=None, l
         layers,
         layerwise_true_edges,
         modulewise_true_edges,
-        time_ordered_true_edges,
         orderwise_true_edges,
+        time_ordered_true_edges,
         input_edges,
         hits["hit_id"].to_numpy(),
         hits.pt.to_numpy(),
