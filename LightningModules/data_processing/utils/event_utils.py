@@ -133,7 +133,7 @@ def get_modulewise_edges(hits):
 
 def get_orderwise_edges(hits):
     """Get modulewise (layerless) true edge list using the order
-    of occurence of hits. Here 'hits' represent complete event."""
+    of occurrence of hits. Here 'hits' represent complete event."""
     
     # Handle NaN and Null Values    
     signal = hits[
@@ -184,16 +184,17 @@ def process_particles(particles, selection=False):
     return particles
 
 
-def select_hits(event_file=None, inputRootFile=None, noise=False, skewed=False, readTruth=True, **kwargs):
+def select_hits(event_file=None, file_reader=None, noise=False, skewed=False, readTruth=True, **kwargs):
     """
     Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria.
     """
     
+    if file_reader is not None:
     # load event (root or csv)
     if inputRootFile is not None:
         # load data using event_prefix (e.g. path/to/event0000000001)
         logging.info(f"Loading event {event_file} from ROOT file")
-        hits, tubes, particles, truth = load_event(inputRootFile, int(event_file), readTruth=readTruth)
+        hits, tubes, particles, truth = file_reader.load_event(int(event_file), read_truth=readTruth)
     else:
         # load data using ROOT file
         logging.info(f"Loading event {event_file} from CSV file")
@@ -292,7 +293,7 @@ def build_event(event_file, inputRootFile, feature_scale,
         Finally, it returns the preprocessed hits data.
     """
     
-    # Load event using "event_file" prefix (load_event function transfered to select_hits function).
+    # Load event using "event_file" prefix (load_event function transferred to select_hits function).
     # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # Select hits, add new/select columns, add event_id
@@ -300,8 +301,8 @@ def build_event(event_file, inputRootFile, feature_scale,
     # TODO: Maybe can have dataformat flag here e.g. 
     # if dataformat = 'root' elif dataformat = 'csv' else raise error
 
-    if inputRootFile is not None:
-        hits = select_hits(event_file=event_file, inputRootFile=inputRootFile, noise=noise, skewed=skewed, readTruth=True, **kwargs).assign(event_id=int(event_file))
+    if file_reader is not None:
+        hits = select_hits(event_file=event_file, file_reader=file_reader, noise=noise, skewed=skewed, readTruth=True, **kwargs).assign(event_id=int(event_file))
     else:
         hits = select_hits(event_file=event_file, noise=noise, skewed=skewed, **kwargs).assign(event_id=int(event_file[-10:]))
     
@@ -414,7 +415,7 @@ def build_event(event_file, inputRootFile, feature_scale,
     )
  
     
-def prepare_event(event_file : str, inputedges : str, output_dir : str, inputRootFile = None ,modulewise=True, orderwise=True, timeOrdered=True, layerwise=True, noise=False, skewed=False, overwrite=False, **kwargs):
+def prepare_event(event_file : str, inputedges : str, output_dir : str, file_reader = None ,modulewise=True, orderwise=True, timeOrdered=True, layerwise=True, noise=False, skewed=False, overwrite=False, **kwargs):
     """
     Main function for processing an event.
 
@@ -434,7 +435,7 @@ def prepare_event(event_file : str, inputedges : str, output_dir : str, inputRoo
     """
 
     try:
-        if inputRootFile is not None:
+        if file_reader is not None:
             
             # feature scale for X=[r,phi,z]
             feature_scale = [100, np.pi, 100]
@@ -458,7 +459,7 @@ def prepare_event(event_file : str, inputedges : str, output_dir : str, inputRoo
                 pphi
             ) = build_event(
                 feature_scale = feature_scale,
-                inputRootFile = inputRootFile,
+                file_reader = file_reader,
                 event_file    = event_file,
                 layerwise     = layerwise,
                 modulewise    = modulewise,
@@ -546,12 +547,12 @@ def prepare_event(event_file : str, inputedges : str, output_dir : str, inputRoo
         # edges (edge_index). After embedding, one gets GT as y, and after filtering one gets 
         # the GT in the form of 'y_pid'. As I intend to skip both the Embedding & the Filtering
         # stages, the input graph and its GT is build in Processing stage. The GNN can run after
-        # either embedding or filtering stages so it look for either 'y' or 'y_pid', existance of
+        # either embedding or filtering stages so it look for either 'y' or 'y_pid', existence of
         # one of these means the execution of these stages i.e. if y_pid exists in data that means
         # both embedding and filtering stages has been executed. If only 'y' exists then only 
         # embedding stage has been executed. In principle, I should've only one of these in 'Data'.
         
-        # Now, for my case, I will build input graph duing Processing and also add its GT to the
+        # Now, for my case, I will build input graph during Processing and also add its GT to the
         # data. If the 'edge_index' is build in Processing then ground truth (y or y_pid) should 
         # also be built here. The dimension of y (n) and y_pid (m) are given below, here m < n.
         

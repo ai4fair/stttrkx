@@ -2,8 +2,8 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the .csv files
-# input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/root/mlData.root
-input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/csv
+input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/root/mlData.root
+# input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/csv
 
 # Output directory for the pyTorch geometry files
 output_dir : /home/nikin105/mlProject/data/machineLearning/mum5mup5/newLayerwise

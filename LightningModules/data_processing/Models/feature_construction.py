@@ -1,8 +1,7 @@
 import os
 import logging
-from typing import IO
 import numpy as np
-from torch_sparse.tensor import to
+from time import time
 import uproot as up
 
 from functools import partial
@@ -10,6 +9,7 @@ from tqdm.contrib.concurrent import process_map
 
 from ..feature_store_base import FeatureStoreBase
 from ..utils.event_utils  import prepare_event
+from ..utils.ROOTFileReader import ROOTFileReader
 
 class TrackMLFeatureStore(FeatureStoreBase):
     """
@@ -43,25 +43,24 @@ class TrackMLFeatureStore(FeatureStoreBase):
             evenly sized chunks and processing each chunk in parallel.
         """
 
+        start_time = time()
+
         # Create the output directory if it does not exist
         logging.info("Writing outputs to " + self.output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Check if the input file is a ROOT file by examining the extension
-        fileExtention = os.path.splitext(self.input_dir)[1]
+        fileExtension = os.path.splitext(self.input_dir)[1]
 
-        if fileExtention == ".root":
+        # If the input file is a ROOT file, process the data from the ROOT file
+        if fileExtension == ".root":
+
             logging.info("Importing data from ROOT file.")
-            self.useRootFile = True
-            
+
             # Open the input ROOT file and get the number of events saved in the file
-            try:
-                with up.open(self.input_dir) as input_file:
-                    inputRootFile = input_file
-                    totEvents = input_file["hits"].num_entries
-                    logging.info(f"Total number of events in the file: {totEvents}")
-            except IOError:
-                logging.error(f"Could not open the input file: {self.input_dir}")
+            root_file_reader = ROOTFileReader(self.input_dir)
+            totEvents = root_file_reader.get_tree_entries()
+            logging.info(f"Total number of events in the file: {totEvents}")
             
             # Get the number of events to process
             if "n_files" not in self.hparams.keys():
@@ -75,7 +74,7 @@ class TrackMLFeatureStore(FeatureStoreBase):
             all_events = [str(evt) for evt in list(range(nEvents))]
 
             # Process the input file with a worker pool and progress bar
-            process_func = partial(prepare_event, inputRootFile=inputRootFile, **self.hparams )
+            process_func = partial(prepare_event, file_reader=root_file_reader , **self.hparams )
             process_map(process_func, all_events, max_workers=self.n_workers, chunksize=self.chunksize)
 
         else:
@@ -88,6 +87,10 @@ class TrackMLFeatureStore(FeatureStoreBase):
             all_events = np.array_split(all_events, self.n_tasks)[self.task]
 
             # Process input files with a worker pool and progress bar
-            # Use process_mp() from tqdm instead of mp.Pool from multiprocessing.
+            # Use process_map() from tqdm instead of mp.Pool from multiprocessing.
             process_func = partial(prepare_event, **self.hparams)
             process_map(process_func, all_events, max_workers=self.n_workers, chunksize=self.chunksize)
+
+        # Print the time taken for feature construction
+        end_time = time()
+        print(f"Feature construction complete. Time taken: {end_time - start_time:f} seconds.")
