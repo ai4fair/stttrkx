@@ -63,13 +63,8 @@
 .virtual_documents
 __pycache__
 
-logs
-train*
-run*
+lightning_*
+data_all
+run
 
-lightning_logs
-lightning_models
-tutorials
-gnn4itk
-ray_tune
 
