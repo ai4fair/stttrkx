@@ -306,7 +306,7 @@ def build_event(
     
     # Select hits, add new/select columns, add event_id
     hits = select_hits(event_prefix, file_reader,
-                       readTruth=True, noise=noise, skewed=skewed,
+                       read_truth=True, noise=noise, skewed=skewed,
                        **kwargs)
     
     # Get list of all layers
@@ -505,7 +505,7 @@ def prepare_event(
                     peta,
                     pphi
                 ) = build_event(
-                    event_file=event_prefix,
+                    event_prefix=event_prefix,
                     file_reader=file_reader,
                     feature_scale=feature_scale,
                     layerwise=layerwise,
