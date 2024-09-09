@@ -303,7 +303,7 @@ def build_event(event_file, file_reader, feature_scale,
         hits = select_hits(event_file=event_file, noise=noise, skewed=skewed, **kwargs).assign(event_id=int(event_file[-10:]))
     
     # Get list of all layers
-    layers = hits.layer.to_numpy()
+    layers = hits.layer_id.to_numpy()
     
     # Handle which truth graph(s) are being produced
     modulewise_true_edges, layerwise_true_edges = None, None
