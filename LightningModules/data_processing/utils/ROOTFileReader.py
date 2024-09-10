@@ -27,9 +27,7 @@ class ROOTFileReader:
     def load_event(
         self,
         event_num: int,
-        read_truth: bool,
-        hit_tree_names: List[str] = ["hits", "cells"],
-        truth_tree_names: List[str] = ["particles", "truth"],
+        tree_names: List[str] = ["hits", "cells", "particles", "truth"],
     ) -> Tuple[pd.DataFrame, ...]:
         """
         Converts the TTrees in a ROOT file into pandas DataFrames for a single event.
@@ -39,19 +37,11 @@ class ROOTFileReader:
 
         Args:
             event_num (int): Number of the event to read. Corresponds to the entry number in the ROOT file.
-            read_truth (bool): If True, the truth trees are read as well.
-            hit_tree_names (List[str], optional): List with the names of the TTrees to be read as hit trees. Defaults to ["hits", "cells"].
-            truth_tree_names (List[str], optional): List with the names of the TTrees to be read as truth trees. Defaults to ["particles", "truth"].
+            hit_tree_names (List[str], optional): List with the names of the TTrees to be read. Defaults to ["hits", "cells", "particles", "truth"].
 
         Returns:
             data_frames (Tuple[pd.DataFrame, ...]): Tuple of pandas DataFrames, one for each tree read.
         """
-
-        # Combine hit and truth tree names if read_truth is True
-        if read_truth:
-            tree_names = hit_tree_names + truth_tree_names
-        else:
-            tree_names = hit_tree_names
 
         # Create a pandas DataFrame for each tree and return them as a tuple
         return tuple(

@@ -181,28 +181,17 @@ def process_particles(particles):
     return particles
 
 
-def select_hits(event_prefix, file_reader, read_truth, noise, skewed, **kwargs):
+def select_hits(event_prefix, read_truth, noise, skewed, **kwargs):
     """Hit selection method from Exa.TrkX. Build a full event, select hits based on certain criteria."""
     
-    # select a data source (ROOT, CSV)
-    if file_reader is not None:
-        hits, tubes, particles, truth = file_reader.load_event(int(event_prefix), read_truth=read_truth)
-        event_id = int(event_prefix)  # extract event_id
-
-        logging.info(
-            "Loading event {} from ROOT data source".format(
-                event_prefix
-            )
+    hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
+    event_id = int(event_prefix[-10:])  # extract event_id
+    
+    logging.info(
+        "Loading event {} from CSV data source".format(
+            event_prefix
         )
-    else:
-        hits, tubes, particles, truth = trackml.dataset.load_event(event_prefix)
-        event_id = int(event_prefix[-10:])  # extract event_id
-        
-        logging.info(
-            "Loading event {} from CSV data source".format(
-                event_prefix
-            )
-        )
+    )
     
     # store original order (needed for orderwise_true_edges function)
     hits['original_order'] = hits.index
@@ -273,14 +262,13 @@ def select_hits(event_prefix, file_reader, read_truth, noise, skewed, **kwargs):
 
 
 def build_event(
-        event_prefix, file_reader, feature_scale,
+        event_prefix, feature_scale,
         layerwise, modulewise, orderwise, timeOrdered, inputedges,
         noise, skewed, **kwargs):
     """Builds the event data by loading the event file and preprocessing the hit's data.
     
     Args:
         event_prefix (str): The path to the event file.
-        file_reader (str): The data source of the event file.
         feature_scale (List): The scale factor for the features.
         layerwise (bool, optional): Whether to build the layerwise true edges (default: True).
         modulewise (bool, optional): Whether to build the modulewise true edges (default: False).
@@ -305,7 +293,7 @@ def build_event(
     # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
     
     # Select hits, add new/select columns, add event_id
-    hits = select_hits(event_prefix, file_reader,
+    hits = select_hits(event_prefix,
                        read_truth=True, noise=noise, skewed=skewed,
                        **kwargs)
     
@@ -416,7 +404,7 @@ def build_event(
 
 
 def prepare_event(
-        event_prefix, file_reader, output_dir,
+        event_prefix, output_dir,
         layerwise, modulewise, orderwise, timeOrdered, inputedges,
         noise, skewed, overwrite, **kwargs):
     """Main function for processing an event.
@@ -426,7 +414,6 @@ def prepare_event(
 
     Args:
         event_prefix (str): Name of the event file
-        file_reader (str): The data source of the event file
         output_dir (str): Directory in which to save the processed event
         layerwise (bool, optional): Whether to build the layerwise true edges (default: True)
         modulewise (bool, optional): Whether to build the modulewise true edges (default: False)
@@ -440,7 +427,11 @@ def prepare_event(
     """
 
     try:
-        if file_reader is not None:
+        evtid = int(event_prefix[-10:])
+        filename = os.path.join(output_dir, str(evtid))
+        
+        if not os.path.exists(filename) or overwrite:
+            logging.info("Preparing event {}".format(evtid))
             
             # feature scale for X=[r,phi,z]
             feature_scale = [100, np.pi, 100]
@@ -464,7 +455,6 @@ def prepare_event(
                 pphi
             ) = build_event(
                 event_prefix=event_prefix,
-                file_reader=file_reader,
                 feature_scale=feature_scale,
                 layerwise=layerwise,
                 modulewise=modulewise,
@@ -475,50 +465,8 @@ def prepare_event(
                 skewed=skewed,
                 **kwargs
             )
-            filename = os.path.join(output_dir, event_prefix)
-        
         else:
-            evtid = int(event_prefix[-10:])
-            filename = os.path.join(output_dir, str(evtid))
-            
-            if not os.path.exists(filename) or overwrite:
-                logging.info("Preparing event {}".format(evtid))
-                
-                # feature scale for X=[r,phi,z]
-                feature_scale = [100, np.pi, 100]
-                
-                # build event
-                (
-                    X,
-                    pid,
-                    layers,
-                    layerwise_true_edges,
-                    modulewise_true_edges,
-                    orderwise_true_edges,
-                    time_ordered_true_edges,
-                    input_edges,
-                    hid,
-                    pt,
-                    vertex,
-                    pdgcode,
-                    ptheta,
-                    peta,
-                    pphi
-                ) = build_event(
-                    event_prefix=event_prefix,
-                    file_reader=file_reader,
-                    feature_scale=feature_scale,
-                    layerwise=layerwise,
-                    modulewise=modulewise,
-                    orderwise=orderwise,
-                    timeOrdered=timeOrdered,
-                    inputedges=inputedges,
-                    noise=noise,
-                    skewed=skewed,
-                    **kwargs
-                )
-            else:
-                logging.info("{} already exists".format(evtid))
+            logging.info("{} already exists".format(evtid))
         
         # build PyTorch Geometric (PyG) 'Data' object
         data = Data(
@@ -592,7 +540,7 @@ def prepare_event(
         
         # if cell_information:
         #    data = get_cell_information(
-        #        data, cell_features, detector_orig, detector_proc, endcaps, noise
+        #        data, cell_features, detector_orig, detector_proc, end caps, noise
         #    )
         
         with open(filename, "wb") as pickle_file:

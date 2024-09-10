@@ -2,8 +2,8 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the .csv files
-input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/root/mlData.root
-# input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/csv
+# input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/root/mlData.root
+input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/csv
 
 # Output directory for the pyTorch geometry files
 output_dir : /home/nikin105/mlProject/data/machineLearning/mum5mup5/newLayerwise
@@ -19,6 +19,7 @@ chunksize : 1     # ?
 layerwise   : False # If True, construct true edges by connecting hits in adjacent layers. The radial distance to the interaction point must increase in every step.
 modulewise  : False # If True, construct true edges by connecting hits in adjacent modules. The radial distance to the interaction point must increase or be the same in every step.
 timeOrdered : True # If True, construct true edges by connecting hits sequentially in time. 
+orderwise: False
 
 inputedges : newLayerwise # Method how the input edges are constructed. Options: 'layerwise' and 'all'
 

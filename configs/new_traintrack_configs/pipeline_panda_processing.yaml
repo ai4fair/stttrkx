@@ -1,20 +1,20 @@
 # Name of the project
-project          : Test
+project          : "Test"
 
 # Path to directory containing the model files
-model_library    : /home/nikin105/mlProject/machineLearning/LightningModules
+model_library    : "/home/nikin105/mlProject/machineLearning/LightningModules"
 
 # Path to the checkpoint directory
-artifact_library : /home/nikin105/mlProject/data/machineLearning/artifacts
+artifact_library : "/home/nikin105/mlProject/data/machineLearning/artifacts"
 
 # List containing dictionaries with the configuration for each stage
 stage_list:
     # 1st stage
     - {
       # Name of the directory in the model library containing the python model
-      set       : data_processing,
+      set       : "data_processing",
       # Name of the the class that needs to be used to run the stage 
-      name      : TrackMLFeatureStore,
+      name      : "PandaFeatureStore",
       # Path to the configuration file for the stage
-      config    : processing.yaml,
+      config    : "panda_processing.yaml",
       }
