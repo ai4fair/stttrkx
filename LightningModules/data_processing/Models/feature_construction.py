@@ -69,17 +69,32 @@ class TrackMLFeatureStore(FeatureStoreBase):
 
 
 class PandaFeatureStore(FeatureStoreBase):
+    """
+    Class to process ROOT files containing PANDA STT data and save the processed tensors into PyTorch files.
+    """
 
     def __init__(self, hparams: dict) -> None:
+        """
+        Default constructor for the PandaFeatureStore class.
+
+        Initializes the PandaFeatureStore class by calling the FeatureStoreBase constructor with a dictionary containing the hyperparameters.
+
+        Args:
+            hparams (dict): Dictionary containing the hyperparameters for the PANDA data processing.
+        """
 
         # Call the base class (FeatureStoreBase in feature_store_base.py) constructor with the hyperparameters as arguments
         super().__init__(hparams)
 
     def prepare_data(self) -> None:
+        """
+        Main method for the PANDA data processing.
+        """
 
+        # Start the timer to measure the time taken for feature construction
         start_time = time()
 
-        # Create the output directory if it does not exist
+        # Create the output directory if it does not exist yet
         logging.info("Writing outputs to " + self.output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -89,12 +104,13 @@ class PandaFeatureStore(FeatureStoreBase):
             logging.error(f"Specified input file {self.input_dir} is not a ROOT file!")
             raise Exception("Input file must be a ROOT file.")
 
-        # Open the input ROOT file and get the number of events saved in the file
+        # Open the input ROOT file using the ROOTFileReader class and get the number of events saved in the file
         root_file_reader = ROOTFileReader(self.input_dir)
         total_events = root_file_reader.get_tree_entries()
         logging.info(f"Total number of events in the file: {total_events}")
 
         # Get the number of events to process
+        # If this hyperparameter is not specified, process all events in the file
         if "n_files" not in self.hparams.keys():
             nEvents = total_events
         else:
@@ -105,11 +121,12 @@ class PandaFeatureStore(FeatureStoreBase):
         # make iterable of events
         all_events = range(nEvents)
 
-        # Process the input file with a worker pool and progress bar
+        # Define a new function by passing the static arguments to the prepare_event function
         process_func = partial(
             panda_prepare_event, file_reader=root_file_reader, **self.hparams
         )
 
+        # Execute the new process_func in parallel for each event withing the all_events iterable
         process_map(
             process_func,
             all_events,

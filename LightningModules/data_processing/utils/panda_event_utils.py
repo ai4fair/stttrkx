@@ -1,7 +1,6 @@
 import os
 import logging
 import torch
-import trackml.dataset
 import numpy as np
 import pandas as pd
 
@@ -14,63 +13,55 @@ from ..utils.event_utils import (
     get_modulewise_edges,
     get_orderwise_edges,
     get_time_ordered_true_edges,
-    process_particles,
 )
 from ..utils.ROOTFileReader import ROOTFileReader
 
 
 def select_hits(
-    event_number: int, file_reader: ROOTFileReader, noise: bool, skewed: bool, **kwargs
+    event_id: int, file_reader: ROOTFileReader, noise: bool, skewed: bool
 ) -> pd.DataFrame:
+    """
+    Function to select and process the parameters imported from the ROOT file
+    and apply selection criteria for the hits of a single event.
 
-    hits, tubes, particles, truth = file_reader.load_event(event_number)
+    Args:
+        event_id (int): Event number to be processed.
+        file_reader (ROOTFileReader): ROOTFileReader object containing the open ROOT file.
+        noise (bool): If True, hits from secondary processes will be filtered out.
+        skewed (bool): If True, hits in the skewed tubes of the STT will be included.
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+
+    # Get the pandas DataFrames for the hits, tubes, particles, and truth for the specified event using the ROOTFileReader
+    hits, tubes, particles, truth = file_reader.load_event(event_id)
 
     # store original order (needed for orderwise_true_edges function)
     hits["original_order"] = hits.index
 
-    # preprocess 'particles' to get nhits, and drop duplicates
-    particles["nhits"] = particles.groupby(["particle_id"])["nhits"].transform("count")
-    particles.drop_duplicates(inplace=True, ignore_index=True)
+    # Merge the relevant columns from the particles DataFrame into the truth DataFrame
+    truth = truth.merge(
+        particles[["particle_id", "vx", "vy", "vz", "pdgcode", "primary"]],
+        on="particle_id",
+    )
 
-    # apply particle selection (not nice, but works)
-    if kwargs["selection"]:
-        particles = process_particles(particles)
-
-    # skip noise hits.
-    if noise:
-        # runs if noise=True
-        truth = truth.merge(
-            particles[["particle_id", "vx", "vy", "vz", "pdgcode"]],
-            on="particle_id",
-            how="left",
-        )
-    else:
-        # runs if noise=False
-        truth = truth.merge(
-            particles[["particle_id", "vx", "vy", "vz", "pdgcode"]],
-            on="particle_id",
-            how="inner",
-        )
-
-    # calculate pt, ptheta, peta, pphi
+    # Calculate the transverse momentum (pt), polar angle (ptheta), pseudo-rapidity (peta),
+    # and azimuthal angle (pphi) with the truth momentum information
     pt = np.sqrt(truth.tpx**2 + truth.tpy**2)
     ptheta = np.arctan2(pt, truth.tpz)
     peta = -np.log(np.tan(0.5 * ptheta))
     pphi = np.arctan2(truth.tpy, truth.tpx)
 
-    # assign pt, ptheta, peta, pphi to truth
+    # Add pt, ptheta, peta, pphi to the truth DataFrame
     truth = truth.assign(pt=pt, ptheta=ptheta, peta=peta, pphi=pphi)
 
-    # merge some columns of tubes to the hits
+    # Merge the relevant columns from the tubes DataFrame into the hits DataFrame
     hits = hits.merge(
         tubes[["hit_id", "isochrone", "skewed", "sector_id"]], on="hit_id"
     )
 
-    # skip skewed tubes
-    if skewed is False:
-        hits = hits.query("skewed==0")
-
-    # Calculate derived variables from 'hits'
+    # Calculate the transverse distance (r), azimuthal angle (phi), polar angle (theta), and pseudo-rapidity (eta)
     r = np.sqrt(hits.x**2 + hits.y**2)  # Transverse distance from the interaction point
     phi = np.arctan2(hits.y, hits.x)  # Azimuthal angle
     r3 = np.sqrt(
@@ -79,8 +70,19 @@ def select_hits(
     theta = np.arccos(hits.z / r3)  # Polar angle
     eta = -np.log(np.tan(theta / 2.0))  # Pseudo-rapidity
 
-    # Add r, phi, theta, eta to 'hits' and merge with 'truth'
-    hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta).merge(truth, on="hit_id")
+    # Add r, phi, theta, eta to the hits DataFrame
+    hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta)
+
+    # Merge the relevant columns from the truth DataFrame into the hits DataFrame
+    hits = hits.merge(truth, on="hit_id")
+
+    # skip noise hits.
+    if not noise:
+        truth = truth.query("primary==1")
+
+    # skip skewed tubes
+    if not skewed:
+        hits = hits.query("skewed==0")
 
     # Restore the original order
     hits = hits.sort_values(by="original_order").reset_index(drop=True)
@@ -89,18 +91,16 @@ def select_hits(
     hits = hits.drop(columns=["original_order"])
 
     # Add 'event_id' column to this event.
-    hits = hits.assign(event_id=event_number)
+    hits = hits.assign(event_id=event_id)
 
     return hits
 
 
 def build_event(
-    event_number: int,
+    event_id: int,
     file_reader: ROOTFileReader,
     true_edge_method: str,
     input_edge_method: str,
-    noise: bool,
-    skewed: bool,
     **kwargs,
 ) -> Tuple[
     np.ndarray,
@@ -116,65 +116,97 @@ def build_event(
     np.ndarray,
     np.ndarray,
 ]:
+    """
+    Function that uses the provided hit information to build the true and input edges for a single event.
 
-    # Load event using "event_file" prefix (load_event function transferred to select_hits function).
-    # hits, tubes, particles, truth = trackml.dataset.load_event(event_file)
+    Args:
+        event_id (int): ID of the event to be processed.
+        file_reader (ROOTFileReader): ROOTFileReader object containing the open ROOT file.
+        true_edge_method (str): Method how to build the true edges. Options: 'layerwise', 'modulewise', 'orderwise', 'timeOrdered'.
+        input_edge_method (str): Method how to build the input edges. Options: 'oldLayerwise', 'newLayerwise', 'all'.
 
-    # Select hits, add new/select columns, add event_id
-    hits = select_hits(event_number, file_reader, noise=noise, skewed=skewed, **kwargs)
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        Returns a tuple with the following 12 elements:
+
+        - Hit features (r, phi, isochrone) scaled by feature_scale for each hit.
+        - Particle ID for each hit.
+        - Layer ID for each hit.
+        - True edges between hits.
+        - Input edges between hits.
+        - Hit ID for each hit.
+        - True transverse momentum for each hit.
+        - True vertex position (vx, vy, vz) for each hit.
+        - MC PDG code for each hit.
+        - True polar angle for each hit.
+        - True pseudo-rapidity for each hit.
+        - True azimuthal angle for each hit.
+    """
+
+    hits = select_hits(
+        event_id, file_reader, noise=kwargs["noise"], skewed=kwargs["skewed"]
+    )
 
     # Get list of all layers
     layers = hits.layer_id.to_numpy()
 
+    # Select the method how to build the true edges
     if (
         true_edge_method == "layerwise"
-    ):  # Get true edge list using the ordering of layers
+    ):  # Get the true edges by connecting hits layer by layer while the
+        # radial distance to the interaction point must increase
         true_edges, hits = get_layerwise_edges(hits)
         logging.info(
-            f"Layerwise truth graph built for {event_number} with size {true_edges.shape}"
+            f"Layerwise truth graph built for {event_id} with size {true_edges.shape}"
         )
-    elif true_edge_method == "modulewise":  # Get true edge list without layer ordering
+    elif (
+        true_edge_method == "modulewise"
+    ):  # Get the true edges by connecting hits, where each
+        # hit must increase in radial distance to the interaction point
         true_edges = get_modulewise_edges(hits)
         logging.info(
-            f"Modulewise truth graph built for {event_number} with size {true_edges.shape}"
+            f"Modulewise truth graph built for {event_id} with size {true_edges.shape}"
         )
     elif (
         true_edge_method == "orderwise"
-    ):  # Get true edge list without layer ordering (natural order)
+    ):  # Get the true edges using the order of the hits
         true_edges = get_orderwise_edges(hits)
         logging.info(
-            f"Orderwise truth graph built for {event_number} with size {true_edges.shape}"
+            f"Orderwise truth graph built for {event_id} with size {true_edges.shape}"
         )
     elif (
-        true_edge_method == "timeOrdered"
-    ):  # Get true edge list without layer ordering (time ordered)
+        true_edge_method == "timeordered"
+    ):  # Get the true edges using the true time order of the hits
         true_edges = get_time_ordered_true_edges(hits)
         logging.info(
-            f"Time ordered truth graph built for {event_number} with size {true_edges.shape}"
+            f"Time ordered truth graph built for {event_id} with size {true_edges.shape}"
         )
     else:
         logging.error(f"{true_edge_method} is not a valid method to build true graphs")
         exit(1)
 
-    # Get input edge list using order of layers.
+    # Build input edges by connecting hits layer by layer. The distance of the hits
+    # from the interaction point need to be radially increasing
     if input_edge_method == "oldLayerwise":
         input_edges = get_layerwise_graph(
             hits, filtering=kwargs["filtering"], inneredges=False
-        )  # w/o samelayer edges
-        logging.info(
-            f"Layerwise input graph built for {event_number} with size {input_edges.shape}"
         )
+        logging.info(
+            f"Layerwise input graph built for {event_id} with size {input_edges.shape}"
+        )
+    # Same as oldLayerwise, but also builds edges between adjacent hits in the same layer
     elif input_edge_method == "newLayerwise":
         input_edges = get_layerwise_graph(
             hits, filtering=kwargs["filtering"], inneredges=True
-        )  # with samelayer edges
-        logging.info(
-            f"Layerwise input graph built for {event_number} with size {input_edges.shape}"
         )
+        logging.info(
+            f"Layerwise input graph built for {event_id} with size {input_edges.shape}"
+        )
+    # Build input edges by connecting all hits to all other hits.
     elif input_edge_method == "all":
         input_edges = get_all_edges(hits)
         logging.info(
-            f"All input graph built for {event_number} with size {input_edges.shape}"
+            f"All input graph built for {event_id} with size {input_edges.shape}"
         )
     else:
         logging.error(
@@ -202,30 +234,40 @@ def build_event(
 
 
 def prepare_event(
-    event_number: int,
+    event_id: int,
     file_reader: ROOTFileReader,
     output_dir: str,
     true_edge_method: str,
     input_edge_method: str,
-    noise: bool,
-    skewed: bool,
     overwrite: bool,
     **kwargs,
 ) -> None:
+    """
+    Main function that reads the hit data from a ROOT file, processes the data, creates input and
+    true edges between the hits, and finally saves the features into a PyTorch file.
 
-    logging.info(f"Preparing event number {event_number}")
+    Args:
+        event_id (int): ID of the event to be processed.
+        file_reader (ROOTFileReader): ROOTFileReader object containing the open ROOT file.
+        output_dir (str): Directory where the PyTorch files will be saved.
+        true_edge_method (str): Method how to build the true edges. Options: 'layerwise', 'modulewise', 'orderwise', 'timeOrdered'.
+        input_edge_method (str): Method how to build the input edges. Options: 'oldLayerwise', 'newLayerwise', 'all'.
+        overwrite (bool): If True, existing files in the output directory will be overwritten.
+    """
 
-    output_filename = f"{output_dir}/event_{event_number}.pt"
+    logging.info(f"Preparing event number {event_id}")
 
+    # Prepare the output filename and check if it already exists
+    output_filename = f"{output_dir}/event_{event_id}.pt"
     if not os.path.exists(output_filename) or overwrite:
         logging.info(f"Writing into {output_filename}")
     else:
         logging.warning(
-            f"File {output_filename} already exists! Skipping event {event_number}..."
+            f"File {output_filename} already exists! Skipping event {event_id}..."
         )
         return
 
-    # build event
+    # Build the event
     (
         X,
         pid,
@@ -240,16 +282,14 @@ def prepare_event(
         peta,
         pphi,
     ) = build_event(
-        event_number=event_number,
+        event_id=event_id,
         file_reader=file_reader,
         true_edge_method=true_edge_method,
         input_edge_method=input_edge_method,
-        noise=noise,
-        skewed=skewed,
         **kwargs,
     )
 
-    # build PyTorch Geometric (PyG) 'Data' object
+    # Build the PyTorch Geometric (PyG) 'Data' object
     data = Data(
         x=torch.from_numpy(X).float(),
         pid=torch.from_numpy(pid),
@@ -262,15 +302,20 @@ def prepare_event(
         peta=torch.from_numpy(peta),
         pphi=torch.from_numpy(pphi),
         true_edges=torch.from_numpy(true_edges),
-        event_file=event_number,
+        event_file=event_id,
     )
 
-    # get input graph
+    # Get the input and true edges as PyTorch tensors
     input_edges = torch.from_numpy(input_edges)
     true_edges = data.true_edges
-    new_input_edges, y = graph_intersection(input_edges, true_edges)
-    data.edge_index = new_input_edges
-    data.y_pid = y  # if regime: [[pid]] points to filtering
 
+    # Label the input edges, and reorganizes the order of the edges to fit the labels
+    new_input_edges, y = graph_intersection(input_edges, true_edges)
+    
+    # Save both the labels and edges in the data object
+    data.edge_index = new_input_edges
+    data.y_pid = y
+
+    # Save the data object to a PyTorch file
     with open(output_filename, "wb") as output_file:
         torch.save(data, output_file)
