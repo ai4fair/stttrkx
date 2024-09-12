@@ -9,7 +9,7 @@ from tqdm.contrib.concurrent import process_map
 from ..feature_store_base import FeatureStoreBase
 from ..utils.event_utils  import prepare_event as trackml_prepare_event
 from ..utils.panda_event_utils import prepare_event as panda_prepare_event
-from ..utils.ROOTFileReader import ROOTFileReader
+from ..utils.root_file_reader import ROOTFileReader
 
 class TrackMLFeatureStore(FeatureStoreBase):
     """

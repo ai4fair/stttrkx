@@ -7,14 +7,14 @@ import pandas as pd
 from typing import Tuple
 
 from torch_geometric.data import Data
-from .heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
-from ..utils.event_utils import (
+from heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
+from event_utils import (
     get_layerwise_edges,
     get_modulewise_edges,
     get_orderwise_edges,
     get_time_ordered_true_edges,
 )
-from ..utils.ROOTFileReader import ROOTFileReader
+from root_file_reader import ROOTFileReader
 
 
 def select_hits(
@@ -115,6 +115,7 @@ def build_event(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """
     Function that uses the provided hit information to build the true and input edges for a single event.
@@ -141,6 +142,7 @@ def build_event(
         - True polar angle for each hit.
         - True pseudo-rapidity for each hit.
         - True azimuthal angle for each hit.
+        - Primary particle flag for each hit (1 = primary, 0 = secondary).
     """
 
     hits = select_hits(
@@ -230,6 +232,7 @@ def build_event(
         hits.ptheta.to_numpy(),
         hits.peta.to_numpy(),
         hits.pphi.to_numpy(),
+        hits.primary.to_numpy(),
     )
 
 
@@ -281,6 +284,7 @@ def prepare_event(
         ptheta,
         peta,
         pphi,
+        primary,
     ) = build_event(
         event_id=event_id,
         file_reader=file_reader,
@@ -302,6 +306,7 @@ def prepare_event(
         peta=torch.from_numpy(peta),
         pphi=torch.from_numpy(pphi),
         true_edges=torch.from_numpy(true_edges),
+        primary=torch.from_numpy(primary),
         event_file=event_id,
     )
 
@@ -311,7 +316,7 @@ def prepare_event(
 
     # Label the input edges, and reorganizes the order of the edges to fit the labels
     new_input_edges, y = graph_intersection(input_edges, true_edges)
-    
+
     # Save both the labels and edges in the data object
     data.edge_index = new_input_edges
     data.y_pid = y
