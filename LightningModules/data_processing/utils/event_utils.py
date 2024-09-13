@@ -122,9 +122,9 @@ def get_orderwise_edges(hits):
     """Get modulewise (layerless) true edge list using the order
     of occurrence of hits. Here 'hits' represent complete event."""
 
-    # Restore the original order (New)
-    hits = hits.sort_values(by="original_order").reset_index(drop=True)
-    hits = hits.drop(columns=["original_order"])
+    # Restore the original order using pseudo time
+    hits = hits.sort_values(by="stime").reset_index(drop=True)
+    hits = hits.drop(columns=["stime"])
 
     # Handle NaN and Null Values
     signal = hits[

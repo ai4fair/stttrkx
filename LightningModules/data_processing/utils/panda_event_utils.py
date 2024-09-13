@@ -7,14 +7,14 @@ import pandas as pd
 from typing import Tuple
 
 from torch_geometric.data import Data
-from heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
-from event_utils import (
+from .heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
+from .event_utils import (
     get_layerwise_edges,
     get_modulewise_edges,
     get_orderwise_edges,
     get_time_ordered_true_edges,
 )
-from root_file_reader import ROOTFileReader
+from .root_file_reader import ROOTFileReader
 
 
 def select_hits(
