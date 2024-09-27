@@ -1,0 +1,25 @@
+# This example file contains all available options for the processing stage with short descriptions.
+# Optional fields are marked with a # Optional comment.
+
+# Input directory with the .csv files
+input_dir :  /home/nikin105/mlProject/data/simulations/mum5mup5/root/
+
+# Output directory for the pyTorch geometry files
+output_dir : "/home/nikin105/mlProject/data/machineLearning/testing"
+
+# - Parallelization parameters - 
+overwrite : True  # ?
+n_files   : 10    # ?
+n_workers : 1     # ?
+n_tasks   : 1     # ?
+chunksize : 1     # ?
+
+# - Graph construction method -
+true_edge_method : "timeordered"
+
+input_edge_method : "oldLayerwise" # Method how the input edges are constructed. Options: 'layerwise' and 'all'
+
+# - Filter -
+noise     : True  # If True, include hits from secondary processes, e.g., e- from Bremsstrahlung.
+skewed    : True  # If True, include skewed layers for the graph construction.
+filtering : True  # If True, get input edges without adjacent sectors
