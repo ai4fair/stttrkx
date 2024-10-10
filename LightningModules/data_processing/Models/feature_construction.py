@@ -221,40 +221,35 @@ class PandaRootFeatureStore(FeatureStoreBase):
 
         # TBranches of the simulation file and the corresponding names in the data frame
         sttPoint_branch_dict = {
-            "STTPoint.fX": "sttP_x",
-            "STTPoint.fY": "sttP_y",
-            "STTPoint.fZ": "sttP_z",
-            "STTPoint.fTime": "sttP_t",
-            "STTPoint.fPx": "sttP_px",
-            "STTPoint.fPy": "sttP_py",
-            "STTPoint.fPz": "sttP_pz",
-            "STTPoint.fTrackID": "track_id",
+            "STTPoint.fX": "tx",
+            "STTPoint.fY": "ty",
+            "STTPoint.fZ": "tz",
+            "STTPoint.fTime": "tT",
+            "STTPoint.fPx": "tpx",
+            "STTPoint.fPy": "tpy",
+            "STTPoint.fPz": "tpz",
+            "STTPoint.fTrackID": "particle_id",
         }
 
         mcTrack_branch_dict = {
-            "MCTrack.fStartX": "mc_start_x",
-            "MCTrack.fStartY": "mc_start_y",
-            "MCTrack.fStartZ": "mc_start_z",
-            "MCTrack.fStartT": "mc_start_t",
-            "MCTrack.fPx": "mc_px",
-            "MCTrack.fPy": "mc_py",
-            "MCTrack.fPz": "mc_pz",
-            "MCTrack.fPdgCode": "mc_pdg_code",
-            "MCTrack.fProcess": "mc_process",
-            "MCTrack.fMotherID": "mc_mother_id",
-            "MCTrack.fSecondMotherID": "mc_second_mother_id",
+            "MCTrack.fStartX": "vx",
+            "MCTrack.fStartY": "vy",
+            "MCTrack.fStartZ": "vz",
+            "MCTrack.fPdgCode": "pdgcode",
+            "MCTrack.fProcess": "process_code",
+            "MCTrack.fMotherID": "mother_id",
+            "MCTrack.fSecondMotherID": "second_mother_id",
         }
 
         # TBranches of the digitalization file and the corresponding names in the data frame
         sttHit_branch_dict = {
             "STTHit.fRefIndex": "hit_id",
-            "STTHit.fX": "sttH_x",
-            "STTHit.fY": "sttH_y",
-            "STTHit.fZ": "sttH_z",
-            "STTHit.fDetectorID": "sttH_det_id",
-            "STTHit.fTubeID": "sttH_tube_id",
-            "STTHit.fDepCharge": "sttH_charge",
-            "STTHit.fIsochrone": "sttH_isochrone",
+            "STTHit.fX": "x",
+            "STTHit.fY": "y",
+            "STTHit.fZ": "z",
+            "STTHit.fDetectorID": "volume_id",
+            "STTHit.fTubeID": "module_id",
+            "STTHit.fIsochrone": "isochrone",
         }
 
         key_dict = {
@@ -271,6 +266,8 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 for sttHit_key in sttHit_branch_dict.keys()
             ],
         }
+
+        events_processed = 0
 
         # Iterate over all files
         for file_num in range(self.n_files):
@@ -292,7 +289,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 expressions=list(mcTrack_branch_dict.keys())
                 + list(sttPoint_branch_dict.keys()),
                 library="pd",
-                step_size=1000,
+                step_size=10000,
             )
             logging.debug(f"Simulation events iterator:\n{sim_iterator}")
 
@@ -309,7 +306,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
             digi_iterator = digi_file.iterate(
                 expressions=sttHit_branch_dict.keys(),
                 library="pd",
-                step_size=1000,
+                step_size=10000,
             )
             logging.debug(f"Digitalization iterator:\n{digi_iterator}")
 
@@ -322,9 +319,12 @@ class PandaRootFeatureStore(FeatureStoreBase):
 
                 logging.debug(f"Simulation chunk:\n{chunk}")
                 logging.debug(f"Digitalization chunk:\n{digi_chunk}")
+                last_event_num = events_processed + len(chunk)
+                event_ids = np.arange(events_processed, last_event_num, dtype=int)
 
                 # Combine the simulation and digitalization chunks into a single chunk
                 chunk = pd.concat([chunk, digi_chunk], axis=1)
+                chunk = chunk.assign(event_id=event_ids)
                 logging.debug(f"Chunk:\n{chunk}")
                 del digi_chunk
 
@@ -339,12 +339,15 @@ class PandaRootFeatureStore(FeatureStoreBase):
                     **self.hparams,
                 )
 
-                # Execute the new process_func in parallel for each event withing the all_events iterable
-                for i in row_iterator:
-                    process_func(i)
-                    break
-                # with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
-                #     executor.map(process_func, row_iterator)
+                process_map(process_func, row_iterator, max_workers=self.n_workers, chunksize=self.chunksize)
+
+                with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
+                    executor.map(process_func, row_iterator)
+
+                events_processed += len(chunk)
+
+            sim_file.close()
+            digi_file.close()
 
         end_time = time()
 
