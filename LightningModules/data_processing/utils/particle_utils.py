@@ -3,6 +3,8 @@ import uproot as up
 import logging
 import pdg
 
+from typing import Dict, Tuple, List
+
 
 def get_branch_entry(entry_id: int, branch_name: str, tree: up.TTree) -> np.ndarray:
     """
@@ -26,8 +28,8 @@ def get_branch_entry(entry_id: int, branch_name: str, tree: up.TTree) -> np.ndar
 def make_track_dict(
     track_ids: np.ndarray,
     track_parameter_arr: np.ndarray,
-    track_dict: dict[str, np.ndarray] = {},
-) -> dict[str, np.ndarray]:
+    track_dict: Dict[str, np.ndarray] = {},
+) -> Dict[str, np.ndarray]:
     """
     Create a dictionary with track IDs as keys and track parameter arrays as values.
 
@@ -124,8 +126,8 @@ def get_particle_tex_name(
 
 
 def get_all_mother_ids(
-    mother_ids: np.ndarray[int], second_mother_ids: np.ndarray[int]
-) -> np.ndarray[int]:
+    mother_ids: np.ndarray, second_mother_ids: np.ndarray
+) -> np.ndarray:
     """
     Uses the mother and second mother IDs proved by PandaRoot to create an array with all mother IDs.
 
@@ -156,11 +158,11 @@ def get_all_mother_ids(
 
 
 def get_process_ids(
-    process_ids: np.ndarray[int],
-    mother_ids: np.ndarray[int],
-    pdg_ids: np.ndarray[int],
+    process_ids: np.ndarray,
+    mother_ids: np.ndarray,
+    pdg_ids: np.ndarray,
     particle_id: int,
-) -> tuple[np.ndarray[int], np.ndarray[int]]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Get an array with the PDG Monte Carlo particle ID numbers and the VMC
     physics process code (https://root.cern/doc/v610/TMCProcess_8h_source.html)
@@ -228,10 +230,10 @@ def get_process_tex_str(process_mc_ids: np.array, max_depth: int = np.inf) -> st
 
 
 def is_signal_particle(
-    process_mc_ids: np.ndarray[int],
-    process_ids: np.ndarray[int],
-    signal_mc_ids: list[list[int]],
-    signal_process_ids: list[list[int]],
+    process_mc_ids,
+    process_ids,
+    signal_mc_ids,
+    signal_process_ids,
 ) -> bool:
     """
     Check if a given particle is a signal particle based on its PDG Monte Carlo IDs

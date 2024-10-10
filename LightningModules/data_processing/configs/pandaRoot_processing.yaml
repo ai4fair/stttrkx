@@ -2,17 +2,23 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the .csv files
-input_dir :  /home/nikin105/mlProject/data/simulations/mum5mup5/root/
+input_dir :  "/home/nikin105/mlProject/data/simulations/mum5mup5/root"
+
+# Prefix of the input files
+prefix : "new_mum5mup5"
 
 # Output directory for the pyTorch geometry files
 output_dir : "/home/nikin105/mlProject/data/machineLearning/testing"
 
+signal_signature_file : "/home/nikin105/mlProject/visualization/simulationChain/signal_signatures/signal_signature_mum5mup5.yaml"
+
 # - Parallelization parameters - 
 overwrite : True  # ?
-n_files   : 10    # ?
+n_files   : 1     # ?
 n_workers : 1     # ?
 n_tasks   : 1     # ?
 chunksize : 1     # ?
+
 
 # - Graph construction method -
 true_edge_method : "timeordered"

@@ -78,7 +78,7 @@ def select_hits(
 
     # skip noise hits.
     if not noise:
-        truth = truth.query("primary==1")
+        hits = hits.query("primary==1")
 
     # skip skewed tubes
     if not skewed:

@@ -2,15 +2,15 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the .csv files
-input_dir  : "/home/nikin105/mlProject/data/machineLearning/XiAntiXi/root/mlData.root"
+input_dir  : "/home/nikin105/mlProject/data/simulations/mum5mup5/processed/mlData.root"
 
 # Output directory for the pyTorch geometry files
-output_dir : "/home/nikin105/mlProject/data/machineLearning/XiAntiXi/newLayerwise"
+output_dir : "/home/nikin105/mlProject/data/machineLearning/mum5mup5/training/newGT_oldIG/processedFiles"
 
 # - Parallelization parameters - 
 overwrite : True  # ?
-n_files   : 10    # ?
-n_workers : 1     # ?
+n_files   : 100   # ?
+n_workers : 10    # ?
 n_tasks   : 1     # ?
 chunksize : 1     # ?
 

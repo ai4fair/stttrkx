@@ -1,9 +1,13 @@
 import os
+import yaml
 import logging
 import numpy as np
 import uproot as up
-from time import time
+import pandas as pd
+import awkward as ak
+import fnmatch
 
+from time import time
 from functools import partial
 from tqdm.contrib.concurrent import process_map
 
@@ -11,7 +15,10 @@ from ..feature_store_base import FeatureStoreBase
 from ..utils.trackml_event_utils import prepare_event as trackml_prepare_event
 from ..utils.panda_event_utils import prepare_event as panda_prepare_event
 from ..utils.root_file_reader import ROOTFileReader
-from ..utils.pandaRoot_event_utils import prepare_sim_event, prepare_digi_event
+from ..utils.pandaRoot_event_utils import prepare_event as pandaRoot_prepare_event
+
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
 
 class TrackMLFeatureStore(FeatureStoreBase):
@@ -183,77 +190,164 @@ class PandaRootFeatureStore(FeatureStoreBase):
         logging.info("Writing outputs to " + self.output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
 
-        # Get a list with all the input sim ROOT files
-        sim_dir = self.input_dir + "/sim"
-        sim_file_list = [
-            sim_dir + "/" + file + ":pndsim"
-            for file in os.listdir(sim_dir)
-            if os.path.isfile(os.path.join(sim_dir, file))
-        ]
+        # Save the STT geometry data from the csv file into a pandas data frame
+        stt_geo_df = pd.read_csv(
+            "/home/nikin105/mlProject/data/detectorGeometries/tubePos.csv"
+        )
 
-        logging.info(f"Sim files: {sim_file_list}")
+        # Read the signal signature from the YAML file.
+        with open(self.hparams["signal_signature_file"], "r") as file:
+            signal_signature = yaml.safe_load(file)
 
-        # Get a list with all the input digi ROOT files
-        digi_dir = self.input_dir + "/digi"
-        digi_file_list = [
-            digi_dir + "/" + file + ":pndsim"
-            for file in os.listdir(digi_dir)
-            if os.path.isfile(os.path.join(digi_dir, file))
-        ]
+        # Count the number of input sim and digi ROOT files
+        num_sim_files = 0
+        for filename in os.listdir(self.input_dir + "/sim"):
+            if fnmatch.fnmatch(filename, "*_sim.root"):
+                num_sim_files += 1
+        logging.info(f"Number of sim files: {num_sim_files}")
 
-        logging.info(f"Digi files: {digi_file_list}")
+        num_digi_files = 0
+        for filename in os.listdir(self.input_dir + "/digi"):
+            if fnmatch.fnmatch(filename, "*_digi.root"):
+                num_digi_files += 1
+        logging.info(f"Number of digi files: {num_digi_files}")
 
-        sim_branches = [
-            "STTPoint.fX",
-            "STTPoint.fY",
-            "STTPoint.fZ",
-            "STTPoint.fTime",
-            "STTPoint.fPx",
-            "STTPoint.fPy",
-            "STTPoint.fPz",
-            "STTPoint.fTrackID",
-            "MCTrack.fStartX",
-            "MCTrack.fStartY",
-            "MCTrack.fStartZ",
-            "MCTrack.fPx",
-            "MCTrack.fPy",
-            "MCTrack.fPz",
-            "MCTrack.fPoints",
-            "MCTrack.fPdgCode",
-            "MCTrack.fStartT",
-            "MCTrack.fGeneratorFlags",
-        ]
+        # Check if the number of sim and digi files are the same
+        if num_sim_files != num_digi_files:
+            logging.error(
+                f"Number of sim files ({num_sim_files}) and digi files ({num_digi_files}) do not match!"
+            )
+            raise Exception("Number of sim and digi files must match.")
 
-        digi_branches = [
-            "STTHit.fRefIndex",
-            "STTHit.fX",
-            "STTHit.fY",
-            "STTHit.fZ",
-            "STTHit.fDetectorID",
-            "STTHit.fTubeID",
-            "STTHit.fDepCharge",
-            "STTHit.fIsochrone",
-        ]
+        # TBranches of the simulation file and the corresponding names in the data frame
+        sttPoint_branch_dict = {
+            "STTPoint.fX": "sttP_x",
+            "STTPoint.fY": "sttP_y",
+            "STTPoint.fZ": "sttP_z",
+            "STTPoint.fTime": "sttP_t",
+            "STTPoint.fPx": "sttP_px",
+            "STTPoint.fPy": "sttP_py",
+            "STTPoint.fPz": "sttP_pz",
+            "STTPoint.fTrackID": "track_id",
+        }
 
-        logging.info("Preparing sim events")
-        for batch in up.iterate(
-            sim_file_list,
-            sim_branches,
-            step_size="100 MB",
-            num_workers=self.n_workers,
-        ):
-            prepare_sim_event()
+        mcTrack_branch_dict = {
+            "MCTrack.fStartX": "mc_start_x",
+            "MCTrack.fStartY": "mc_start_y",
+            "MCTrack.fStartZ": "mc_start_z",
+            "MCTrack.fStartT": "mc_start_t",
+            "MCTrack.fPx": "mc_px",
+            "MCTrack.fPy": "mc_py",
+            "MCTrack.fPz": "mc_pz",
+            "MCTrack.fPdgCode": "mc_pdg_code",
+            "MCTrack.fProcess": "mc_process",
+            "MCTrack.fMotherID": "mc_mother_id",
+            "MCTrack.fSecondMotherID": "mc_second_mother_id",
+        }
 
-        logging.info("Preparing digi events")
-        for batch in up.iterate(
-            digi_file_list,
-            digi_branches,
-            step_size="100 MB",
-            num_workers=self.n_workers,
-        ):
-            prepare_digi_event()
+        # TBranches of the digitalization file and the corresponding names in the data frame
+        sttHit_branch_dict = {
+            "STTHit.fRefIndex": "hit_id",
+            "STTHit.fX": "sttH_x",
+            "STTHit.fY": "sttH_y",
+            "STTHit.fZ": "sttH_z",
+            "STTHit.fDetectorID": "sttH_det_id",
+            "STTHit.fTubeID": "sttH_tube_id",
+            "STTHit.fDepCharge": "sttH_charge",
+            "STTHit.fIsochrone": "sttH_isochrone",
+        }
+
+        key_dict = {
+            "sttPoint": [
+                sttPoint_branch_dict[sttPoint_key]
+                for sttPoint_key in sttPoint_branch_dict.keys()
+            ],
+            "mcTrack": [
+                mcTrack_branch_dict[mcTrack_key]
+                for mcTrack_key in mcTrack_branch_dict.keys()
+            ],
+            "sttHit": [
+                sttHit_branch_dict[sttHit_key]
+                for sttHit_key in sttHit_branch_dict.keys()
+            ],
+        }
+
+        # Iterate over all files
+        for file_num in range(self.n_files):
+
+            logging.info(f"Processing File {file_num+1} of {self.n_files}")
+
+            # Open the simulation file using uproot
+            sim_file_name = (
+                self.input_dir
+                + "/sim/"
+                + self.hparams["prefix"]
+                + f"_{file_num}_sim.root:pndsim"
+            )
+            logging.debug(f"Simulation file:\n{sim_file_name}")
+            sim_file = up.open(sim_file_name, num_workers=self.n_workers)
+
+            # Create an iterator that contains a chunk of the simulation events
+            sim_iterator = sim_file.iterate(
+                expressions=list(mcTrack_branch_dict.keys())
+                + list(sttPoint_branch_dict.keys()),
+                library="pd",
+                step_size=1000,
+            )
+            logging.debug(f"Simulation events iterator:\n{sim_iterator}")
+
+            digi_file_name = (
+                self.input_dir
+                + "/digi/"
+                + self.hparams["prefix"]
+                + f"_{file_num}_digi.root:pndsim"
+            )
+            logging.debug(f"Digitalization file:\n{digi_file_name}")
+            digi_file = up.open(digi_file_name, num_workers=self.n_workers)
+
+            # Create an iterator that contains a chunk of the digitalization events
+            digi_iterator = digi_file.iterate(
+                expressions=sttHit_branch_dict.keys(),
+                library="pd",
+                step_size=1000,
+            )
+            logging.debug(f"Digitalization iterator:\n{digi_iterator}")
+
+            # Iterate over the simulation and digitalization chunks
+            for chunk, digi_chunk in zip(sim_iterator, digi_iterator):
+
+                chunk = chunk.rename(columns=mcTrack_branch_dict)
+                chunk = chunk.rename(columns=sttPoint_branch_dict)
+                digi_chunk = digi_chunk.rename(columns=sttHit_branch_dict)
+
+                logging.debug(f"Simulation chunk:\n{chunk}")
+                logging.debug(f"Digitalization chunk:\n{digi_chunk}")
+
+                # Combine the simulation and digitalization chunks into a single chunk
+                chunk = pd.concat([chunk, digi_chunk], axis=1)
+                logging.debug(f"Chunk:\n{chunk}")
+                del digi_chunk
+
+                # create an iterator for the rows of the data frame
+                row_iterator = tqdm(chunk.itertuples(index=False), total=len(chunk))
+
+                process_func = partial(
+                    pandaRoot_prepare_event,
+                    key_dict=key_dict,
+                    signal_signatures=signal_signature,
+                    stt_geo=stt_geo_df,
+                    **self.hparams,
+                )
+
+                # Execute the new process_func in parallel for each event withing the all_events iterable
+                for i in row_iterator:
+                    process_func(i)
+                    break
+                # with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
+                #     executor.map(process_func, row_iterator)
 
         end_time = time()
+
         print(
             f"Feature construction complete. Time taken: {end_time - start_time:f} seconds."
         )
