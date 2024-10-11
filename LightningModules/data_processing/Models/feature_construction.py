@@ -289,7 +289,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 expressions=list(mcTrack_branch_dict.keys())
                 + list(sttPoint_branch_dict.keys()),
                 library="pd",
-                step_size=10000,
+                step_size=self.hparams["events_per_step"],
             )
             logging.debug(f"Simulation events iterator:\n{sim_iterator}")
 
@@ -306,7 +306,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
             digi_iterator = digi_file.iterate(
                 expressions=sttHit_branch_dict.keys(),
                 library="pd",
-                step_size=10000,
+                step_size=self.hparams["events_per_step"],
             )
             logging.debug(f"Digitalization iterator:\n{digi_iterator}")
 
@@ -328,22 +328,21 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 logging.debug(f"Chunk:\n{chunk}")
                 del digi_chunk
 
-                # create an iterator for the rows of the data frame
-                row_iterator = tqdm(chunk.itertuples(index=False), total=len(chunk))
+                progress_bar = tqdm(total=chunk.shape[0])
 
                 process_func = partial(
                     pandaRoot_prepare_event,
                     key_dict=key_dict,
                     signal_signatures=signal_signature,
                     stt_geo=stt_geo_df,
+                    progress_bar=progress_bar,
                     **self.hparams,
                 )
 
-                process_map(process_func, row_iterator, max_workers=self.n_workers, chunksize=self.chunksize)
-
                 with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
-                    executor.map(process_func, row_iterator)
+                    executor.map(process_func, chunk.itertuples())
 
+                progress_bar.close()
                 events_processed += len(chunk)
 
             sim_file.close()

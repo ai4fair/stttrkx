@@ -4,15 +4,12 @@ import torch
 import numpy as np
 import pandas as pd
 
+from tqdm import tqdm
 from torch_geometric.data import Data
-from .heuristic_utils import get_layerwise_graph, get_all_edges, graph_intersection
-from .event_utils import (
-    get_layerwise_edges,
-    get_modulewise_edges,
-    get_orderwise_edges,
-    get_time_ordered_true_edges,
-)
+from .heuristic_utils import get_all_edges, graph_intersection
+from .event_utils import get_time_ordered_true_edges
 from .particle_utils import is_signal_particle, get_process_ids, get_all_mother_ids
+
 
 def prepare_event(
     event: pd.Series,
@@ -20,8 +17,7 @@ def prepare_event(
     signal_signatures,
     stt_geo,
     output_dir: str,
-    true_edge_method: str,
-    input_edge_method: str,
+    progress_bar: tqdm,
     overwrite: bool,
     **kwargs,
 ) -> None:
@@ -82,6 +78,7 @@ def prepare_event(
             pdg_ids=event["pdgcode"],
             particle_id=particle_id,
         )
+        del mother_ids
         # Check if the particle is a signal particle.
         mcTrack_dict["primary"][particle_num] = is_signal_particle(
             process_mc_ids=mc_ids,
@@ -142,6 +139,7 @@ def prepare_event(
     sttH_dict["eta"] = -np.log(np.tan(sttH_dict["theta"] / 2.0))  # Pseudo-rapidity
 
     processed_df = pd.merge(pd.DataFrame(sttH_dict), processed_df, on="hit_id")
+    del sttH_dict
 
     # skip noise hits.
     if not kwargs["noise"]:
@@ -161,7 +159,7 @@ def prepare_event(
 
     # Build input edges by connecting all hits to all other hits.
     input_edges = get_all_edges(processed_df)
-    logging.info(f"All input graph built for {event_id} with size {input_edges.shape}")
+    logging.info(f"Input graph built for {event_id} with size {input_edges.shape}")
 
     # feature scale for X=[r,phi,z]
     feature_scale = [100, np.pi, 100]
@@ -198,3 +196,5 @@ def prepare_event(
     # Save the data object to a PyTorch file
     with open(output_filename, "wb") as output_file:
         torch.save(data, output_file)
+
+    progress_bar.update(n=1)

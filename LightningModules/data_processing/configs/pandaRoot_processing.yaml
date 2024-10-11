@@ -15,15 +15,10 @@ signal_signature_file : "/home/nikin105/mlProject/visualization/simulationChain/
 # - Parallelization parameters - 
 overwrite : True  # ?
 n_files   : 1     # ?
-n_workers : 1     # ?
+n_workers : 8     # ?
 n_tasks   : 1     # ?
-chunksize : 1     # ?
-
-
-# - Graph construction method -
-true_edge_method : "timeordered"
-
-input_edge_method : "oldLayerwise" # Method how the input edges are constructed. Options: 'layerwise' and 'all'
+chunksize : 10    # ?
+events_per_step: 10000 # ?
 
 # - Filter -
 noise     : True  # If True, include hits from secondary processes, e.g., e- from Bremsstrahlung.
