@@ -12,6 +12,16 @@ from .particle_utils import is_signal_particle, get_process_ids, get_all_mother_
 
 
 def process_mcTracks(event: pd.Series, signal_signatures: list) -> pd.DataFrame:
+    """
+    Process an event containing the mcTrack information and return a DataFrame containing the processed information.
+
+    Args:
+        event (pd.Series): Event information containing the mcTrack information.
+        signal_signatures (list): Lists containing the PDG MC IDs and VMC process codes of the signal particles.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the processed mcTrack information.
+    """
 
     # Create a dictionary to store the processed mcTrack information.
     mcTrack_dict = {}
@@ -74,6 +84,16 @@ def process_mcTracks(event: pd.Series, signal_signatures: list) -> pd.DataFrame:
 
 
 def process_sttPoints(event: pd.Series, key_dict: dict) -> pd.DataFrame:
+    """
+    Process an event containing the sttPoint information and return a DataFrame containing the processed information.
+
+    Args:
+        event (pd.Series): Event information containing the sttPoint information.
+        key_dict (dict): Dictionary containing the keys of the event series corresponding the different branch types.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the processed sttPoint information.
+    """
 
     # Create a dictionary to store the processed sttPoint information.
     sttP_dict = {}
@@ -111,6 +131,17 @@ def process_sttPoints(event: pd.Series, key_dict: dict) -> pd.DataFrame:
 def process_sttHits(
     event: pd.Series, key_dict: dict, stt_geo: pd.DataFrame
 ) -> pd.DataFrame:
+    """
+    Process an event containing the sttHit information and return a DataFrame containing the processed information.
+
+    Args:
+        event (pd.Series): Event information containing the sttHit information.
+        key_dict (dict): Dictionary containing the keys of the event series corresponding the different branch types.
+        stt_geo (pd.DataFrame): Pandas DataFrame containing the STT geometry information.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the processed sttHit information.
+    """
 
     # Create a dictionary to store the processed sttHit information.
     sttH_dict = {}

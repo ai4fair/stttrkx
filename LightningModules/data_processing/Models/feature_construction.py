@@ -344,10 +344,8 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 )
 
                 # Execute the process_func in parallel for each event
-                # with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
-                #     executor.map(process_func, chunk.itertuples())
-                for i in chunk.itertuples():
-                    process_func(i)
+                with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
+                    executor.map(process_func, chunk.itertuples())
 
                 # Close the progress bar
                 progress_bar.close()
