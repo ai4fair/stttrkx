@@ -219,7 +219,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
             )
             raise Exception("Number of sim and digi files must match.")
 
-        # TBranches of the simulation file and the corresponding names in the data frame
+        # Names of the TBranches in the ROOT files to be processed and their corresponding names in the data frame
         sttPoint_branch_dict = {
             "STTPoint.fX": "tx",
             "STTPoint.fY": "ty",
@@ -241,7 +241,6 @@ class PandaRootFeatureStore(FeatureStoreBase):
             "MCTrack.fSecondMotherID": "second_mother_id",
         }
 
-        # TBranches of the digitalization file and the corresponding names in the data frame
         sttHit_branch_dict = {
             "STTHit.fRefIndex": "hit_id",
             "STTHit.fX": "x",
@@ -252,6 +251,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
             "STTHit.fIsochrone": "isochrone",
         }
 
+        # Dictionary containing the keys of the data frame for the different branch types
         key_dict = {
             "sttPoint": [
                 sttPoint_branch_dict[sttPoint_key]
@@ -267,12 +267,13 @@ class PandaRootFeatureStore(FeatureStoreBase):
             ],
         }
 
+        # Count the number of events processed
         events_processed = 0
 
         # Iterate over all files
         for file_num in range(self.n_files):
 
-            logging.info(f"Processing File {file_num+1} of {self.n_files}")
+            print(f"Step {file_num+1} of {self.n_files}")
 
             # Open the simulation file using uproot
             sim_file_name = (
@@ -281,7 +282,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 + self.hparams["prefix"]
                 + f"_{file_num}_sim.root:pndsim"
             )
-            logging.debug(f"Simulation file:\n{sim_file_name}")
+            logging.info(f"Simulation file:\n{sim_file_name}")
             sim_file = up.open(sim_file_name, num_workers=self.n_workers)
 
             # Create an iterator that contains a chunk of the simulation events
@@ -289,9 +290,8 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 expressions=list(mcTrack_branch_dict.keys())
                 + list(sttPoint_branch_dict.keys()),
                 library="pd",
-                step_size=10000,
+                step_size=self.hparams["events_per_step"],
             )
-            logging.debug(f"Simulation events iterator:\n{sim_iterator}")
 
             digi_file_name = (
                 self.input_dir
@@ -299,58 +299,68 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 + self.hparams["prefix"]
                 + f"_{file_num}_digi.root:pndsim"
             )
-            logging.debug(f"Digitalization file:\n{digi_file_name}")
+            logging.info(f"Digitalization file:\n{digi_file_name}")
             digi_file = up.open(digi_file_name, num_workers=self.n_workers)
 
             # Create an iterator that contains a chunk of the digitalization events
             digi_iterator = digi_file.iterate(
                 expressions=sttHit_branch_dict.keys(),
                 library="pd",
-                step_size=10000,
+                step_size=self.hparams["events_per_step"],
             )
-            logging.debug(f"Digitalization iterator:\n{digi_iterator}")
 
-            # Iterate over the simulation and digitalization chunks
+            # Iterate over the chunks of events
             for chunk, digi_chunk in zip(sim_iterator, digi_iterator):
-
+                # Rename the columns of the chunks so they are correctly named in the tuples and 
+                # are consistent with the other implementations
                 chunk = chunk.rename(columns=mcTrack_branch_dict)
                 chunk = chunk.rename(columns=sttPoint_branch_dict)
                 digi_chunk = digi_chunk.rename(columns=sttHit_branch_dict)
 
                 logging.debug(f"Simulation chunk:\n{chunk}")
                 logging.debug(f"Digitalization chunk:\n{digi_chunk}")
+
+                # Make an array with the event ids for the current chunk
                 last_event_num = events_processed + len(chunk)
                 event_ids = np.arange(events_processed, last_event_num, dtype=int)
 
                 # Combine the simulation and digitalization chunks into a single chunk
                 chunk = pd.concat([chunk, digi_chunk], axis=1)
                 chunk = chunk.assign(event_id=event_ids)
-                logging.debug(f"Chunk:\n{chunk}")
+                logging.debug(f"Full chunk:\n{chunk}")
                 del digi_chunk
 
-                # create an iterator for the rows of the data frame
-                row_iterator = tqdm(chunk.itertuples(index=False), total=len(chunk))
+                # Create a progress bar for the current chunk
+                progress_bar = tqdm(total=chunk.shape[0])
 
+                # Define a new function by passing the static arguments to the prepare_event function
                 process_func = partial(
                     pandaRoot_prepare_event,
                     key_dict=key_dict,
                     signal_signatures=signal_signature,
                     stt_geo=stt_geo_df,
+                    progress_bar=progress_bar,
                     **self.hparams,
                 )
 
-                process_map(process_func, row_iterator, max_workers=self.n_workers, chunksize=self.chunksize)
+                # Execute the process_func in parallel for each event
+                # with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
+                #     executor.map(process_func, chunk.itertuples())
+                for i in chunk.itertuples():
+                    process_func(i)
 
-                with ThreadPoolExecutor(max_workers=self.n_workers) as executor:
-                    executor.map(process_func, row_iterator)
+                # Close the progress bar
+                progress_bar.close()
 
+                # Update the number of events processed
                 events_processed += len(chunk)
 
+            # Close the ROOT files
             sim_file.close()
             digi_file.close()
 
+        # End the timer and print the time taken for feature construction
         end_time = time()
-
         print(
             f"Feature construction complete. Time taken: {end_time - start_time:f} seconds."
         )
