@@ -11,6 +11,7 @@ from .event_utils import get_time_ordered_true_edges
 from .particle_utils import is_signal_particle, get_process_ids, get_all_mother_ids
 
 
+
 def process_mcTracks(event: pd.Series, signal_signatures: list) -> pd.DataFrame:
     """
     Process an event containing the mcTrack information and return a DataFrame containing the processed information.
@@ -63,6 +64,7 @@ def process_mcTracks(event: pd.Series, signal_signatures: list) -> pd.DataFrame:
             pdg_ids=event["pdgcode"],
             particle_id=particle_id,
         )
+        del mother_ids
         # Check if the particle is a signal particle.
         mcTrack_dict["primary"][particle_num] = is_signal_particle(
             process_mc_ids=mc_ids,
@@ -255,6 +257,8 @@ def prepare_event(
     # Build input edges by connecting all hits to all other hits.
     input_edges = get_all_edges(processed_df)
     logging.info(f"Input graph built for {event_id} with size {input_edges.shape}")
+    
+
 
     # feature scale for X=[r,phi,z]
     feature_scale = [100, np.pi, 100]
