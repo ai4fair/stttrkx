@@ -311,7 +311,7 @@ class PandaRootFeatureStore(FeatureStoreBase):
 
             # Iterate over the chunks of events
             for chunk, digi_chunk in zip(sim_iterator, digi_iterator):
-                # Rename the columns of the chunks so they are correctly named in the tuples and 
+                # Rename the columns of the chunks so they are correctly named in the tuples and
                 # are consistent with the other implementations
                 chunk = chunk.rename(columns=mcTrack_branch_dict)
                 chunk = chunk.rename(columns=sttPoint_branch_dict)
