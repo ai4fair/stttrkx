@@ -11,6 +11,7 @@ from .heuristic_utils import (
     graph_intersection,
     get_layerwise_graph,
     get_time_ordered_true_edges,
+    get_time_ordered_true_edges_v2,
     get_layerwise_graph_v2,
 )
 from .particle_utils import is_signal_particle, get_process_ids, get_all_mother_ids
@@ -175,12 +176,19 @@ def process_sttHits(
 
     # Calculate the transverse distance (r), azimuthal angle (phi), polar angle (theta), and pseudo-rapidity (eta)
     sttH_dict["r"] = np.sqrt(sttH_dict["x"] ** 2 + sttH_dict["y"] ** 2)
-    sttH_dict["phi"] = np.arctan2(sttH_dict["y"], sttH_dict["x"])  # Azimuthal angle
+    sttH_dict["phi"] = np.arctan2(
+        sttH_dict["y"], sttH_dict["x"]
+    )  # Azimuthal angle defined from -pi to pi
     sttH_dict["theta"] = np.arccos(
         sttH_dict["z"]
         / np.sqrt(sttH_dict["x"] ** 2 + sttH_dict["y"] ** 2 + sttH_dict["z"] ** 2)
     )
     sttH_dict["eta"] = -np.log(np.tan(sttH_dict["theta"] / 2.0))
+
+    # redefined phi to be in the range [0, 2pi]
+    sttH_dict["phi"] = np.where(
+        sttH_dict["phi"] < 0, sttH_dict["phi"] + 2 * np.pi, sttH_dict["phi"]
+    )
 
     # Create a pandas DataFrame from the sttHit dictionary.
     sttH_df = pd.DataFrame(sttH_dict)
@@ -281,25 +289,109 @@ def prepare_event(
         # set the isochrone to the tube radius (0.5cm) if the deposited charge is 0
         processed_df.loc[processed_df["dep_charge"] == 0, "isochrone"] = 0.5
 
-    if kwargs["merge_wire_hits"]:
+    tol = 1e-10  # floating point tolerance
+    if (
+        kwargs["merge_wire_hits"]
+        and processed_df.query("r_out <= 0.001 + @tol").shape[0] > 0
+    ):
+        logging.info(f"Event {event_id} contains wire hits!")
+
+        processed_df.reset_index(drop=True, inplace=True)
+
         # Get the row numbers of the hits that correspond to an incoming particle hitting the wire.
-        # These hits will have an outgoing local radius of less then tube (0.5cm) and the wire radius (0.001cm).
-        tol = 1e-10  # floating point tolerance
+        # These hits will have an outgoing local true radius of less then the wire radius (0.001cm).
         i_wire_hit = processed_df.query("r_out <= 0.001 + @tol").index
 
-        # In these cases the next hit should correspond to the particle leaving the wire as an ingoing hit.
-        i_wire_hit_next = i_wire_hit + 1
+        # Iterate over the wire hits
+        for i in i_wire_hit:
+            # First check if the index corresponds to the last row in the data frame.
+            # This means that the track went through the wire and left the detector, leaving no double-hit.
+            if i == len(processed_df) - 1:
+                logging.info(
+                    f"In event {event_id}: The wire hit {i} is the last hit in the data frame, thus it does not correspond to a double-hit.\n"
+                    f"Total number of hits: {len(processed_df)}\n"
+                    f"Radii of the in and out points: {processed_df.loc[i, ['r_in', 'r_out']]} \n"
+                    f"z positions of the in and out points: {processed_df.loc[i, ['z_in', 'z_out']]} \n"
+                    f"Tube IDs of the wire hit: {processed_df.loc[i, 'module_id']} \n"
+                )
+                # Set the isochrone of the wire hit to 0.
+                processed_df.loc[i, "isochrone"] = 0.0
 
-        # Test this hypothesis
-        if not all(processed_df.loc[i_wire_hit_next, "r_in"] <= 0.001 + tol):
-            logging.error(
-                "The next hit after the wire hit does not correspond to the wire hit!"
+            # Now check if the next hit also corresponds to a wire hit.
+            # In this case we would expect that the ingoing radius would be less than the wire radius (0.001cm).
+            elif processed_df.loc[i + 1, "r_in"] <= 0.001 + tol:
+                # If this is the case, we have a double-hit in the same tube.
+                # Thus we remove the second hit and set the isochrone of the first hit to 0.
+                processed_df.loc[i, "isochrone"] = 0.0
+                processed_df.drop(i + 1, inplace=True)
+
+            # Now only cases are left where the next hit does not correspond to a wire hit.
+            # This could be the case if the track went through the wire and left the tube.
+            else:
+                logging.warning(
+                    f"In event {event_id}: The hit after the wire hit {i} does not correspond to a wire hit!\n"
+                    f"Radii of the in and out points: {processed_df.loc[i, ['r_in', 'r_out']]} \n"
+                    f"Radii of the next in and out points: {processed_df.loc[i + 1, ['r_in', 'r_out']]} \n"
+                    f"z positions of the in and out points: {processed_df.loc[i, ['z_in', 'z_out']]} \n"
+                    f"z positions of the next in and out points: {processed_df.loc[i + 1, ['z_in', 'z_out']]} \n"
+                    f"Tube IDs of the wire hits: {processed_df.loc[i, 'module_id']} \n"
+                    f"Tube IDs of the next hits: {processed_df.loc[i + 1 , 'module_id']} \n"
+                    "Leaving the hit unchanged..."
+                )
+                # Set the isochrone of the wire hit to 0.
+                processed_df.loc[i, "isochrone"] = 0.0
+
+    # give hits in the same tube the same hit id
+    # make a two new columns for the number of multi-hits and the particle ids of the multi-hits
+    processed_df["n_multi_hit"] = 0
+    processed_df["multi_hit_particle_ids"] = ""
+    if kwargs["merge_same_tube_hits"]:
+        # mark the multi-hits in an extra column and make a data frame only with multi-hits and remove them from the original data frame
+        processed_df["duplicate"] = processed_df.duplicated(
+            subset=["module_id"], keep="first"
+        )
+        df_with_multi_hits = processed_df.query("duplicate==True")
+        processed_df.query("duplicate==False", inplace=True)
+
+        # reindex and set the hit id to the index
+        processed_df.reset_index(drop=True, inplace=True)
+        processed_df["hit_id"] = processed_df.index
+
+        # now append the rows with multi-hits
+        processed_df = pd.concat([processed_df, df_with_multi_hits], ignore_index=True)
+
+        # iterate over the module ids with multi-hits
+        for module_id in df_with_multi_hits["module_id"].unique():
+            # get the row numbers of the multi-hits
+            i_multi_hit = processed_df.query("module_id==@module_id").index
+
+            # get the number of multi-hits
+            processed_df.loc[i_multi_hit[0], "n_multi_hit"] = len(i_multi_hit)
+
+            # get the particle ids of the multi-hits
+            multi_hit_particle_ids = processed_df.loc[i_multi_hit, "particle_id"].array
+            processed_df.loc[i_multi_hit[0], "multi_hit_particle_ids"] = ",".join(
+                f"{pid}" for pid in multi_hit_particle_ids
             )
-            exit(1)
 
-        # Now set the isochrones of the wire hits to 0 and throw away the second hit.
-        processed_df.loc[i_wire_hit, "isochrone"] = 0.0
-        processed_df.drop(i_wire_hit_next, inplace=True)
+            # iterate over the multi-hits
+            for i in i_multi_hit:
+                # set the hit id of the multi-hit to the hit id of the first hit
+                processed_df.loc[i, "hit_id"] = processed_df.loc[
+                    i_multi_hit[0], "hit_id"
+                ]
+
+        # Get the true edges using the true time order of the hits
+        true_edges = get_time_ordered_true_edges_v2(processed_df)
+        logging.info(
+            f"Time ordered truth graph built for {event_id} with size {true_edges.shape}"
+        )
+
+        # now remove the multi-hits from the processed data frame if the option is set
+        processed_df.drop_duplicates(subset=["hit_id"], keep="first", inplace=True)
+
+        # drop the columns that are not needed anymore
+        processed_df.drop(columns=["duplicate"], inplace=True)
 
     # count the number of times a particle (particle_id) leaves multiple hits in the same tube (module_id)
     duplicate_hits = processed_df[
@@ -313,6 +405,13 @@ def prepare_event(
     # Redefine the hit ids and the index to be continuous after the cut hits.
     processed_df.reset_index(drop=True, inplace=True)
     processed_df["hit_id"] = np.arange(len(processed_df))
+
+    if not kwargs["merge_same_tube_hits"]:
+        # Get the true edges using the true time order of the hits
+        true_edges = get_time_ordered_true_edges(processed_df)
+        logging.info(
+            f"Time ordered truth graph built for {event_id} with size {true_edges.shape}"
+        )
 
     # Check if the event has less hits than the minimum required.
     logging.debug(f"Event {event_id} contains {len(processed_df)} hits.")
@@ -334,12 +433,6 @@ def prepare_event(
             dtype=int,
         )
 
-    # Get the true edges using the true time order of the hits
-    true_edges = get_time_ordered_true_edges(processed_df)
-    logging.info(
-        f"Time ordered truth graph built for {event_id} with size {true_edges.shape}"
-    )
-
     # Build input edges by connecting all hits to all other hits.
     if input_edge_method == "all":
         input_edges = get_all_edges(processed_df)
@@ -358,7 +451,8 @@ def prepare_event(
     )
 
     # feature scale for X=[r,phi,isochrone] (basically a normalization for the input features)
-    feature_scale = [42, np.pi, 0.5]
+    # r: 42cm := outer STT radius, phi: 2pi := max azimuthal angle, isochrone: 0.5cm := tube radius
+    feature_scale = [42, 2 * np.pi, 0.5]
 
     # Build the PyTorch Geometric (PyG) 'Data' object
     data = Data(
@@ -369,6 +463,8 @@ def prepare_event(
         hid=torch.from_numpy(processed_df["hit_id"].to_numpy()),
         pt=torch.from_numpy(processed_df["ppt"].to_numpy()),
         vertex=torch.from_numpy(processed_df[["vx", "vy", "vz"]].to_numpy()),
+        mc_point=torch.from_numpy(processed_df[["tx", "ty", "tz"]].to_numpy()),
+        mc_mom=torch.from_numpy(processed_df[["tpx", "tpy", "tpz"]].to_numpy()),
         pdgcode=torch.from_numpy(processed_df["pdgcode"].to_numpy()),
         ptheta=torch.from_numpy(processed_df["ptheta"].to_numpy()),
         peta=torch.from_numpy(processed_df["peta"].to_numpy()),
@@ -378,7 +474,10 @@ def prepare_event(
         dep_charge=torch.from_numpy(processed_df["dep_charge"].to_numpy()),
         r_in=torch.from_numpy(processed_df["r_in"].to_numpy()),
         r_out=torch.from_numpy(processed_df["r_out"].to_numpy()),
+        layer_id=torch.from_numpy(processed_df["layer_id"].to_numpy()),
         event_file=event_id,
+        n_multi_hits=torch.from_numpy(processed_df["n_multi_hit"].to_numpy()),
+        multi_hit_particle_ids=processed_df["multi_hit_particle_ids"].array,
     )
 
     # Get the input and true edges as PyTorch tensors

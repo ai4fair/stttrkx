@@ -246,8 +246,10 @@ class PandaRootFeatureStore(FeatureStoreBase):
             "STTPoint.fTrackID": "particle_id",
             "STTPoint.fX_out_local": "x_out",
             "STTPoint.fY_out_local": "y_out",
+            "STTPoint.fZ_out_local": "z_out",
             "STTPoint.fX_in_local": "x_in",
             "STTPoint.fY_in_local": "y_in",
+            "STTPoint.fZ_in_local": "z_in",
         }
 
         mcTrack_branch_dict = {

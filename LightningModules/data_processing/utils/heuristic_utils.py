@@ -226,7 +226,7 @@ def graph_intersection(pred_graph, truth_graph):
     return new_pred_graph, y
 
 
-def get_time_ordered_true_edges(hits):
+def get_time_ordered_true_edges(hits: pd.DataFrame) -> np.ndarray:
     """Get time ordered true edge list.  Here 'hits' represent complete event."""
 
     true_edges_start = []
@@ -308,3 +308,31 @@ def get_layerwise_graph_v2(hits: pd.DataFrame, restrict_sectors: bool) -> np.nda
 
     # Return the input graph (edge tensor)
     return input_graph
+
+
+def get_time_ordered_true_edges_v2(hits: pd.DataFrame) -> np.ndarray:
+    """Get time ordered true edge list.  Here 'hits' represent complete event."""
+
+    true_edges_start = []
+    true_edges_end = []
+
+    # Sort by the time of the MC Points
+    for particle_id in hits.particle_id.unique():
+        sortedHits = hits.query(f"particle_id=={particle_id}").sort_values(
+            "tT", ascending=True
+        )
+        # reindex
+        sortedHits = sortedHits.reset_index(drop=True)
+        for hit in range(sortedHits.x.size - 1):
+            true_edges_start.append(sortedHits.loc[hit,"hit_id"])
+            true_edges_end.append(sortedHits.loc[hit + 1, "hit_id"])
+
+    true_edges = np.array([true_edges_start, true_edges_end])
+
+    # Add the reverse edges
+    true_edges = np.concatenate((true_edges, true_edges[[1, 0]]), axis=1)
+    
+    # Remove duplicate edges
+    true_edges = np.unique(true_edges, axis=1)
+
+    return true_edges
