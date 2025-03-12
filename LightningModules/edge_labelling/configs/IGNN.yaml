@@ -1,18 +1,25 @@
 # Input directory with the processed pyTorch geometry files
-input_dir  : /home/nikin105/mlProject/mlFiles/afterProcessing/XiAntiXi
+input_dir  : /home/nikin105/mlProject/data/machineLearning/mum5mup5/processed_files/layerwise_merged_multi_hits/layerwise_merged_multi_hits.tar.gz
 
 # Working directory for the training with the split up pyTorch geometry files
-output_dir : /home/nikin105/mlProject/mlFiles/training/XiAntiXi
+output_dir : /home/nikin105/mlProject/data/machineLearning/mum5mup5/classification/layerwise_merged_multi_hits
 
-# Logger for monitoring the training. Options: wandb (Weights and Biases), tb (Tensor Board), or None
-logger     : wandb
-
-# - Further Filtering -
-edge_cut          : 0.5   # ? edge score?
-pt_signal_min     : 0     # ? minimal transversal momentum of signal hits
-pt_background_min : 0     # ? minimal transversal momentum of background hits
-sorted_events     : True  # ?
-noise             : False # ?
+# - Data Filtering & Manipulation -
+seed              : 1     # Seed for the random number generator
+pt_background_cut : 0     # All edges in the input graph corresponding to hits which have 
+                          # a lower transversal momentum than the cut value get filtered out
+pt_signal_cut     : 0     # All edges in the signal truth graph corresponding to hits which have 
+                          # a lower transversal momentum than the cut value get filtered out
+                          # (This is only relevant if the signal truth graph is used!)
+sorted_events     : True  # If True, loads the events in the order of the event number.
+                          # E.g. if a directory/archive contains 1e4 files but only 1e3 files are used
+                          # for training, only the first 1e3 files are loaded in the order of the event number. 
+noise             : False # If True, include hits from secondary processes, e.g., e- from Bremsstrahlung.
+directed          : False # Only accept edges that go outwards or stay on a same radius with respect to the IP
+weight            : 2     # Multiples every positive y label with this weight
+overwrite         : True  # Option for the inference stage. If True, overwrites existing files.
+regime:                   # Different information about the given data
+  - pid                   # Implies that the data is labeled with True and False (y_pid should be set)
 
 # Names of the data types used for this stage
 datatype_names:
@@ -22,49 +29,52 @@ datatype_names:
 
 # Number of events used for each data type
 datatype_split: 
-  - 15 # Number of events used to train the model
-  - 5  # Number of events used to validate the performance of the model after an epoch
-  - 5  # Number of events used to test the performance of the model after the training
+  - 100 # Number of events used to train the model
+  - 10  # Number of events used to validate the performance of the model after an epoch
+  - 10  # Number of events used to test the performance of the model after the training
 
-# ? same as datatype_split but for data_utils.py
+# Same as datatype_split but for data_utils.py
 train_split: 
-  - 15
-  - 5
-  - 5
+  - 100
+  - 10
+  - 10
 
-# - General configuration -
-overwrite    : True # ?
-max_epochs   : 1    # Number of training epochs
-n_workers    : 1    # ?
-save_top_k   : 2    # Optional (default = 2) : Number of best models that should be saved as checkpoints
-sanity_steps : 2    # Optional (default = 2) : Number of sanity steps after resuming training from a checkpoint
+# - Training Configuration -
+max_epochs   : 3  # Number of training epochs
+n_workers    : 16 # Number of cpu workers used for data loading
+sanity_steps : 0  # Optional (default = 2) : Number of sanity steps after resuming training from a checkpoint
 
-# - IGNN hyperparameter - 
-fom               : val_loss # Optional (default = val_loss) : Figure of merit (FOM) used to determine the best model.
-fom_mode          : min      # Optional (default = min) : Mode of the FOM. Options: min, max
-spatial_channels  : 3        # ?
-cell_channels     : 0        # ?
-hidden            : 128      # ?
-n_graph_iters     : 8        # ?
-nb_node_layer     : 3        # ?
-nb_edge_layer     : 3        # ?
-emb_channels      : 0        # ?
-layernorm         : True     # ?
-batchnorm         : False    # ?
-directed          : False    # ?
-batchsize         : 1        # ?
-aggregation       : sum_max  # ? Options: sum, max, sum_max, mean, mea_sum, mean_max
-hidden_activation : ReLU     # ? Options: ReLu
-weight            : 2        # ?
-warmup            : 200      # ?
-lr                : 0.001    # ?
-factor            : 0.3      # ?
-patience          : 10       # ?
+# - Logger & Checkpoint Configuration -
+logger       : wandb     # Logger for monitoring the training. Options: wandb (Weights and Biases), tb (Tensor Board), or None
+edge_cut     : 0.5      # Minimum edge score for an edge to be considered true. Used for evaluation.
+fom          : val_loss # Optional (default = val_loss) : Figure of merit (FOM) used to determine the best model.
+fom_mode     : min      # Optional (default = min) : Mode of the FOM. Options: min, max
+save_top_k   : 2        # Optional (default = 2) : Number of best models that should be saved as checkpoints
 
-# ?
-regime: 
-  - pid # ? [pid] assumes filtering has (not) been performed i.e. variable y_pid (y) exists in Data.
+# - Optimizer Configuration -
+warmup            : 5        # Epochs in which the learning rate steadily increases
+lr                : 0.001    # Learning rate after the warmup epochs
+factor            : 0.1      # Decrease the learning rate by this factor after the patience epochs
+patience          : 10       # Number of epochs to wait before decreasing the learning rate
 
-# Post-processing?
+# - IGNN Parameters - 
+spatial_channels  : 3        # Size of the input layer
+cell_channels     : 0        # Adds to the size of the input layer
+hidden            : 128      # Number of neurons in the hidden layers
+n_graph_iters     : 8        # Number of recurrent message passing steps
+nb_node_layer     : 3        # Number of hidden layers in the input and node network
+nb_edge_layer     : 3        # Number of hidden layers in the edge encoder & network as well as the output layer minus the output
+layernorm         : True     # If True: Applies Layer Normalization over a mini-batch of inputs as described in 
+                             # the paper `Layer Normalization <https://arxiv.org/abs/1607.06450>`
+batchnorm         : False    # Applies Batch Normalization over a 2D or 3D input (a mini-batch of 1D
+                             # inputs with optional additional channel dimension) as described in the paper
+                             # `Batch Normalization: Accelerating Deep Network Training by Reducing
+                             # Internal Covariant Shift <https://arxiv.org/abs/1502.03167>`
+batchsize         : 1        # Currently not used (hardcoded to 1)
+aggregation       : sum_max  # Method for the aggregation layer: sum, max, sum_max, mean, mean_sum, mean_max
+hidden_activation : ReLU     # Activation function for the hidden layers: ReLu
+
+# callbacks are run after training
 callbacks: 
-  - GNNBuilder # ? Options: GNNBuilder
+  - pandaRoot_GNNBuilder # This callback evaluates the model on the test data after training and 
+                         # sorts the training, validation, and test data into different directories.  

@@ -344,7 +344,7 @@ def prepare_event(
     # give hits in the same tube the same hit id
     # make a two new columns for the number of multi-hits and the particle ids of the multi-hits
     processed_df["n_multi_hit"] = 0
-    processed_df["multi_hit_particle_ids"] = ""
+    processed_df["multi_hit_particle_ids"] = "-1"
     if kwargs["merge_same_tube_hits"]:
         # mark the multi-hits in an extra column and make a data frame only with multi-hits and remove them from the original data frame
         processed_df["duplicate"] = processed_df.duplicated(
@@ -413,6 +413,10 @@ def prepare_event(
             f"Time ordered truth graph built for {event_id} with size {true_edges.shape}"
         )
 
+    # Convert the multi_hit_particle_ids from strings to integer lists
+    arr_multi_hit_particle_ids = processed_df["multi_hit_particle_ids"].array
+    arr_multi_hit_particle_ids = [[int(x) for x in s.split(",")] for s in arr_multi_hit_particle_ids]
+
     # Check if the event has less hits than the minimum required.
     logging.debug(f"Event {event_id} contains {len(processed_df)} hits.")
     if len(processed_df) < min_hits:
@@ -477,7 +481,7 @@ def prepare_event(
         layer_id=torch.from_numpy(processed_df["layer_id"].to_numpy()),
         event_file=event_id,
         n_multi_hits=torch.from_numpy(processed_df["n_multi_hit"].to_numpy()),
-        multi_hit_particle_ids=processed_df["multi_hit_particle_ids"].array,
+        multi_hit_particle_ids=arr_multi_hit_particle_ids,
     )
 
     # Get the input and true edges as PyTorch tensors
