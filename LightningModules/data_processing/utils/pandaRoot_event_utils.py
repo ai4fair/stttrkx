@@ -449,6 +449,23 @@ def prepare_event(
         )
     elif input_edge_method == "layerwise_v2":
         input_edges = get_layerwise_graph_v2(processed_df, kwargs["filtering"])
+        if input_edges is False:
+            logging.info(
+                f"Event {event_id} has only hits in one layer! Skipping event..."
+            )
+            return np.array(
+                [
+                    event_id,
+                    0,
+                    0,
+                    0,
+                    0,
+                    len(processed_df),
+                    n_zero_charge,
+                    n_multi_hits,
+                ],
+                dtype=int,
+            )
 
     logging.info(
         f"Input graph built with method {input_edge_method} for {event_id} with size {input_edges.shape}"

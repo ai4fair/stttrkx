@@ -275,6 +275,9 @@ def get_layerwise_graph_v2(hits: pd.DataFrame, restrict_sectors: bool) -> np.nda
     edgeStart = []
     edgeEnd = []
 
+    if len(layer_ids) == 1:
+        return False
+
     # Iterate over all layers with hits
     for layer in range(1, len(layer_ids)):
 

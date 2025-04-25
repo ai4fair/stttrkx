@@ -2,16 +2,16 @@
 # Optional fields are marked with a # Optional comment.
 
 # Input directory with the digi and sim directories containing the .root files
-input_dir :  "/home/nikin105/mlProject/data/simulations/mum5mup5/root"
+input_dir :  "/home/nikin105/mlProject/data/simulations/XiAntiXi/root"
 
 # Prefix of the input files
-prefix : "new_mum5mup5"
+prefix : "new_XiAntiXi"
 
 # Output directory for the pyTorch geometry files
-output_dir : "/home/nikin105/mlProject/data/machineLearning/mum5mup5/processed_files/layerwise"
+output_dir : "/home/nikin105/mlProject/data/machineLearning/XiAntiXi/processed_files/layerwise"
 
 # Config YAML file containing the particle ids and process codes of the generated signal process 
-signal_signature_file : "/home/nikin105/mlProject/data/signal_signatures/signal_signature_mum5mup5.yaml"
+signal_signature_file : "/home/nikin105/mlProject/data/signal_signatures/signal_signature_new_XiAntiXi.yaml"
 
 # Input edge construction method ("all", "layerwise", "layerwise_v2")
 input_edge_method : "layerwise_v2"
@@ -23,8 +23,8 @@ directional : True # If True, excludes self-loops on samelayer edges.
 
 # - Parallelization parameters - 
 overwrite : True  # If True, overwrite existing files
-n_files   : 1     # Number of files to process (1 = one digi and one sim file)
-n_events  : 10000 # Number of events to process
+n_files   : 10    # Number of files to process (1 = one digi and one sim file)
+n_events  : 100000 # Number of events to process
 n_workers : 16    # Number of workers for parallel processing
 n_tasks   : -1    # Currently not used but a mandatory parameter for the pipeline
 chunksize : -1    # Currently not used but a mandatory parameter for the pipeline

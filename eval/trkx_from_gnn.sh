@@ -3,7 +3,7 @@
 # This script runs 'trkx_from_gnn.py'
 
 # params
-epsilon=0.15
+epsilon=0.2
 maxevts=30000
 edge_score_cut=0.5
 
@@ -25,8 +25,8 @@ fi
 ann=gnn
 
 # Data Directories
-inputdir="/home/nikin105/mlProject/data/machineLearning/XiAntiXi/training/baseline/trainingResults/test"  # input from GNN stage as in test/pred
-outputdir="/home/nikin105/mlProject/data/machineLearning/XiAntiXi/track_reconstruction/baseline/track_candidates" # output of trkx_from_gnn.sh i.e. TrackCands
+inputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/classification/layerwise_100k/test"  # input from GNN stage as in test/pred
+outputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/evaluation/mum5mup5/layerwise_100k" # output of trkx_from_gnn.sh i.e. TrackCands
 mkdir -p $outputdir
 
 # original: trkx_from_gnn_v1
@@ -38,7 +38,7 @@ python trkx_from_gnn.py \
     --input-dir $inputdir \
     --output-dir $outputdir \
     --max-evts $maxevts \
-    --num-workers 8 \
+    --num-workers 16 \
     --score-name "scores" \
     --edge-score-cut $edge_score_cut \
     --epsilon $epsilon \
