@@ -16,6 +16,10 @@ from multiprocessing import Pool
 from functools import partial
 from sklearn.cluster import DBSCAN
 
+import warnings
+
+warnings.filterwarnings("ignore", module="sklearn")
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 

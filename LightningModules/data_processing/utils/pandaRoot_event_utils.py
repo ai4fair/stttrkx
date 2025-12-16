@@ -40,7 +40,7 @@ def process_mcTracks(event: pd.Series, signal_signatures: list) -> pd.DataFrame:
 
     # Get the track ids of particles that leave a signal in the STT
     # and save them into the dictionary.
-    mcTrack_dict["particle_id"] = np.unique(np.array(event["particle_id"]))
+    mcTrack_dict["particle_id"] = np.unique(event["particle_id"])
 
     # Initialize the "is_signal" column of the dictionary with an empty bool array.
     mcTrack_dict["primary"] = np.empty(len(mcTrack_dict["particle_id"]), dtype=bool)
@@ -241,9 +241,11 @@ def prepare_event(
     if not os.path.exists(output_filename) or overwrite:
         logging.info(f"Writing into {output_filename}")
     else:
-        logging.warning(
+        logging.info(
             f"File {output_filename} already exists! Skipping event {event_id}..."
         )
+        # Update the progress bar
+        progress_bar.update(n=1)
         return np.array(
             [
                 event_id,
@@ -423,6 +425,8 @@ def prepare_event(
         logging.info(
             f"Event {event_id} has only {len(processed_df)} hits! Skipping event..."
         )
+        # Update the progress bar
+        progress_bar.update(n=1)
         return np.array(
             [
                 event_id,
@@ -453,6 +457,8 @@ def prepare_event(
             logging.info(
                 f"Event {event_id} has only hits in one layer! Skipping event..."
             )
+            # Update the progress bar
+            progress_bar.update(n=1)
             return np.array(
                 [
                     event_id,

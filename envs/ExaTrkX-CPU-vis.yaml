@@ -1,4 +1,4 @@
-name: ExaTrkX-CPU
+name: ExaTrkX-CPU-vis
 channels:
   - conda-forge
 dependencies:
@@ -167,8 +167,8 @@ dependencies:
       - frozenlist==1.6.0
       - greenlet==3.2.2
       - multidict==6.4.4
-      - panda-csvreader==1
-      - panda-train-track==0.1.0
+      # - panda-csvreader==1
+      # - panda-train-track==0.1.0
       - pdg==0.1.4
       - propcache==0.3.1
       - psutil==7.0.0

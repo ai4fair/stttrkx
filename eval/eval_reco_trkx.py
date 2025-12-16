@@ -21,7 +21,7 @@ class SttTorchDataReader(object):
         """Initialize Instance Variables in Constructor"""
 
         self.path = input_dir
-        all_files = sorted(glob.glob(os.path.join(input_dir, "*")))
+        all_files = sorted(glob.glob(os.path.join(input_dir, "[0123456789]*")))
         self.nevts = len(all_files)
         self.all_evtids = [os.path.basename(x) for x in all_files]
 
@@ -75,7 +75,7 @@ def evaluate_reco_tracks(
     n_reco_hits = (
         reconstructed.track_id.value_counts(sort=False)
         .reset_index()
-        .rename(columns={"index": "track_id", "track_id": "n_reco_hits"})
+        .rename(columns={"count": "n_reco_hits"})
     )
 
     # only tracks with a minimum number of spacepoints are considered
@@ -93,7 +93,7 @@ def evaluate_reco_tracks(
     n_true_hits = (
         hits.particle_id.value_counts(sort=False)
         .reset_index()
-        .rename(columns={"index": "particle_id", "particle_id": "n_true_hits"})
+        .rename(columns={"count": "n_true_hits"})
     )
 
     # only particles leaves at least min_hits_truth spacepoints
@@ -146,12 +146,12 @@ def evaluate_reco_tracks(
     # select the best match
     reco_matching["purity_reco_max"] = reco_matching.groupby("track_id")[
         "purity_reco"
-    ].transform(max)
+    ].transform("max")
     truth_matching["purity_true_max"] = truth_matching.groupby("track_id")[
         "purity_true"
-    ].transform(max)
+    ].transform("max")
 
-    # FIXME: For 0.5, we should reguire that purity_reco_max > frac_reco_matched
+    # FIXME: For 0.5, we should require that purity_reco_max > frac_reco_matched
     matched_reco_tracks = reco_matching[
         (reco_matching.purity_reco_max > frac_reco_matched)
         & (reco_matching.purity_reco == reco_matching.purity_reco_max)
@@ -161,7 +161,7 @@ def evaluate_reco_tracks(
     if matched_reco_tracks.shape[0] > n_reco_hits.shape[0]:
         print("More True Matched:", matched_reco_tracks.shape[0], n_reco_hits.shape[0])
 
-    # FIXME: For 0.5, we should reguire that purity_true_max > frac_truth_matched
+    # FIXME: For 0.5, we should require that purity_true_max > frac_truth_matched
     matched_true_particles = truth_matching[
         (truth_matching.purity_true_max > frac_truth_matched)
         & (truth_matching.purity_true == truth_matching.purity_true_max)
@@ -184,9 +184,9 @@ def evaluate_reco_tracks(
     n_reco_tracks = n_reco_hits.shape[0]
     n_true_tracks = particles.shape[0]
 
-    # For GNN, there are non-negaliable cases where GNN-based
+    # For GNN, there are non-negatable cases where GNN-based
     # track candidates are matched to particles not considered as interesting.
-    # which means there are paticles in matched_pids that do not exist in particles.
+    # which means there are particles in matched_pids that do not exist in particles.
     matched_pids = np.unique(combined_match.particle_id)
 
     is_matched = particles.particle_id.isin(matched_pids).values
@@ -332,7 +332,6 @@ if __name__ == "__main__":
 
     # read reconstructed tracks
     reco_trkx_reader = SttTorchDataReader(reco_track_path)
-
     n_tot_files = reco_trkx_reader.nevts
     all_evtids = reco_trkx_reader.all_evtids
     max_evts = (
@@ -408,6 +407,8 @@ if __name__ == "__main__":
     # calculate the track efficiency and purity
     out_sum = "{}_summary.txt".format(outname)
     ctime = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+    if n_reco_tracks <= 0:
+        n_reco_tracks = -1
     summary = [
         "".join(["-"] * 50),
         "                    Run Time: {:>10}".format(ctime),

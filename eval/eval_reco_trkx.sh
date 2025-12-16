@@ -11,40 +11,33 @@ if test "$1" != ""; then
 fi
 
 # Matching Fractions
-fraction=0.5
-
-
-# Stage [dnn, gnn, agnn,...]
-ann=gnn
+fraction=0.75
 
 # Data Directories
-raw_inputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/classification/layerwise_100k/test"  # output of GNN stage as in test/pred
-rec_inputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/evaluation/mum5mup5/layerwise_100k"  # output of trkx_from_gnn.sh
-outputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/evaluation/mum5mup5/layerwise_100k"    # output of eval_reco_trkx.sh
-outfile=$outputdir"/$fraction" # name prefix of output files
+raw_inputdir="/mnt/data1/user/n_inde01/machineLearning/XiAntiXi/classification/trained_from_muon/test" # output of GNN stage as in test/pred
+rec_inputdir="/mnt/data1/user/n_inde01/machineLearning/XiAntiXi/evaluation/trained_from_muon_0.75mf/events"          # output of trkx_from_gnn.sh
+outputdir="/mnt/data1/user/n_inde01/machineLearning/XiAntiXi/evaluation/trained_from_muon_0.75mf/summaries"             # output of eval_reco_trkx.sh
+outfile=$outputdir"/$fraction"                                                                         # name prefix of output files
 mkdir -p $outputdir
 
-
 # Don't move above outfile, name will be messed up.
-if (( $(echo "$fraction == 0.5" | bc -l) )); then
+if (($(echo "$fraction == 0.5" | bc -l))); then
   fraction=$(echo "$fraction + 0.00001" | bc -l)
 fi
 
-
 # Evaluate Reco. Tracks
 python eval_reco_trkx.py \
-    --csv-path $raw_inputdir \
-    --reco-track-path $rec_inputdir \
-    --outname $outfile \
-    --max-evts $maxevts \
-    --num-workers 16 \
-    --force \
-    --min-pt 0.0 \
-    --min-hits-truth 7 \
-    --min-hits-reco 5 \
-    --frac-reco-matched $fraction \
-    --frac-truth-matched $fraction
-
+  --csv-path $raw_inputdir \
+  --reco-track-path $rec_inputdir \
+  --outname $outfile \
+  --max-evts $maxevts \
+  --num-workers 10 \
+  --force \
+  --min-pt 0.0 \
+  --min-hits-truth 7 \
+  --min-hits-reco 5 \
+  --frac-reco-matched $fraction \
+  --frac-truth-matched $fraction
 
 # Last 4 Params:
 
@@ -59,4 +52,3 @@ python eval_reco_trkx.py \
 # Matching Fractions
 
 # ATLAS: 0.5     PANDA: 0.5, 0.75, 0.95, etc.
-

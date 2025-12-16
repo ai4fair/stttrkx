@@ -2,10 +2,10 @@
 project          : "XiAntiXi"
 
 # Path to directory containing the model files
-model_library    : "/home/nikin105/mlProject/machineLearning/LightningModules"
+model_library    : "/mnt/scr1/user/n_inde01/stttrkx/LightningModules"
 
 # Path to the checkpoint directory
-artifact_library : "/home/nikin105/mlProject/data/machineLearning/artifacts"
+artifact_library : ""
 
 # List containing dictionaries with the configuration for each stage
 stage_list:

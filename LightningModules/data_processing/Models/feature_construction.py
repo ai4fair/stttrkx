@@ -188,11 +188,11 @@ class PandaRootFeatureStore(FeatureStoreBase):
 
         # Create the output directory if it does not exist yet
         logging.info("Writing outputs to " + self.output_dir)
-        os.makedirs(self.output_dir, exist_ok=True)
+        # os.makedirs(self.output_dir, exist_ok=True)
 
         # Save the STT geometry data from the csv file into a pandas data frame
         stt_geo_df = pd.read_csv(
-            "/home/nikin105/mlProject/data/detectorGeometries/tubePos.csv"
+            "/mnt/data1/user/n_inde01/detectorGeometries/tubePos.csv"
         )
 
         # Create a pandas data frame to save some event wise meta information
@@ -355,7 +355,9 @@ class PandaRootFeatureStore(FeatureStoreBase):
                 chunk = chunk[chunk.event_id < self.hparams["n_events"]]
 
                 if chunk.empty:
-                    logging.warning("The max amount of events has been reached. Skipping this step.")
+                    logging.warning(
+                        "The max amount of events has been reached. Skipping this step."
+                    )
                     continue
 
                 # Create a progress bar for the current chunk

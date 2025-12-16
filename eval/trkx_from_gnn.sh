@@ -4,9 +4,7 @@
 
 # params
 epsilon=0.2
-maxevts=30000
-edge_score_cut=0.5
-
+max_events=100_000
 
 # input
 if test "$1" != ""; then
@@ -14,19 +12,12 @@ if test "$1" != ""; then
 fi
 
 if test "$2" != ""; then
-  maxevts=$2
+  max_events=$2
 fi
-
-if test "$3" != ""; then
-  edge_score_cut=$3
-fi
-
-# Stage [dnn, gnn, agnn,...]
-ann=gnn
 
 # Data Directories
-inputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/classification/layerwise_100k/test"  # input from GNN stage as in test/pred
-outputdir="/home/nikin105/mlProject/data/machineLearning/mum5mup5/evaluation/mum5mup5/layerwise_100k" # output of trkx_from_gnn.sh i.e. TrackCands
+inputdir="/mnt/data1/user/n_inde01/machineLearning/XiAntiXi/classification/trained_from_muon/test" # input from GNN stage as in test/pred
+outputdir="/mnt/data1/user/n_inde01/machineLearning/XiAntiXi/evaluation/trained_from_muon_0.75mf"   # output of trkx_from_gnn.sh i.e. TrackCands
 mkdir -p $outputdir
 
 # original: trkx_from_gnn_v1
@@ -35,11 +26,11 @@ mkdir -p $outputdir
 
 # Tracks from GNN
 python trkx_from_gnn.py \
-    --input-dir $inputdir \
-    --output-dir $outputdir \
-    --max-evts $maxevts \
-    --num-workers 16 \
-    --score-name "scores" \
-    --edge-score-cut $edge_score_cut \
-    --epsilon $epsilon \
-    --min-samples 2
+  --input-dir $inputdir \
+  --output-dir $outputdir \
+  --max-evts $max_events \
+  --num-workers 10 \
+  --score-name "scores" \
+  --edge-score-cut 0 \
+  --epsilon $epsilon \
+  --min-samples 2
